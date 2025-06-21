@@ -26,17 +26,16 @@ export default function SearchAndActionBar({
           placeholder={searchPlaceholder}
           value={searchValue}
           onChangeText={onSearchChange}
-          style={styles.searchInput}
+          style={[styles.searchInput, { paddingLeft: 12 }] as any}
           leftIcon={<IconSymbol name="magnifyingglass" size={20} color="#757575" />}
-          // Remover paddingLeft extra para alinhar texto ao início
-          inputStyle={{ paddingLeft: 12 }}
         />
       </View>
       <Button
         variant="primary"
-        style={styles.iconButton}
+        style={styles.iconOnlyButton}
         onPress={onButtonPress}
-        leftIcon={<IconSymbol name="edit" size={24} color="#FFF" />} // Exemplo de ícone, pode trocar depois
+        leftIcon={<IconSymbol name="addition" size={20} color="#FFF" />}
+        label=""
       />
     </View>
   );
@@ -47,10 +46,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    gap: 0,
   },
   inputWrapper: {
     flex: 1,
     marginRight: 12,
+    alignSelf: 'stretch',
   },
   searchInput: {
     height: 48,
@@ -63,19 +64,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
-  },
-  iconButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#2196F3',
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    paddingHorizontal: 0,
     paddingVertical: 0,
+  },
+  iconOnlyButton: {
+    height: 48,
+    width: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    marginTop: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    alignSelf: 'stretch',
   },
 });

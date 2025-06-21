@@ -1,5 +1,5 @@
+import { borderRadius, fontSize, lineHeight, shadows, spacing } from '@/utils/responsive';
 import { StyleSheet } from 'react-native';
-import { spacing, fontSize, lineHeight, borderRadius, shadows } from '@/utils/responsive';
 
 // Define theme colors
 export const colors = {

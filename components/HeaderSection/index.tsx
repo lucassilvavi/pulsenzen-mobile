@@ -4,11 +4,15 @@ import { Image } from 'expo-image';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
-export default function HeaderSection() {
+interface HeaderSectionProps {
+  userName?: string;
+}
+
+export default function HeaderSection({ userName }: HeaderSectionProps) {
   return (
     <ThemedView style={styles.header}>
       <ThemedView style={{ backgroundColor: 'transparent' }}>
-        <ThemedText type="title">Olá, Joyce</ThemedText>
+        <ThemedText type="title">Olá, {userName || 'Visitante'}</ThemedText>
       </ThemedView>
       <ThemedView style={styles.profileImageContainer}>
         <Image

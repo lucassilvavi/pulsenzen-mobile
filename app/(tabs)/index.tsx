@@ -5,13 +5,23 @@ import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
 import StreakSection from '@/components/StreakSection';
 import { ThemedView } from '@/components/ThemedView';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const name = await AsyncStorage.getItem('userName');
+      setUserName(name || '');
+    })();
+  }, []);
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
@@ -19,18 +29,18 @@ export default function HomeScreen() {
         colors={['#A1CEDC', '#E8F4F8']}
         style={styles.headerGradient}
       />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-       <HeaderSection/>
-       <MoodSelector />
-       <DailyQuote/>
-       <QuickAccess/>
-       <StreakSection/>
-       <RecommendedSection/>
+        <HeaderSection userName={userName} />
+        <MoodSelector />
+        <DailyQuote />
+        <QuickAccess />
+        <StreakSection />
+        <RecommendedSection />
       </ScrollView>
     </ThemedView>
   );

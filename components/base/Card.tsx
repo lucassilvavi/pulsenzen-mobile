@@ -1,8 +1,7 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
 import * as Haptics from 'expo-haptics';
+import React from 'react';
+import { StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 
 interface CardProps {
   children?: React.ReactNode;
@@ -73,7 +72,7 @@ const Card: React.FC<CardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  touchable: {
+   touchable: {
     width: '100%',
   },
   card: {

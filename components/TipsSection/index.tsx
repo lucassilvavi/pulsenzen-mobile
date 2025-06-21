@@ -32,17 +32,23 @@ const styles = StyleSheet.create({
   card: {
     padding: 20,
     marginBottom: 20,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 16,
   },
   tipsList: {
     marginTop: 15,
+    backgroundColor: '#E3F2FD',
   },
   tipItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: '#E3F2FD',
+
   },
   tipText: {
     marginLeft: 10,
     flex: 1,
+    fontWeight: '500',
   },
 });

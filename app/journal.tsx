@@ -1,91 +1,81 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Card from '@/components/base/Card';
+import JournalEntryView from '@/components/Journal/JournalEntryView';
 import JournalEntriesList from '@/components/JournalEntriesList';
-import PromptsSection from '@/components/PromptsSection';
 import SearchAndActionBar from '@/components/SearchAndActionBar';
 import StatsBar from '@/components/StatsBar';
+import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import TipsSection from '@/components/TipsSection';
-
-const journals = [
-            {
-              id: '1',
-              date: 'Hoje, 15:30',
-              title: 'Um dia de reflexão',
-              preview: 'Hoje foi um dia muito produtivo. Consegui finalizar aquele projeto que estava me preocupando há semanas e ainda tive tempo para uma caminhada no parque...',
-              mood: { label: 'Ótimo', color: '#4CAF50', bg: '#E8F5E9', icon: 'face.smiling' },
-              tags: ['trabalho', 'conquista', 'natureza'],
-            },
-            {
-              id: '2',
-              date: 'Ontem, 21:45',
-              title: 'Ansiedade antes da apresentação',
-              preview: 'Estou me sentindo nervoso com a apresentação de amanhã. Sei que estou preparado, mas não consigo evitar a ansiedade. Fiz alguns exercícios de respiração que ajudaram...',
-              mood: { label: 'Neutro', color: '#FF9800', bg: '#FFF3E0', icon: 'face.dashed' },
-              tags: ['ansiedade', 'trabalho', 'respiração'],
-            },
-            {
-              id: '3',
-              date: '3 dias atrás, 08:15',
-              title: 'Manhã de gratidão',
-              preview: 'Acordei hoje com uma sensação de gratidão. Decidi listar cinco coisas pelas quais sou grato: 1. Minha saúde, 2. Minha família, 3. Meu trabalho...',
-              mood: { label: 'Bem', color: '#4CAF50', bg: '#E8F5E9', icon: 'face.smiling' },
-              tags: ['gratidão', 'manhã', 'reflexão'],
-            },
-            {
-              id: '4',
-              date: '1 semana atrás, 19:20',
-              title: 'Dia difícil',
-              preview: 'Hoje foi um dia realmente desafiador. Tive uma discussão com um colega de trabalho e depois recebi uma notícia não muito boa sobre o projeto...',
-              mood: { label: 'Mal', color: '#F44336', bg: '#FFEBEE', icon: 'face.frowning' },
-              tags: ['estresse', 'conflito', 'aprendizado'],
-            },
-          ];
-
- const promptsSections = [
-            {
-              icon: 'lightbulb.fill',
-              iconColor: '#2196F3',
-              iconBg: '#E3F2FD',
-              title: 'Momento de Clareza',
-              text: 'Descreva um momento recente em que você teve uma percepção importante ou uma nova compreensão sobre algo em sua vida.',
-            },
-            {
-              icon: 'heart.fill',
-              iconColor: '#4CAF50',
-              iconBg: '#E8F5E9',
-              title: 'Gratidão Diária',
-              text: 'Liste três coisas pelas quais você é grato hoje e explique por que elas são significativas para você.',
-            },
-            {
-              icon: 'figure.walk',
-              iconColor: '#FF9800',
-              iconBg: '#FFF3E0',
-              title: 'Próximos Passos',
-              text: 'Quais são três pequenas ações que você pode realizar amanhã para se aproximar de seus objetivos?',
-            },
-          ];         
+import { JournalService } from '@/services/journalService';
+import { JournalStatsService } from '@/services/JournalStatsService';
+import { JournalEntry } from '@/types/journal';
 
 export default function JournalScreen() {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [stats, setStats] = useState({ totalEntries: 0, uniqueDays: 0, percentPositive: 0 });
 
-  const handleEntryPress = (entryId) => {
-    router.push({
-      pathname: '/journal-entry',
-      params: { id: entryId }
-    });
+  // Carrega entradas e stats ao montar e ao retornar para a tela
+  useEffect(() => {
+    const loadEntries = async () => {
+      const entries = await JournalService.getEntries();
+      setJournalEntries(entries);
+      setStats(JournalStatsService.calculateStats(entries));
+    };
+    loadEntries();
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadEntries = async () => {
+        const entries = await JournalService.getEntries();
+        setJournalEntries(entries);
+        setStats(JournalStatsService.calculateStats(entries));
+      };
+      loadEntries();
+    }, [])
+  );
+
+  const handleEntryPress = (entryId: string) => {
+    const entry = journalEntries.find(e => e.id === entryId);
+    if (entry) {
+      setSelectedEntry(entry);
+      setModalVisible(true);
+    }
   };
 
-  const handleNewEntry = () => {
-    router.push('/journal-entry');
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedEntry(null);
   };
+
+  // Mapeia os dados para o formato esperado pelo componente de lista
+  const entriesList = journalEntries.map(entry => ({
+    id: entry.id,
+    date: new Date(entry.date).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: 'short', year: '2-digit'
+    }),
+    title: entry.promptCategory || 'Reflexão',
+    preview: entry.text,
+    mood: {
+      label: entry.moodTags[0] || '',
+      color: '#FFA726',
+      bg: '#FFF3E0',
+      icon: 'book',
+    },
+    tags: entry.moodTags || [],
+  }));
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top + 60 }]}>
@@ -93,40 +83,37 @@ export default function JournalScreen() {
         colors={['#FFE0B2', '#FFF8E1']}
         style={styles.headerGradient}
       />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-       <SearchAndActionBar
+        <SearchAndActionBar
           searchPlaceholder="Pesquisar entradas..."
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          buttonLabel="Nova Entrada"
-          onButtonPress={handleNewEntry}
+          buttonLabel=""
+          onButtonPress={() => router.push('/journal-entry')}
           style={{ marginBottom: 20 }}
         />
 
-       <Card style={styles.statsCard}>
+        <Card style={styles.statsCard}>
           <StatsBar
             stats={[
-              { value: 28, label: 'Entradas' },
-              { value: 14, label: 'Dias' },
-              { value: '70%', label: 'Positivas' },
+              { value: stats.totalEntries, label: 'Entradas' },
+              { value: stats.uniqueDays, label: 'Dias' },
+              { value: `${stats.percentPositive}%`, label: 'Positivas' },
             ]}
           />
         </Card>
 
         <JournalEntriesList
-          entries={journals}
+          entries={entriesList}
           onEntryPress={handleEntryPress}
         />
-        <PromptsSection
-          prompts={promptsSections}
-        />
 
-       <TipsSection
+        <TipsSection
           title="Dicas para um diário eficaz"
           tips={[
             'Escreva regularmente, mesmo que por apenas 5 minutos',
@@ -137,6 +124,33 @@ export default function JournalScreen() {
           style={styles.tipsCard}
         />
       </ScrollView>
+
+      {/* Modal de leitura do diário */}
+      <Modal
+        visible={modalVisible && !!selectedEntry}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.dragBar} />
+            <Pressable style={styles.closeModalButton} onPress={handleCloseModal}>
+              <ThemedText style={styles.closeModalText}>×</ThemedText>
+            </Pressable>
+            {selectedEntry && (
+              <JournalEntryView
+                prompt={selectedEntry.prompt}
+                promptCategory={selectedEntry.promptCategory}
+                moodTags={selectedEntry.moodTags}
+                text={selectedEntry.text}
+                date={new Date(selectedEntry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                onBack={handleCloseModal}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -166,5 +180,59 @@ const styles = StyleSheet.create({
   tipsCard: {
     padding: 20,
     marginBottom: 20,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '100%',
+    minHeight: '100%',
+    maxHeight: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 24,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 16,
+    alignItems: 'stretch',
+  },
+  dragBar: {
+    alignSelf: 'center',
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#E0E0E0',
+    marginBottom: 18,
+  },
+  closeModalButton: {
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 152, 0, 0.10)',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  closeModalText: {
+    fontSize: 28,
+    color: '#FFA726',
+    fontWeight: 'bold',
+    lineHeight: 32,
   },
 });

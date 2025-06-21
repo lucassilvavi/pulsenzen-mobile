@@ -1,8 +1,7 @@
-import React from 'react';
-import { StyleSheet, TouchableOpacity, View, ViewStyle, TextStyle } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ThemedText } from '@/components/ThemedText';
 import * as Haptics from 'expo-haptics';
+import React from 'react';
+import { StyleSheet, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 interface ButtonProps {
   label: string;
@@ -132,18 +131,26 @@ const Button: React.FC<ButtonProps> = ({
     return textStyles;
   };
 
+  const buttonStyles = [...getButtonStyles(), style];
+  const labelTextStyles = [...getLabelStyles(), labelStyle];
+
   return (
     <TouchableOpacity
-      style={[...getButtonStyles(), style]}
+      style={buttonStyles}
       onPress={handlePress}
       disabled={disabled}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <View style={styles.contentContainer}>
-        {leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
-        <ThemedText style={[...getLabelStyles(), labelStyle]}>{label}</ThemedText>
-        {rightIcon && <View style={styles.rightIconContainer}>{rightIcon}</View>}
-      </View>
+      {leftIcon && !label && !rightIcon ? (
+        // Centraliza o ícone se não houver label
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>{leftIcon}</View>
+      ) : (
+        <>
+          {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+          <ThemedText style={labelTextStyles}>{label}</ThemedText>
+          {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
+        </>
+      )}
     </TouchableOpacity>
   );
 };
@@ -223,6 +230,16 @@ const styles = StyleSheet.create({
   },
   disabledLabel: {
     opacity: 0.7,
+  },
+  iconLeft: {
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconRight: {
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

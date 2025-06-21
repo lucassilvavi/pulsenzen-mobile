@@ -16,8 +16,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
-    const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
-     const router = useRouter();
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const router = useRouter();
 
 
   // Load custom fonts
@@ -59,6 +59,13 @@ export default function RootLayout() {
     }
   }, [appIsReady, fontsLoaded]);
 
+  useEffect(() => {
+    // Redireciona para o onboarding apenas se não estiver concluído
+    if (appIsReady && fontsLoaded && onboardingDone === false) {
+      router.replace('/onboarding/welcome');
+    }
+  }, [appIsReady, fontsLoaded, onboardingDone, router]);
+
 
   if (!appIsReady || !fontsLoaded || onboardingDone === null) {
     return (
@@ -86,55 +93,71 @@ export default function RootLayout() {
               <Stack.Screen name="onboarding/benefits" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/features" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/setup" options={{ headerShown: false, gestureEnabled: false }} />
-              <Stack.Screen name="breathing-session" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
               <Stack.Screen name="sleep-session" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
               <Stack.Screen name="sos-session" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-              <Stack.Screen name="journal-entry" options={{ headerShown: false }} />
               <Stack.Screen name="mood-entry" options={{ headerShown: false }} />
-              <Stack.Screen name="settings" options={{ headerShown: false }} />
               <Stack.Screen
-                    name="breathing"
-                    options={{
-                      headerShown: true,
-                      presentation: 'fullScreenModal',
-                      title: 'Respiração',
-                      headerTransparent: true
-                  
-                    }}
-                  />
+               name="journal-entry"
+                options={{
+                  headerShown: true,
+                  presentation: 'fullScreenModal',
+                  title: 'Tema do Diário',
+                  headerTransparent: true
+                }} />
 
-                  <Stack.Screen
-                    name="sos"
-                    options={{
-                      headerShown: true,
-                      presentation: 'fullScreenModal',
-                      title: 'SOS',
-                      headerTransparent: true
-                  
-                    }}
-                  />
+              <Stack.Screen
+                name="breathing"
+                options={{
+                  headerShown: true,
+                  presentation: 'fullScreenModal',
+                  title: 'Respiração',
+                  headerTransparent: true
 
-                   <Stack.Screen
-                    name="journal"
-                    options={{
-                      headerShown: true,
-                      presentation: 'fullScreenModal',
-                      title: 'Diário',
-                      headerTransparent: true
-                  
-                    }}
-                  />
+                }}
+              />
+              <Stack.Screen
+                name="breathing-session"
+                options={{
+                  headerShown: true,
+                  presentation: 'fullScreenModal',
+                  title: 'Respiração',
+                  headerTransparent: true
 
-                    <Stack.Screen
-                    name="sleep"
-                    options={{
-                      headerShown: true,
-                      presentation: 'fullScreenModal',
-                      title: 'Dormir',
-                      headerTransparent: true
-                  
-                    }}
-                  />
+                }}
+              />
+
+              <Stack.Screen
+                name="sos"
+                options={{
+                  headerShown: true,
+                  presentation: 'fullScreenModal',
+                  title: 'SOS',
+                  headerTransparent: true
+
+                }}
+              />
+
+              <Stack.Screen
+                name="journal"
+                options={{
+                  headerShown: true,
+                  presentation: 'fullScreenModal',
+                  title: 'Diário',
+                  headerTransparent: true
+
+                }}
+              />
+
+              <Stack.Screen
+                name="sleep"
+                options={{
+                  headerShown: true,
+                  presentation: 'fullScreenModal',
+                  title: 'Dormir',
+                  headerTransparent: true
+
+                }}
+              />
             </Stack>
           </ThemedView>
         </AppProvider>
