@@ -82,7 +82,7 @@ export default function MiniPlayer() {
 
   return (
     <TouchableOpacity
-      style={[styles.container, { bottom: insets.bottom + 80 }]} // 80px acima da tab bar
+      style={[styles.container, { bottom: insets.bottom + 20 }]} // 20px acima da borda inferior
       onPress={handleMiniPlayerPress}
       activeOpacity={0.9}
     >

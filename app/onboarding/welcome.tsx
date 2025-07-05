@@ -19,7 +19,7 @@ export default function WelcomeScreen() {
 
     const handleSkip = async () => {
         await AsyncStorage.setItem('onboardingDone', 'true');
-        router.replace('/(tabs)');
+        router.replace('/');
     };
 
     return (

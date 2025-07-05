@@ -86,7 +86,7 @@ export default function SetupScreen() {
             ]);
 
             // Navigate to main app
-            router.replace('/(tabs)');
+            router.replace('/');
         } catch (error) {
             console.error('Error saving user preferences:', error);
             Alert.alert('Erro', 'Não foi possível salvar suas preferências. Tente novamente.');

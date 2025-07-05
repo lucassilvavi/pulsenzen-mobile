@@ -95,7 +95,16 @@ export default function RootLayout() {
                 animation: 'slide_from_right',
               }}
             >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="profile" 
+                options={{ 
+                  headerShown: true,
+                  presentation: 'modal',
+                  title: 'Perfil',
+                  headerTransparent: true
+                }} 
+              />
               <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/benefits" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/features" options={{ headerShown: false, gestureEnabled: false }} />

@@ -1,26 +1,31 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 
 interface HeaderSectionProps {
   userName?: string;
 }
 
 export default function HeaderSection({ userName }: HeaderSectionProps) {
+  const handleProfilePress = () => {
+    router.push('/profile');
+  };
+
   return (
     <ThemedView style={styles.header}>
       <ThemedView style={{ backgroundColor: 'transparent' }}>
         <ThemedText type="title">Olá, {userName || 'Visitante'}</ThemedText>
       </ThemedView>
-      <ThemedView style={styles.profileImageContainer}>
+      <TouchableOpacity onPress={handleProfilePress} style={styles.profileImageContainer}>
         <Image
           source={require('@/assets/images/profile-placeholder.png')}
           style={styles.profileImage}
           contentFit="cover"
         />
-      </ThemedView>
+      </TouchableOpacity>
     </ThemedView>
   );
 }
