@@ -1,5 +1,5 @@
 import { MusicCategory, MusicTrack, PlaybackState, Playlist } from '@/types/music';
-import { AudioPlayer, createAudioPlayer, AudioModule } from 'expo-audio';
+import { AudioPlayer } from 'expo-audio';
 import { mockCategories, mockPlaylists, mockTracks } from './musicMock';
 
 class MusicService {

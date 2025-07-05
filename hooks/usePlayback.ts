@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
 import musicService from '@/services/musicService';
 import { PlaybackState } from '@/types/music';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function usePlayback() {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(

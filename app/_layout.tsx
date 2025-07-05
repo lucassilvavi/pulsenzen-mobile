@@ -1,9 +1,9 @@
 // Import View directly from react-native instead of ThemedView
-import { AppProvider } from '@/context/AppContext';
 import MiniPlayer from '@/components/MiniPlayer';
+import { AppProvider } from '@/context/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
