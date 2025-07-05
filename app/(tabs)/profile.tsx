@@ -14,11 +14,11 @@ import TabBar from '@/components/base/TabBar';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
+  const { top, bottom, left, right } = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('profile');
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <ThemedView style={[styles.container, { paddingTop: top }]}>
       <LinearGradient
         colors={['#E1F5FE', '#F5F5F5']}
         style={styles.headerGradient}

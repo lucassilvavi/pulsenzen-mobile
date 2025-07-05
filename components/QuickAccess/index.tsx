@@ -21,7 +21,7 @@ const quickAccessItems = [
     icon: 'moon.stars.fill',
     iconColor: colors.gradients.sleep[0],
     bgColor: colors.gradients.sleep[1],
-    route: '/sleep',
+    route: '/souns',
   },
   {
     title: 'Diário',
@@ -60,12 +60,12 @@ export default function QuickAccess() {
             activeOpacity={0.7}
             onPress={
               item.route
-                ? () => router.push(item.route)
+                ? () => router.push(item.route as any)
                 : undefined
             }
           >
             <ThemedView style={[styles.iconCircle, { backgroundColor: item.bgColor }]}>
-              <IconSymbol name={item.icon} size={32} color={item.iconColor} />
+              <IconSymbol name={item.icon as any} size={32} color={item.iconColor} />
             </ThemedView>
             <ThemedText style={styles.cardTitle}>{item.title}</ThemedText>
             <ThemedText style={styles.cardSubtitle}>{item.subtitle}</ThemedText>

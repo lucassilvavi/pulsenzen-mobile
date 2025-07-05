@@ -1,8 +1,9 @@
-import { ThemedView } from '@/components/ThemedView';
+// Import View directly from react-native instead of ThemedView
 import { AppProvider } from '@/context/AppContext';
+import MiniPlayer from '@/components/MiniPlayer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
@@ -18,6 +19,7 @@ export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
 
   // Load custom fonts
@@ -77,10 +79,15 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={{
+        frame: { x: 0, y: 0, width: 0, height: 0 },
+        insets: { top: 0, left: 0, right: 0, bottom: 0 }
+      }}>
         <AppProvider>
-          <ThemedView style={styles.container}>
+          {/* Using regular View instead of ThemedView to avoid potential issues */}
+          <View style={[styles.container, { backgroundColor: 'white' }]}>
             <StatusBar style="auto" />
+            {/* Stack Navigation */}
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -93,11 +100,10 @@ export default function RootLayout() {
               <Stack.Screen name="onboarding/benefits" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/features" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/setup" options={{ headerShown: false, gestureEnabled: false }} />
-              <Stack.Screen name="sleep-session" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
-              <Stack.Screen name="sos-session" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+
               <Stack.Screen name="mood-entry" options={{ headerShown: false }} />
               <Stack.Screen
-               name="journal-entry"
+                name="journal-entry"
                 options={{
                   headerShown: true,
                   presentation: 'fullScreenModal',
@@ -120,7 +126,7 @@ export default function RootLayout() {
                 options={{
                   headerShown: true,
                   presentation: 'fullScreenModal',
-                  title: 'Respiração',
+                  title: '',
                   headerTransparent: true
 
                 }}
@@ -131,9 +137,8 @@ export default function RootLayout() {
                 options={{
                   headerShown: true,
                   presentation: 'fullScreenModal',
-                  title: 'SOS',
+                  title: '',
                   headerTransparent: true
-
                 }}
               />
 
@@ -149,17 +154,47 @@ export default function RootLayout() {
               />
 
               <Stack.Screen
-                name="sleep"
+                name="souns"
                 options={{
                   headerShown: true,
                   presentation: 'fullScreenModal',
-                  title: 'Dormir',
+                  title: 'Sons',
                   headerTransparent: true
 
                 }}
               />
+
+              <Stack.Screen
+                name="playlists"
+                options={{
+                  headerShown: false,
+                  presentation: 'fullScreenModal',
+
+                }}
+              />
+
+              <Stack.Screen
+                name="music-player"
+                options={{
+                  headerShown: false,
+                  presentation: 'fullScreenModal',
+                }}
+              />
+
+              <Stack.Screen
+                name="category"
+                options={{
+                  headerShown: false,
+                  presentation: 'fullScreenModal',
+                }}
+              />
             </Stack>
-          </ThemedView>
+            {/* Mini Player - Aparece quando uma música está tocando */}
+            {/* Não mostramos o mini-player na própria tela do player ou em telas de onboarding */}
+            {!pathname.includes('music-player') && !pathname.includes('onboarding') && (
+              <MiniPlayer />
+            )}
+          </View>
         </AppProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

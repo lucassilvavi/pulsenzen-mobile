@@ -1,139 +1,296 @@
+import ScreenContainer from '@/components/base/ScreenContainer';
+import ActiveSession from '@/components/SOS/ActiveSession';
+import CalmingAnimation from '@/components/SOS/CalmingAnimation';
+import CopingStrategiesGrid from '@/components/SOS/CopingStrategiesGrid';
+import EmergencyContacts from '@/components/SOS/EmergencyContacts';
+import HelpMessage from '@/components/SOS/HelpMessage';
+import { ThemedText } from '@/components/ThemedText';
+import { colors } from '@/constants/theme';
+import SOSService from '@/services/sosService';
+import { CopingStrategy, EmergencyContact, SOSSession } from '@/types/sos';
+import { fontSize, spacing } from '@/utils/responsive';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { StyleSheet } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
-import CopingStrategies from '@/components/CopingStrategies';
-import EmergencyCard from '@/components/EmergencyCard';
-import QuickReliefExercises from '@/components/QuickReliefExercises';
-import ReminderCard from '@/components/ReminderCard';
-import { ThemedView } from '@/components/ThemedView';
+const { width, height } = Dimensions.get('window');
 
+export default function SOSSessionScreen() {
+  const router = useRouter();
+  
+  // State
+  const [strategies, setStrategies] = useState<CopingStrategy[]>([]);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [selectedStrategy, setSelectedStrategy] = useState<CopingStrategy | null>(null);
+  const [currentSession, setCurrentSession] = useState<SOSSession | null>(null);
+  const [isActive, setIsActive] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [loading, setLoading] = useState(true);
 
+  // Timer ref
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-const quickReliefExercises: Exercise[] = [
-  {
-    key: 'breathing',
-    icon: { name: 'wind', color: '#2196F3', bg: '#E3F2FD' },
-    title: 'Respiração de Emergência',
-    duration: '2 minutos • Ansiedade',
-    description: 'Técnica de respiração rápida para acalmar o sistema nervoso e reduzir sintomas de ansiedade aguda.',
-  },
-  {
-    key: 'grounding',
-    icon: { name: 'hand.raised.fill', color: '#4CAF50', bg: '#E8F5E9' },
-    title: 'Técnica de Aterramento 5-4-3-2-1',
-    duration: '3 minutos • Pânico',
-    description: 'Use seus sentidos para ancorar-se no momento presente. Eficaz durante ataques de pânico ou dissociação.',
-  },
-  {
-    key: 'bodyscan',
-    icon: { name: 'person.fill', color: '#FF9800', bg: '#FFF3E0' },
-    title: 'Escaneamento Corporal',
-    duration: '4 minutos • Tensão',
-    description: 'Identifique e libere tensão muscular progressivamente, do topo da cabeça até os pés.',
-  },
-  {
-    key: 'visualization',
-    icon: { name: 'eye.fill', color: '#03A9F4', bg: '#E1F5FE' },
-    title: 'Visualização de Lugar Seguro',
-    duration: '5 minutos • Conforto',
-    description: 'Imagine-se em um local seguro e tranquilo, engajando todos os sentidos para acalmar a mente.',
-  },
-];
+  useEffect(() => {
+    loadData();
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
-const copingStrategies = [
-  {
-    key: 'cold-water',
-    icon: { name: 'drop.fill', color: '#4CAF50', bg: '#E8F5E9' },
-    title: 'Água Fria',
-    description: 'Mergulhe o rosto em água fria ou coloque um pano gelado no rosto para ativar o reflexo de mergulho e acalmar o sistema nervoso.',
-  },
-  {
-    key: 'movement',
-    icon: { name: 'figure.walk', color: '#2196F3', bg: '#E3F2FD' },
-    title: 'Movimento',
-    description: 'Caminhe, estique-se ou dance por alguns minutos para liberar energia nervosa e tensão acumulada no corpo.',
-  },
-  {
-    key: 'music',
-    icon: { name: 'music.note', color: '#FF9800', bg: '#FFF3E0' },
-    title: 'Música',
-    description: 'Ouça uma música calmante ou que traga boas memórias para mudar seu estado emocional rapidamente.',
-  },
-  {
-    key: 'connection',
-    icon: { name: 'person.2.fill', color: '#9C27B0', bg: '#F3E5F5' },
-    title: 'Conexão',
-    description: 'Entre em contato com alguém de confiança. Compartilhar seus sentimentos pode reduzir significativamente a angústia.',
-  },
-];
+  const loadData = async () => {
+    try {
+      const [strategiesData, contactsData] = await Promise.all([
+        SOSService.getCopingStrategies(),
+        SOSService.getEmergencyContacts()
+      ]);
+      
+      setStrategies(strategiesData);
+      setEmergencyContacts(contactsData);
+    } catch (error) {
+      console.error('Error loading SOS data:', error);
+      Alert.alert('Erro', 'Não foi possível carregar os dados. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const startStrategy = async (strategy: CopingStrategy) => {
+    try {
+      // If it's a breathing technique, navigate to breathing-session
+      if (strategy.category === 'breathing') {
+        const breathingTechnique = {
+          id: strategy.id,
+          name: strategy.title,
+          description: strategy.description,
+          inhaleTime: 4,
+          holdTime: 4,
+          exhaleTime: 4,
+          cycles: Math.max(1, Math.floor(strategy.duration * 60 / 16)) 
+        };
+        
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        router.push({
+          pathname: '/breathing-session',
+          params: { technique: JSON.stringify(breathingTechnique) }
+        });
+        return;
+      }
 
-export default function SOSScreen() {
-  const insets = useSafeAreaInsets();
+      // For non-breathing strategies, continue with existing logic
+      setSelectedStrategy(strategy);
+      setIsActive(true);
+      setCurrentStep(0);
+      setTimeRemaining(strategy.duration * 60);
+      
+      // Start session in service
+      const session = await SOSService.startSession(strategy.id);
+      setCurrentSession(session);
+      
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Start countdown timer
+      timerRef.current = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            completeStrategy();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting strategy:', error);
+      Alert.alert('Erro', 'Não foi possível iniciar a técnica. Tente novamente.');
+    }
+  };
 
-  const handleSOSPress = (exerciseType) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    router.push({
-      pathname: '/sos-session',
-      params: { type: exerciseType }
-    });
+  const completeStrategy = async () => {
+    try {
+      setIsActive(false);
+      
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      
+      // Complete session in service
+      if (currentSession) {
+        await SOSService.completeSession(currentSession.id);
+      }
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Show completion dialog
+      Alert.alert(
+        'Parabéns!',
+        'Você completou a técnica. Como está se sentindo agora?',
+        [
+          { 
+            text: 'Melhor', 
+            onPress: async () => {
+              if (currentSession) {
+                await SOSService.completeSession(currentSession.id, 4, 'Me sinto melhor');
+              }
+            }
+          },
+          { 
+            text: 'Preciso de mais ajuda', 
+            onPress: async () => {
+              if (currentSession) {
+                await SOSService.completeSession(currentSession.id, 2, 'Ainda preciso de ajuda');
+              }
+            }
+          },
+          { text: 'OK', style: 'cancel' },
+        ]
+      );
+      
+      // Reset state
+      setSelectedStrategy(null);
+      setCurrentSession(null);
+      setCurrentStep(0);
+      setTimeRemaining(0);
+    } catch (error) {
+      console.error('Error completing strategy:', error);
+      Alert.alert('Erro', 'Erro ao finalizar a sessão.');
+    }
+  };
+
+  const stopStrategy = () => {
+    setIsActive(false);
+    setSelectedStrategy(null);
+    setCurrentSession(null);
+    setCurrentStep(0);
+    setTimeRemaining(0);
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const nextStep = () => {
+    if (selectedStrategy && currentStep < selectedStrategy.steps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const previousStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleEmergencyContact = (contact: EmergencyContact) => {
+    Alert.alert(
+      'Ligar para emergência',
+      `Deseja ligar para ${contact.name} (${contact.number})?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Ligar', 
+          style: 'default', 
+          onPress: () => {
+            // In a real app, this would use Linking.openURL(`tel:${contact.number}`)
+            Alert.alert('Simulação', `Ligando para ${contact.name}...`);
+          }
+        },
+      ]
+    );
   };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top + 60 }]}>
-      <LinearGradient
-        colors={['#FFCDD2', '#FFEBEE']}
-        style={styles.headerGradient}
-      />
-    
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <EmergencyCard/>
-        <QuickReliefExercises exercises={quickReliefExercises} onExercisePress={handleSOSPress} />
-        <CopingStrategies strategies={copingStrategies} />
-        <ReminderCard
-        message="Este momento difícil vai passar. Você já superou desafios antes e tem a força para superar este também. Respire fundo e seja gentil consigo mesmo."
-        style={styles.reminderCard}
-        textStyle={styles.reminderText}
-      />
-      </ScrollView>
-    </ThemedView>
+    <ScreenContainer 
+      gradientColors={['#FFCDD2', '#FFEBEE']}
+      gradientHeight={height}
+    >
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <ThemedText style={styles.headerTitle}>
+            Você não está sozinho. Vamos passar por isso juntos.
+          </ThemedText>
+        </View>
+
+        {/* Calming Animation */}
+        <CalmingAnimation 
+          isActive={isActive}
+          animationType={selectedStrategy?.id === 'box-breathing' ? 'breathing' : 'pulse'}
+          message={isActive ? 'Respire devagar' : 'Você está seguro'}
+        />
+
+        {/* Active Strategy */}
+        {isActive && selectedStrategy && (
+          <ActiveSession
+            strategy={selectedStrategy}
+            currentStep={currentStep}
+            timeRemaining={timeRemaining}
+            onNext={nextStep}
+            onPrevious={previousStep}
+            onStop={stopStrategy}
+            onComplete={completeStrategy}
+          />
+        )}
+
+        {/* Strategy Selection */}
+        {!isActive && (
+          <ScrollView 
+            style={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Help Message */}
+            <HelpMessage />
+
+            {/* Coping Strategies */}
+            <CopingStrategiesGrid
+              strategies={strategies}
+              onStrategySelect={startStrategy}
+              loading={loading}
+            />
+
+            {/* Emergency Contacts */}
+            <EmergencyContacts
+              contacts={emergencyContacts}
+              onContactPress={handleEmergencyContact}
+            />
+          </ScrollView>
+        )}
+      </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: spacing.lg,
   },
-  headerGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 300,
+  header: {
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
-  scrollView: {
+  headerTitle: {
+    fontSize: fontSize.xl,
+    fontFamily: 'Inter-Bold',
+    color: colors.error.main,
+    textAlign: 'center',
+    lineHeight: fontSize.xl * 1.3,
+  },
+  contentContainer: {
     flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
-  reminderCard: {
-    padding: 20,
-    marginBottom: 20,
-    backgroundColor: '#FFF8E1',
-  },
-  reminderText: {
-    marginTop: 10,
-    lineHeight: 22,
-    fontStyle: 'italic',
   },
 });

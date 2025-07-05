@@ -9,14 +9,27 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.lucassilvavi.pulsezenapp",
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ],
+        "NSAppleMusicUsageDescription": "Este app reproduz música de relaxamento para você.",
+        "NSMicrophoneUsageDescription": "Este app não usa o microfone."
+      }
     },
     "android": {
+      "package": "com.lucassilvavi.pulsezenapp",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -34,8 +47,9 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-audio",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

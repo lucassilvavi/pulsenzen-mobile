@@ -18,18 +18,18 @@ const ScreenContainer: React.FC<ScreenContainerProps> = ({
   gradientHeight = 200,
   useSafeArea = true,
 }) => {
-  const insets = useSafeAreaInsets();
+  const { top } = useSafeAreaInsets();
   
   return (
     <View 
       style={[
         styles.container, 
-        useSafeArea && { paddingTop: insets.top },
+        useSafeArea && { paddingTop: top },
         style
       ]}
     >
       <LinearGradient
-        colors={gradientColors}
+        colors={gradientColors as any}
         style={[styles.headerGradient, { height: gradientHeight }]}
       />
       {children}

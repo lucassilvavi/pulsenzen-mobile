@@ -20,9 +20,9 @@ const sleepCategories = [
     icon: '📖',
     color: colors.sleep.primary,
     items: [
-      { id: 'forest', title: 'Caminhada na Floresta', duration: '15 min' },
-      { id: 'ocean', title: 'Praia ao Luar', duration: '20 min' },
-      { id: 'mountain', title: 'Montanhas Serenas', duration: '18 min' },
+      { id: 'forest-walk', title: 'Caminhada na Floresta', duration: '15 min' },
+      { id: 'ocean-moonlight', title: 'Praia ao Luar', duration: '20 min' },
+      { id: 'serene-mountains', title: 'Montanhas Serenas', duration: '18 min' },
     ]
   },
   {
@@ -32,8 +32,8 @@ const sleepCategories = [
     icon: '🎵',
     color: colors.breathing.primary,
     items: [
-      { id: 'rain', title: 'Chuva Suave', duration: '60 min' },
-      { id: 'waves', title: 'Ondas do Mar', duration: '45 min' },
+      { id: 'gentle-rain', title: 'Chuva Suave', duration: '60 min' },
+      { id: 'ocean-waves', title: 'Ondas do Mar', duration: '45 min' },
       { id: 'forest-sounds', title: 'Sons da Floresta', duration: '30 min' },
     ]
   },
@@ -45,8 +45,8 @@ const sleepCategories = [
     color: colors.journal.primary,
     items: [
       { id: 'body-scan', title: 'Relaxamento Corporal', duration: '25 min' },
-      { id: 'breathing', title: 'Respiração para Dormir', duration: '10 min' },
-      { id: 'gratitude', title: 'Gratidão Noturna', duration: '15 min' },
+      { id: 'sleep-breathing', title: 'Respiração para Dormir', duration: '10 min' },
+      { id: 'gratitude-night', title: 'Gratidão Noturna', duration: '15 min' },
     ]
   }
 ];
@@ -56,11 +56,11 @@ export default function SleepScreen() {
   const insets = useSafeAreaInsets();
 
   const handleCategoryPress = (categoryId: string) => {
-    router.push(`/sleep-session?category=${categoryId}`);
+    router.push(`/category?categoryId=${categoryId}`);
   };
 
   const handleItemPress = (categoryId: string, itemId: string) => {
-    router.push(`/sleep-session?category=${categoryId}&content=${itemId}`);
+    router.push(`/music-player?trackId=${itemId}`);
   };
 
   return (
@@ -91,11 +91,11 @@ export default function SleepScreen() {
               Início Rápido
             </ThemedText>
             <Button
-              label="Sessão Personalizada"
+              label="Ver Playlists"
               variant="primary"
               size="large"
               fullWidth
-              onPress={() => router.push('/sleep-session')}
+              onPress={() => router.push('/playlists')}
               style={[styles.quickStartButton, { backgroundColor: colors.sleep.accent }]}
             />
           </View>

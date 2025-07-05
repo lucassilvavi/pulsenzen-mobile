@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useThemeColor } from '@/hooks/useThemeColor';
@@ -17,6 +18,25 @@ export function ThemedText({
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
 
+  // Ensure children are wrapped properly and converted to string if needed
+  const ensureStringChildren = (children: any): React.ReactNode => {
+    if (children === null || children === undefined) {
+      return '';
+    }
+    if (typeof children === 'string' || typeof children === 'number') {
+      return children;
+    }
+    if (Array.isArray(children)) {
+      return children.map((child, index) => (
+        <React.Fragment key={index}>{ensureStringChildren(child)}</React.Fragment>
+      ));
+    }
+    if (React.isValidElement(children)) {
+      return children;
+    }
+    return String(children);
+  };
+
   return (
     <Text
       style={[
@@ -29,7 +49,9 @@ export function ThemedText({
         style,
       ]}
       {...rest}
-    />
+    >
+      {ensureStringChildren(rest.children)}
+    </Text>
   );
 }
 
