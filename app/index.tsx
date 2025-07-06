@@ -1,11 +1,11 @@
 import DailyQuote from '@/components/DailyQuote';
 import HeaderSection from '@/components/HeaderSection';
-import MoodSelector from '@/components/MoodSelector';
 import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
 import StreakSection from '@/components/StreakSection';
 import { ThemedView } from '@/components/ThemedView';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MoodSelector } from '@/modules/mood';
+import { ProfileService } from '@/modules/profile';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -18,8 +18,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      const name = await AsyncStorage.getItem('userName');
-      setUserName(name || '');
+      const profile = await ProfileService.getUserProfile();
+      setUserName(profile?.name || '');
     })();
   }, []);
 

@@ -1,6 +1,6 @@
 // Import View directly from react-native instead of ThemedView
-import MiniPlayer from '@/components/MiniPlayer';
 import { AppProvider } from '@/context/AppContext';
+import { MiniPlayer } from '@/modules/music/components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { Stack, usePathname, useRouter } from 'expo-router';
@@ -110,7 +110,6 @@ export default function RootLayout() {
               <Stack.Screen name="onboarding/features" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/setup" options={{ headerShown: false, gestureEnabled: false }} />
 
-              <Stack.Screen name="mood-entry" options={{ headerShown: false }} />
               <Stack.Screen
                 name="journal-entry"
                 options={{
@@ -162,6 +161,7 @@ export default function RootLayout() {
                 }}
               />
 
+              {/* Music Module Routes */}
               <Stack.Screen
                 name="souns"
                 options={{
@@ -169,7 +169,6 @@ export default function RootLayout() {
                   presentation: 'fullScreenModal',
                   title: 'Sons',
                   headerTransparent: true
-
                 }}
               />
 
@@ -178,10 +177,8 @@ export default function RootLayout() {
                 options={{
                   headerShown: false,
                   presentation: 'fullScreenModal',
-
                 }}
               />
-
               <Stack.Screen
                 name="music-player"
                 options={{
@@ -189,7 +186,6 @@ export default function RootLayout() {
                   presentation: 'fullScreenModal',
                 }}
               />
-
               <Stack.Screen
                 name="category"
                 options={{

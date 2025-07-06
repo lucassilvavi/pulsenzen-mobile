@@ -17,7 +17,7 @@ const recommendedItems = [
     subtitle: '30 minutos • Sono',
   },
   {
-    image: require('@/assets/images/breathing-placeholder.jpg'),
+    image: require('@/modules/breathing/assets/images/breathing-placeholder.jpg'),
     title: 'Respiração 4-7-8',
     subtitle: '5 minutos • Ansiedade',
   },

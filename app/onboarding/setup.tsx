@@ -4,6 +4,7 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import TextInput from '@/components/base/TextInput';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
+import { ProfileService } from '@/modules/profile';
 import { saveOnboardingData } from '@/services/onboardingService';
 import { fontSize, spacing } from '@/utils/responsive';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,13 +75,21 @@ export default function SetupScreen() {
                 goals: selectedGoals,
                 experience: selectedExperience,
             });
-            // Save user preferences localmente
+            
+            // Save user profile using ProfileService
+            await ProfileService.saveUserProfile({
+                name: name.trim(),
+                email: '', // Can be added later
+                avatar: '',
+                sex,
+                age: parseInt(age),
+                goals: selectedGoals,
+                experience: selectedExperience,
+                joinDate: new Date().toISOString(),
+            });
+
+            // Keep minimal data in AsyncStorage for compatibility
             await AsyncStorage.multiSet([
-                ['userName', name.trim()],
-                ['userSex', sex],
-                ['userAge', age],
-                ['userGoals', JSON.stringify(selectedGoals)],
-                ['userExperience', selectedExperience],
                 ['onboardingDone', 'true'],
                 ['setupDate', new Date().toISOString()],
             ]);

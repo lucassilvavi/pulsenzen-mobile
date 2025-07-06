@@ -1,14 +1,12 @@
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
-import { useMood } from '@/hooks/useMood';
-import { MoodLevel } from '@/services/moodService';
+import { MoodLevel, useMood } from '@/modules/mood';
+import { CelebrationEffect, WellnessTip } from '@/modules/mood/components';
 import { fontSize, spacing } from '@/utils/responsive';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
-import CelebrationEffect from './CelebrationEffect';
-import WellnessTip from './WellnessTip';
 
 const { width } = Dimensions.get('window');
 
@@ -38,14 +36,14 @@ const moods: Mood[] = [
   { 
     id: 'neutro', 
     label: 'Neutro', 
-    emoji: '😐', 
+    emoji: '�', 
     color: '#FFB74D',
     description: 'Nem bem, nem mal'
   },
   { 
     id: 'mal', 
     label: 'Difícil', 
-    emoji: '😟', 
+    emoji: '�', 
     color: '#FF8A65',
     description: 'Não estou bem'
   },
