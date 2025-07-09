@@ -1,17 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Dimensions, Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Card from '@/components/base/Card';
+import ScreenContainer from '@/components/base/ScreenContainer';
 import SearchAndActionBar from '@/components/SearchAndActionBar';
 import StatsBar from '@/components/StatsBar';
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import TipsSection from '@/components/TipsSection';
+import { colors } from '@/constants/theme';
+import { fontSize, spacing } from '@/utils/responsive';
 
 import { JournalEntriesList, JournalEntryView } from '../components';
 import { JournalService, JournalStatsService } from '../services';
@@ -76,14 +78,24 @@ export default function JournalScreen() {
     tags: entry.moodTags || [],
   }));
 
-  return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top + 60 }]}>
-      <LinearGradient
-        colors={['#FFE0B2', '#FFF8E1']}
-        style={styles.headerGradient}
-      />
+  const { width, height } = Dimensions.get('window');
 
-      <ScrollView
+  return (
+    <ScreenContainer
+      gradientColors={colors.gradients.journal}
+      gradientHeight={height * 0.4}
+    >
+      <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+        {/* Custom Header */}
+        <View style={styles.customHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
+          </TouchableOpacity>
+          <ThemedText style={styles.headerTitle}>Diário</ThemedText>
+          <View style={styles.headerRight} />
+        </View>
+
+        <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -150,7 +162,8 @@ export default function JournalScreen() {
           </View>
         </View>
       </Modal>
-    </ThemedView>
+      </View>
+    </ScreenContainer>
   );
 }
 
@@ -158,12 +171,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerGradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 300,
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.primary.main,
+  },
+  headerRight: {
+    width: 40,
+    height: 40,
   },
   scrollView: {
     flex: 1,

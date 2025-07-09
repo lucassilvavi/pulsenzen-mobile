@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import Button from '@/components/base/Button';
@@ -84,6 +85,13 @@ export default function BreathingSessionScreen({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity
+            onPress={onBack}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={28} color={colors.neutral.white} />
+          </TouchableOpacity>
+          
           <View style={styles.headerContent}>
             <ThemedText style={styles.techniqueTitle}>
               {technique.title}
@@ -206,6 +214,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 40,
     paddingBottom: 16,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 40,
+    zIndex: 1,
+    padding: 8,
   },
   headerContent: {
     alignItems: 'center',

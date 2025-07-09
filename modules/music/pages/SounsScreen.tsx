@@ -5,9 +5,10 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
@@ -68,7 +69,16 @@ export default function SounsScreen() {
       gradientColors={colors.gradients.sleep}
       gradientHeight={height * 0.4}
     >
-      <View style={[styles.container, { paddingTop: insets.top + 60 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+        {/* Custom Header */}
+        <View style={styles.customHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
+          </TouchableOpacity>
+          <ThemedText style={styles.headerTitle}>Sons</ThemedText>
+          <View style={styles.headerRight} />
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <ThemedText style={styles.title}>
@@ -222,6 +232,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.primary.main,
+  },
+  headerRight: {
+    width: 40,
+    height: 40,
   },
   header: {
     alignItems: 'center',

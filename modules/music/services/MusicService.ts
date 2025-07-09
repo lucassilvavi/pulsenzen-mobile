@@ -552,6 +552,34 @@ class MusicService {
     return this.currentPlaylist;
   }
 
+  // Stop and clear all music data
+  async stopAndClearMusic() {
+    await this.stopCurrentPlayback();
+    
+    // Clear all music state
+    this.currentTrack = null;
+    this.currentPlaylist = [];
+    this.originalPlaylist = [];
+    this.currentTrackIndex = 0;
+    
+    // Reset playback state completely
+    this.playbackState = {
+      isPlaying: false,
+      currentTrack: null,
+      position: 0,
+      duration: 0,
+      isLoading: false,
+      repeatMode: 'off',
+      shuffleMode: false,
+      currentPlaylist: undefined,
+      playlistName: undefined,
+      playlistId: undefined,
+      pausedFrom: null
+    };
+    
+    this.notifyListeners();
+  }
+
   // Cleanup
   async cleanup() {
     this.stopStatusUpdateInterval();

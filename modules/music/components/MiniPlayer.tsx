@@ -3,8 +3,9 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import React from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import usePlayback from '../hooks/usePlayback';
 import musicService from '../services/MusicService';
@@ -14,15 +15,15 @@ const { width } = Dimensions.get('window');
 export default function MiniPlayer() {
   const { playbackState, handleNext, handlePrevious } = usePlayback();
   const insets = useSafeAreaInsets();
+  
+  // Animated values for swipe gesture
+  const translateX = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
 
-  // Lógica de visibilidade do mini-player:
-  // - Mostrar se há uma música carregada E:
-  //   - A música está tocando OU
-  //   - A música foi pausada do mini-player (pausedFrom === 'miniPlayer')
-  const shouldShowMiniPlayer = playbackState.currentTrack && (
-    playbackState.isPlaying || 
-    playbackState.pausedFrom === 'miniPlayer'
-  );
+  // Nova lógica de visibilidade:
+  // - Mostrar sempre que há uma música carregada (seja tocando ou pausada)
+  // - A única forma de esconder é arrastando para o lado quando pausada
+  const shouldShowMiniPlayer = playbackState.currentTrack !== null;
 
   if (!shouldShowMiniPlayer) {
     return null;
@@ -77,66 +78,147 @@ export default function MiniPlayer() {
     }
   };
 
+  // Handle swipe gesture
+  const onGestureEvent = Animated.event(
+    [{ nativeEvent: { translationX: translateX } }],
+    { useNativeDriver: true }
+  );
+
+  const onHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX: translation, velocityX } = event.nativeEvent;
+      
+      // If music is playing, reset position (don't allow dismissal)
+      if (playbackState.isPlaying) {
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }),
+          Animated.spring(opacity, {
+            toValue: 1,
+            useNativeDriver: true,
+          }),
+        ]).start();
+        return;
+      }
+
+      // If music is paused, allow dismissal with swipe
+      const shouldDismiss = Math.abs(translation) > width * 0.3 || Math.abs(velocityX) > 1000;
+      
+      if (shouldDismiss) {
+        // Animate out and stop music
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: translation > 0 ? width : -width,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Stop and clear music after animation
+          musicService.stopAndClearMusic();
+          // Reset animation values for next time
+          translateX.setValue(0);
+          opacity.setValue(1);
+        });
+      } else {
+        // Reset position
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }),
+          Animated.spring(opacity, {
+            toValue: 1,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }
+  };
+
   return (
-    <TouchableOpacity 
-      style={[styles.container, { paddingBottom: insets.bottom + spacing.sm }]}
-      onPress={handleMiniPlayerPress}
-      activeOpacity={0.8}
+    <PanGestureHandler
+      onGestureEvent={onGestureEvent}
+      onHandlerStateChange={onHandlerStateChange}
+      enabled={!playbackState.isPlaying} // Only allow swiping when paused
     >
-      <View style={styles.progressContainer}>
-        <View 
-          style={[
-            styles.progressBar, 
-            { width: `${(playbackState.position / Math.max(playbackState.duration, 1)) * 100}%` }
-          ]} 
-        />
-      </View>
-      <View style={styles.content}>
-        <View style={styles.trackInfo}>
-          <Text style={styles.trackIcon}>{safeIcon}</Text>
-          <View style={styles.trackDetails}>
-            <Text style={styles.trackTitle} numberOfLines={1}>
-              {safeTitle}
-            </Text>
-            <Text style={styles.trackArtist} numberOfLines={1}>
-              {safeArtist}
-            </Text>
+      <Animated.View 
+        style={[
+          styles.container, 
+          { 
+            paddingBottom: insets.bottom + spacing.sm,
+            transform: [{ translateX }],
+            opacity,
+          }
+        ]}
+      >
+        <TouchableOpacity 
+          style={styles.touchable}
+          onPress={handleMiniPlayerPress}
+          activeOpacity={0.8}
+        >
+          <View style={styles.progressContainer}>
+            <View 
+              style={[
+                styles.progressBar, 
+                { width: `${(playbackState.position / Math.max(playbackState.duration, 1)) * 100}%` }
+              ]} 
+            />
           </View>
-        </View>
-        <View style={styles.controls}>
-          <TouchableOpacity 
-            style={styles.controlButton}
-            onPress={handleMiniPlayerPrevious}
-          >
-            <Ionicons 
-              name="play-skip-back" 
-              size={fontSize.lg} 
-              color={colors.neutral.text.primary} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.playButton}
-            onPress={handleMiniPlayerPlayPause}
-          >
-            <Ionicons 
-              name={playbackState.isPlaying ? "pause" : "play"} 
-              size={fontSize.lg} 
-              color={colors.neutral.text.primary} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.controlButton}
-            onPress={handleMiniPlayerNext}
-          >
-            <Ionicons 
-              name="play-skip-forward" 
-              size={fontSize.lg} 
-              color={colors.neutral.text.primary} 
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+          <View style={styles.content}>
+            <View style={styles.trackInfo}>
+              <Text style={styles.trackIcon}>{safeIcon}</Text>
+              <View style={styles.trackDetails}>
+                <Text style={styles.trackTitle} numberOfLines={1}>
+                  {safeTitle}
+                </Text>
+                <Text style={styles.trackArtist} numberOfLines={1}>
+                  {safeArtist}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.controls}>
+              <TouchableOpacity 
+                style={styles.controlButton}
+                onPress={handleMiniPlayerPrevious}
+              >
+                <Ionicons 
+                  name="play-skip-back" 
+                  size={fontSize.lg} 
+                  color={colors.neutral.text.primary} 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.playButton}
+                onPress={handleMiniPlayerPlayPause}
+              >
+                <Ionicons 
+                  name={playbackState.isPlaying ? "pause" : "play"} 
+                  size={fontSize.lg} 
+                  color={colors.neutral.text.primary} 
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.controlButton}
+                onPress={handleMiniPlayerNext}
+              >
+                <Ionicons 
+                  name="play-skip-forward" 
+                  size={fontSize.lg} 
+                  color={colors.neutral.text.primary} 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </PanGestureHandler>
   );
 }
 
@@ -150,6 +232,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.neutral.divider,
     zIndex: 1000,
+  },
+  touchable: {
+    flex: 1,
   },
   progressContainer: {
     height: 3,

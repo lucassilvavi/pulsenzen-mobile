@@ -99,10 +99,8 @@ export default function RootLayout() {
               <Stack.Screen 
                 name="profile" 
                 options={{ 
-                  headerShown: true,
-                  presentation: 'modal',
-                  title: 'Perfil',
-                  headerTransparent: true
+                  headerShown: false,
+                  presentation: 'modal'
                 }} 
               />
               <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
@@ -113,51 +111,38 @@ export default function RootLayout() {
               <Stack.Screen
                 name="journal-entry"
                 options={{
-                  headerShown: true,
-                  presentation: 'fullScreenModal',
-                  title: 'Tema do Diário',
-                  headerTransparent: true
+                  headerShown: false,
+                  presentation: 'fullScreenModal'
                 }} />
 
               <Stack.Screen
                 name="breathing"
                 options={{
-                  headerShown: true,
-                  presentation: 'fullScreenModal',
-                  title: 'Respiração',
-                  headerTransparent: true
-
+                  headerShown: false,
+                  presentation: 'fullScreenModal'
                 }}
               />
               <Stack.Screen
                 name="breathing-session"
                 options={{
-                  headerShown: true,
-                  presentation: 'fullScreenModal',
-                  title: '',
-                  headerTransparent: true
-
+                  headerShown: false,
+                  presentation: 'fullScreenModal'
                 }}
               />
 
               <Stack.Screen
                 name="sos"
                 options={{
-                  headerShown: true,
-                  presentation: 'fullScreenModal',
-                  title: '',
-                  headerTransparent: true
+                  headerShown: false,
+                  presentation: 'fullScreenModal'
                 }}
               />
 
               <Stack.Screen
                 name="journal"
                 options={{
-                  headerShown: true,
-                  presentation: 'fullScreenModal',
-                  title: 'Diário',
-                  headerTransparent: true
-
+                  headerShown: false,
+                  presentation: 'fullScreenModal'
                 }}
               />
 
@@ -165,10 +150,8 @@ export default function RootLayout() {
               <Stack.Screen
                 name="souns"
                 options={{
-                  headerShown: true,
-                  presentation: 'fullScreenModal',
-                  title: 'Sons',
-                  headerTransparent: true
+                  headerShown: false,
+                  presentation: 'fullScreenModal'
                 }}
               />
 

@@ -1,13 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BenefitsSection from '@/components/BenefitsSection';
 import SectionIntro from '@/components/SectionIntro';
+import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import TipsSection from '@/components/TipsSection';
+import { colors } from '@/constants/theme';
+import { fontSize, spacing } from '@/utils/responsive';
 import BreathingTechniquesSection from '../components/BreathingTechniquesSection';
 import { breathingBenefits, breathingTechniques, breathingTips } from '../constants';
 import { BreathingTechnique } from '../types';
@@ -23,11 +27,20 @@ export default function BreathingScreen() {
   };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top + 60 }]}>
+    <ThemedView style={[styles.container, { paddingTop: insets.top + 20 }]}>
       <LinearGradient
         colors={['#A1CEDC', '#E8F4F8']}
         style={styles.headerGradient}
       />
+      
+      {/* Custom Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
+        </TouchableOpacity>
+        <ThemedText style={styles.headerTitle}>Respiração</ThemedText>
+        <View style={styles.headerRight} />
+      </View>
       
       <ScrollView 
         style={styles.scrollView}
@@ -65,6 +78,32 @@ export default function BreathingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    zIndex: 1,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.primary.main,
+  },
+  headerRight: {
+    width: 40,
+    height: 40,
   },
   headerGradient: {
     position: 'absolute',

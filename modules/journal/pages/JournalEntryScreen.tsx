@@ -5,11 +5,12 @@ import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { ProfileService } from '@/modules/profile';
 import { fontSize, spacing } from '@/utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import from the journal module
@@ -289,7 +290,23 @@ export default function JournalEntryScreen() {
                     gradientColors={colors.gradients.journal}
                     gradientHeight={height * 0.34}
                 >
-                    <View style={[styles.container, { paddingTop: insets.top + 60 }]}>  
+                    <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+                        {/* Header */}
+                        <View style={styles.header}>
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                style={styles.backButton}
+                            >
+                                <Ionicons name="chevron-back" size={28} color={colors.neutral.white} />
+                            </TouchableOpacity>
+                            
+                            <ThemedText style={styles.headerTitle}>
+                                {viewEntry ? 'Visualizar Entrada' : 'Nova Entrada'}
+                            </ThemedText>
+                            
+                            <View style={styles.headerRight} />
+                        </View>
+                        
                         <ScrollView
                             style={styles.contentContainer}
                             showsVerticalScrollIndicator={false}
@@ -397,8 +414,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingTop: spacing.xl,
+        paddingTop: spacing.md,
         paddingBottom: spacing.lg,
+    },
+    backButton: {
+        padding: spacing.sm,
+    },
+    headerTitle: {
+        fontSize: fontSize.lg,
+        fontFamily: 'Inter-Bold',
+        color: colors.neutral.white,
+        textAlign: 'center',
+    },
+    headerRight: {
+        width: 44, // Same width as back button to center the title
     },
     closeButton: {
         backgroundColor: 'rgba(255, 152, 0, 0.2)',
@@ -409,12 +438,6 @@ const styles = StyleSheet.create({
     headerContent: {
         flex: 1,
         alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: fontSize.lg,
-        fontFamily: 'Inter-Bold',
-        color: colors.journal.accent,
-        textAlign: 'center',
     },
     headerDate: {
         fontSize: fontSize.sm,

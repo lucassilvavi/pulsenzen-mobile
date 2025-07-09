@@ -4,10 +4,10 @@ import React from 'react';
 import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 interface TabBarProps {
-  tabs: Array<{
+  tabs: {
     id: string;
     label: string;
-  }>;
+  }[];
   activeTab: string;
   onTabChange: (tabId: string) => void;
   style?: ViewStyle;

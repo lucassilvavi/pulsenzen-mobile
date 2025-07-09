@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -80,6 +81,15 @@ export default function ProfileScreen() {
         colors={['#A1CEDC', '#E8F4F8']}
         style={styles.headerGradient}
       />
+
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color={colors.primary.main} />
+        </TouchableOpacity>
+        <ThemedText style={styles.headerTitle}>Perfil</ThemedText>
+        <View style={styles.headerRight} />
+      </View>
 
       <ScrollView 
         style={styles.scrollView}
@@ -195,6 +205,31 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    zIndex: 1,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: fontSize.lg,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.primary.main,
+  },
+  headerRight: {
+    width: 40,
+    height: 40,
   },
   headerGradient: {
     position: 'absolute',

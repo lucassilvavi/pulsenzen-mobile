@@ -1,20 +1,23 @@
 import ScreenContainer from '@/components/base/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
+import { colors } from '@/constants/theme';
 import { CalmingAnimation } from '@/modules/breathing';
 import { fontSize, spacing } from '@/utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  View,
+    Alert,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 import { ActiveSession, CopingStrategiesGrid, EmergencyContacts, HelpMessage } from '../components';
-import { sosColors, sosGradients } from '../constants';
+import { sosGradients } from '../constants';
 import { SOSService } from '../services';
 import { CopingStrategy, EmergencyContact, SOSSession } from '../types';
 
@@ -218,6 +221,15 @@ export default function SOSScreen() {
       gradientHeight={height}
     >
       <View style={styles.container}>
+        {/* Custom Header */}
+        <View style={styles.customHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <ThemedText style={styles.headerTitle}>SOS</ThemedText>
+          <View style={styles.headerRight} />
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <ThemedText style={styles.headerTitle}>
@@ -278,17 +290,35 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerRight: {
+    width: 40,
+    height: 40,
+  },
   header: {
     alignItems: 'center',
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
   },
   headerTitle: {
-    fontSize: fontSize.xl,
-    fontFamily: 'Inter-Bold',
-    color: sosColors.primary,
-    textAlign: 'center',
-    lineHeight: fontSize.xl * 1.3,
+    fontSize: fontSize.lg,
+    fontFamily: 'Inter-SemiBold',
+    color: colors.neutral.white,
   },
   contentContainer: {
     flex: 1,
