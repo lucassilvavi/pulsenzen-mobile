@@ -2,10 +2,10 @@ import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import Animated, {
-  runOnJS,
-  useAnimatedGestureHandler,
-  useAnimatedStyle,
-  useSharedValue,
+    runOnJS,
+    useAnimatedGestureHandler,
+    useAnimatedStyle,
+    useSharedValue,
 } from 'react-native-reanimated';
 
 interface CustomSliderProps {
@@ -37,7 +37,7 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
     if (!isDragging.value) {
       progress.value = value;
     }
-  }, [value]);
+  }, [value, isDragging.value, progress]);
 
   const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
     onStart: () => {

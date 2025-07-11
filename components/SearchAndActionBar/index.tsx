@@ -1,5 +1,5 @@
 import Button from '@/components/base/Button';
-import TextInput from '@/components/base/TextInput';
+import CustomTextInput from '@/components/base/CustomTextInput';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 
@@ -22,11 +22,11 @@ export default function SearchAndActionBar({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.inputWrapper}>
-        <TextInput
+        <CustomTextInput
           placeholder={searchPlaceholder}
           value={searchValue}
           onChangeText={onSearchChange}
-          style={[styles.searchInput, { paddingLeft: 12 }] as any}
+          inputStyle={[styles.searchInput, { paddingLeft: 12 }] as any}
           leftIcon={<IconSymbol name="magnifyingglass" size={20} color="#757575" />}
         />
       </View>
@@ -34,7 +34,7 @@ export default function SearchAndActionBar({
         variant="primary"
         style={styles.iconOnlyButton}
         onPress={onButtonPress}
-        leftIcon={<IconSymbol name="addition" size={20} color="#FFF" />}
+        leftIcon={<IconSymbol name="plus" size={20} color="#FFF" />}
         label=""
       />
     </View>

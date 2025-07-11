@@ -8,7 +8,7 @@ export default function DailyQuote() {
     <Card style={styles.quoteCard}>
       <ThemedText type="subtitle">Pensamento do dia</ThemedText>
       <ThemedText style={styles.quote}>
-        "A paz vem de dentro de você mesmo. Não a procure à sua volta."
+        &ldquo;A paz vem de dentro de você mesmo. Não a procure à sua volta.&rdquo;
       </ThemedText>
       <ThemedText style={styles.quoteAuthor}>- Buddha</ThemedText>
     </Card>

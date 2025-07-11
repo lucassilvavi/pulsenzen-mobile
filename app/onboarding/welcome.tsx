@@ -3,23 +3,17 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
 
     const handleGetStarted = async () => {
-        router.push('/onboarding/benefits');
-    };
-
-    const handleSkip = async () => {
-        await AsyncStorage.setItem('onboardingDone', 'true');
-        router.replace('/');
+        router.push('/onboarding/auth');
     };
 
     return (

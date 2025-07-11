@@ -43,7 +43,7 @@ const Button: React.FC<ButtonProps> = ({
 
   // Determine button styles based on variant and size
   const getButtonStyles = () => {
-    let buttonStyles = [styles.button];
+    let buttonStyles: any[] = [styles.button];
     
     // Add variant styles
     switch (variant) {
@@ -92,7 +92,7 @@ const Button: React.FC<ButtonProps> = ({
 
   // Determine label styles based on variant and size
   const getLabelStyles = () => {
-    let textStyles = [styles.label];
+    let textStyles: any[] = [styles.label];
     
     // Add variant styles
     switch (variant) {

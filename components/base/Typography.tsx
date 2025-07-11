@@ -17,18 +17,18 @@ const Typography = ({
   weight,
   ...props 
 }: TextProps) => {
-  const getWeightStyle = () => {
+  const weightStyle = (() => {
     switch (weight) {
       case 'bold':
-        return { fontWeight: '700' };
+        return { fontWeight: '700' as const };
       case 'semibold':
-        return { fontWeight: '600' };
+        return { fontWeight: '600' as const };
       case 'medium':
-        return { fontWeight: '500' };
+        return { fontWeight: '500' as const };
       default:
         return {};
     }
-  };
+  })();
 
   return (
     <RNText 
@@ -36,6 +36,8 @@ const Typography = ({
         styles[variant], 
         color ? { color } : {},
         align ? { textAlign: align } : {},
+        weightStyle,
+        style
       ]} 
       {...props}
     >

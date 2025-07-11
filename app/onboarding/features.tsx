@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 const features = [
     {
@@ -95,10 +95,10 @@ export default function FeaturesScreen() {
                                 title={feature.title}
                                 description={feature.description}
                                 icon={feature.icon}
-                                style={[
+                                style={StyleSheet.flatten([
                                     styles.featureCard,
                                     { backgroundColor: feature.color }
-                                ]}
+                                ])}
                                 onPress={() => { }}
                             />
                         ))}

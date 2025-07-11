@@ -114,7 +114,6 @@ export const ConfirmationDialog = ({
             onConfirm();
             onClose();
           }}
-          color={isDestructive ? Colors.red[600] : undefined}
         />
       </View>
     </Modal>

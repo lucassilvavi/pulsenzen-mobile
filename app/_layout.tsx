@@ -1,5 +1,5 @@
-// Import View directly from react-native instead of ThemedView
 import { AppProvider } from '@/context/AppContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { MiniPlayer } from '@/modules/music/components';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
@@ -11,16 +11,60 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-
 // Keep splash screen visible while loading resources
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
-  const [appIsReady, setAppIsReady] = useState(false);
+// Component that handles navigation logic using AuthContext
+function NavigationHandler({ children }: { children: React.ReactNode }) {
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
+  useEffect(() => {
+    async function checkOnboardingStatus() {
+      const done = await AsyncStorage.getItem('onboardingDone');
+      const newStatus = done === 'true';
+      setOnboardingDone(newStatus);
+      console.log('Onboarding status checked:', { done, newStatus, isAuthenticated });
+    }
+    checkOnboardingStatus();
+  }, [user, isAuthenticated]); // Re-check when user or auth status changes
+
+  useEffect(() => {
+    // Navigation logic based on auth and onboarding state
+    console.log('Navigation check:', { isLoading, isAuthenticated, onboardingDone, pathname });
+    
+    if (!isLoading && onboardingDone !== null) {
+      if (!isAuthenticated && !pathname.includes('/onboarding')) {
+        // Not authenticated, redirect to auth onboarding
+        console.log('Redirecting to welcome (not authenticated)');
+        router.replace('/onboarding/welcome');
+      } else if (isAuthenticated && !onboardingDone && !pathname.includes('/onboarding/setup')) {
+        // Authenticated but onboarding not done, go to setup
+        console.log('Redirecting to setup (authenticated but no onboarding)');
+        router.replace('/onboarding/setup');
+      } else if (isAuthenticated && onboardingDone && pathname.includes('/onboarding')) {
+        // Authenticated and onboarded, go to main app
+        console.log('Redirecting to home (authenticated and onboarded)');
+        router.replace('/');
+      }
+    }
+  }, [isLoading, isAuthenticated, onboardingDone, pathname, router]);
+
+  if (isLoading || onboardingDone === null) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+export default function RootLayout() {
+  const [appIsReady, setAppIsReady] = useState(false);
 
   // Load custom fonts
   const [fontsLoaded] = useFonts({
@@ -31,13 +75,6 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-
-    async function checkOnboarding() {
-      const done = await AsyncStorage.getItem('onboardingDone');
-      setOnboardingDone(done === 'true');
-    }
-    checkOnboarding();
-
     async function prepare() {
       try {
         // Pre-load fonts, make API calls, etc.
@@ -61,15 +98,8 @@ export default function RootLayout() {
     }
   }, [appIsReady, fontsLoaded]);
 
-  useEffect(() => {
-    // Redireciona para o onboarding apenas se não estiver concluído
-    if (appIsReady && fontsLoaded && onboardingDone === false) {
-      router.replace('/onboarding/welcome');
-    }
-  }, [appIsReady, fontsLoaded, onboardingDone, router]);
 
-
-  if (!appIsReady || !fontsLoaded || onboardingDone === null) {
+  if (!appIsReady || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
@@ -83,10 +113,12 @@ export default function RootLayout() {
         frame: { x: 0, y: 0, width: 0, height: 0 },
         insets: { top: 0, left: 0, right: 0, bottom: 0 }
       }}>
-        <AppProvider>
-          {/* Using regular View instead of ThemedView to avoid potential issues */}
-          <View style={[styles.container, { backgroundColor: 'white' }]}>
-            <StatusBar style="auto" />
+        <AuthProvider>
+          <AppProvider>
+            <NavigationHandler>
+              {/* Using regular View instead of ThemedView to avoid potential issues */}
+              <View style={[styles.container, { backgroundColor: 'white' }]}>
+                <StatusBar style="auto" />
             {/* Stack Navigation */}
             <Stack
               screenOptions={{
@@ -104,6 +136,7 @@ export default function RootLayout() {
                 }} 
               />
               <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
+              <Stack.Screen name="onboarding/auth" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/benefits" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/features" options={{ headerShown: false, gestureEnabled: false }} />
               <Stack.Screen name="onboarding/setup" options={{ headerShown: false, gestureEnabled: false }} />
@@ -178,12 +211,11 @@ export default function RootLayout() {
               />
             </Stack>
             {/* Mini Player - Aparece quando uma música está tocando */}
-            {/* Não mostramos o mini-player na própria tela do player ou em telas de onboarding */}
-            {!pathname.includes('music-player') && !pathname.includes('onboarding') && (
-              <MiniPlayer />
-            )}
+            <MiniPlayer />
           </View>
-        </AppProvider>
+            </NavigationHandler>
+          </AppProvider>
+        </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

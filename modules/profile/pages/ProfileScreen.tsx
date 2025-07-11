@@ -3,6 +3,7 @@ import Card from '@/components/base/Card';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -17,6 +18,7 @@ import { Achievement, UserProfile, UserStats } from '../types';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const { logout } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -60,15 +62,26 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     Alert.alert(
       'Sair',
-      'Tem certeza que deseja sair?',
+      'Tem certeza que deseja sair da sua conta?',
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Sair', 
           style: 'destructive',
           onPress: async () => {
-            await ProfileService.clearUserData();
-            router.replace('/onboarding/welcome');
+            try {
+              // Clear local profile data
+              await ProfileService.clearUserData();
+              
+              // Logout using AuthContext (clears token and user data)
+              await logout();
+              
+              // Navigate to welcome screen
+              router.replace('/onboarding/welcome');
+            } catch (error) {
+              console.error('Erro ao fazer logout:', error);
+              Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
+            }
           }
         }
       ]

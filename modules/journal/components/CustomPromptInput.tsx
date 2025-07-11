@@ -1,5 +1,5 @@
 import Button from '@/components/base/Button';
-import TextInput from '@/components/base/TextInput';
+import CustomTextInput from '@/components/base/CustomTextInput';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
@@ -18,11 +18,11 @@ export default function CustomPromptInput({ value, onChange, onCancel, onUse, di
   return (
     <View style={styles.customPromptSection}>
       <ThemedText style={styles.sectionTitle}>Crie sua pergunta:</ThemedText>
-      <TextInput
+      <CustomTextInput
         placeholder="Digite sua pergunta personalizada..."
         value={value}
         onChangeText={onChange}
-        style={styles.customPromptInput}
+        inputStyle={styles.customPromptInput}
         multiline
       />
       <View style={styles.customPromptActions}>

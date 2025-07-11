@@ -1,6 +1,6 @@
 import { Audio } from 'expo-av';
 import { MusicCategory, MusicTrack, PlaybackState, Playlist } from '../types';
-import { mockCategories, mockPlaylists, mockTracks } from './MusicMock';
+import MusicApiService from './MusicApiService';
 
 class MusicService {
   private sound: Audio.Sound | null = null;
@@ -489,29 +489,23 @@ class MusicService {
 
   // Data fetching
   async getAllTracks(): Promise<MusicTrack[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return mockTracks;
+    return await MusicApiService.searchTracks({}).then(result => result.tracks);
   }
 
   async getTracksByCategory(categoryId: string): Promise<MusicTrack[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return mockTracks.filter(track => track.category === categoryId);
+    return await MusicApiService.getTracksByCategory(categoryId);
   }
 
   async getCategories(): Promise<MusicCategory[]> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return mockCategories;
+    return await MusicApiService.getCategories();
   }
 
   async getPlaylists(): Promise<Playlist[]> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return mockPlaylists;
+    return await MusicApiService.getPlaylists();
   }
 
   async getPlaylist(playlistId: string): Promise<Playlist | null> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return mockPlaylists.find(playlist => playlist.id === playlistId) || null;
+    return await MusicApiService.getPlaylist(playlistId);
   }
 
   // Métodos de edição de playlist removidos - funcionalidade descontinuada

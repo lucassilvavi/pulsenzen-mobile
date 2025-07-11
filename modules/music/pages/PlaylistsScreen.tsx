@@ -1,7 +1,7 @@
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
+import CustomTextInput from '@/components/base/CustomTextInput';
 import ScreenContainer from '@/components/base/ScreenContainer';
-import TextInput from '@/components/base/TextInput';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
@@ -184,8 +184,8 @@ export default function PlaylistsScreen() {
           <View style={styles.createPlaylistContent}>
             <Card style={styles.playlistNameCard}>
               <ThemedText style={styles.inputLabel}>Nome da Playlist</ThemedText>
-              <TextInput
-                style={styles.playlistNameInput}
+              <CustomTextInput
+                inputStyle={styles.playlistNameInput}
                 value={newPlaylistName}
                 onChangeText={setNewPlaylistName}
                 placeholder="Digite o nome da playlist..."

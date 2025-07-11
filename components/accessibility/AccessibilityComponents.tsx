@@ -1,11 +1,11 @@
-import React from 'react';
-import { StyleSheet, View, AccessibilityInfo, AccessibilityProps } from 'react-native';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ThemedText } from '@/components/ThemedText';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { colors } from '@/constants/theme';
-import { spacing, fontSize } from '@/utils/responsive';
+import { fontSize, spacing } from '@/utils/responsive';
+import React from 'react';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 
-interface AccessibilityWrapperProps extends AccessibilityProps {
+interface AccessibilityWrapperProps {
   children: React.ReactNode;
   label?: string;
   hint?: string;
@@ -104,6 +104,8 @@ export const FocusableView = React.forwardRef<View, React.ComponentProps<typeof 
     />
   );
 });
+
+FocusableView.displayName = 'FocusableView';
 
 const styles = StyleSheet.create({
   instructionsContainer: {

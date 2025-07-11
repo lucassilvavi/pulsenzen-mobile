@@ -1,13 +1,13 @@
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
+import CustomTextInput from '@/components/base/CustomTextInput';
 import ScreenContainer from '@/components/base/ScreenContainer';
-import TextInput from '@/components/base/TextInput';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { ProfileService } from '@/modules/profile';
 import { saveOnboardingData } from '@/services/onboardingService';
 import { fontSize, spacing } from '@/utils/responsive';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Dimensions, ScrollView, StyleSheet, View } from 'react-native';
@@ -31,6 +31,7 @@ const experienceLevels = [
 
 export default function SetupScreen() {
     const router = useRouter();
+    const { user, isAuthenticated, markOnboardingComplete } = useAuth();
     const [name, setName] = useState('');
     const [sex, setSex] = useState('');
     const [age, setAge] = useState('');
@@ -46,6 +47,13 @@ export default function SetupScreen() {
     };
 
     const handleFinish = async () => {
+        // Check if user is authenticated
+        if (!isAuthenticated || !user) {
+            Alert.alert('Erro', 'Você precisa fazer login primeiro.');
+            router.replace('/onboarding/auth');
+            return;
+        }
+
         if (!name.trim()) {
             Alert.alert('Nome obrigatório', 'Por favor, digite seu nome para continuar.');
             return;
@@ -66,8 +74,9 @@ export default function SetupScreen() {
             Alert.alert('Experiência obrigatória', 'Selecione seu nível de experiência.');
             return;
         }
+        
         try {
-            // Simula envio para backend
+            // Save onboarding data to API (future implementation)
             await saveOnboardingData({
                 name: name.trim(),
                 sex,
@@ -76,26 +85,29 @@ export default function SetupScreen() {
                 experience: selectedExperience,
             });
             
-            // Save user profile using ProfileService
+            // Save user profile using ProfileService with user info from auth
             await ProfileService.saveUserProfile({
+                id: user.id,
                 name: name.trim(),
-                email: '', // Can be added later
+                email: user.email,
                 avatar: '',
                 sex,
                 age: parseInt(age),
                 goals: selectedGoals,
                 experience: selectedExperience,
                 joinDate: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             });
 
-            // Keep minimal data in AsyncStorage for compatibility
-            await AsyncStorage.multiSet([
-                ['onboardingDone', 'true'],
-                ['setupDate', new Date().toISOString()],
-            ]);
+            // Mark onboarding as completed
+            await markOnboardingComplete();
 
-            // Navigate to main app
-            router.replace('/');
+            Alert.alert(
+                'Perfil criado!', 
+                'Seu perfil foi configurado com sucesso. Bem-vindo ao PulseZen!',
+                [{ text: 'OK', onPress: () => router.replace('/') }]
+            );
         } catch (error) {
             console.error('Error saving user preferences:', error);
             Alert.alert('Erro', 'Não foi possível salvar suas preferências. Tente novamente.');
@@ -133,11 +145,11 @@ export default function SetupScreen() {
                         <ThemedText style={styles.sectionTitle}>
                             Como podemos te chamar?
                         </ThemedText>
-                        <TextInput
+                        <CustomTextInput
                             placeholder="Digite seu nome"
                             value={name}
                             onChangeText={setName}
-                            style={styles.nameInput}
+                            inputStyle={styles.nameInput}
                         />
                     </View>
 
@@ -169,12 +181,12 @@ export default function SetupScreen() {
                         <ThemedText style={styles.sectionTitle}>
                             Qual a sua idade?
                         </ThemedText>
-                        <TextInput
+                        <CustomTextInput
                             placeholder="Digite sua idade"
                             value={age}
                             onChangeText={setAge}
                             keyboardType="numeric"
-                            style={styles.nameInput}
+                            inputStyle={styles.nameInput}
                         />
                     </View>
 

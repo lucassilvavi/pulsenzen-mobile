@@ -1,6 +1,6 @@
 import Button from '@/components/base/Button';
+import CustomTextInput from '@/components/base/CustomTextInput';
 import ScreenContainer from '@/components/base/ScreenContainer';
-import TextInput from '@/components/base/TextInput';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { ProfileService } from '@/modules/profile';
@@ -250,11 +250,11 @@ export default function JournalEntryScreen() {
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', justifyContent: 'flex-end', alignItems: 'center' }}>
                 <View style={{ width: '100%', backgroundColor: colors.neutral.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 24, paddingBottom: 32, paddingHorizontal: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 16 }}>
                     <ThemedText style={{ fontSize: fontSize.md, color: colors.journal.accent, fontFamily: 'Inter-Bold', marginBottom: spacing.md }}>Crie sua pergunta</ThemedText>
-                    <TextInput
+                    <CustomTextInput
                         placeholder="Digite sua pergunta personalizada..."
                         value={customPromptDraft}
                         onChangeText={setCustomPromptDraft}
-                        style={{ minHeight: 60, borderColor: colors.neutral.divider, borderWidth: 1, borderRadius: 12, padding: spacing.sm, backgroundColor: colors.neutral.white, marginBottom: spacing.md }}
+                        inputStyle={{ minHeight: 60, borderColor: colors.neutral.divider, borderWidth: 1, borderRadius: 12, padding: spacing.sm, backgroundColor: colors.neutral.white, marginBottom: spacing.md }}
                         multiline
                         autoFocus
                     />
@@ -340,11 +340,11 @@ export default function JournalEntryScreen() {
                                 <ThemedText style={styles.sectionTitle}>
                                     Sua reflexão:
                                 </ThemedText>
-                                <TextInput
+                                <CustomTextInput
                                     placeholder="Comece a escrever seus pensamentos..."
                                     value={entryText}
                                     onChangeText={setEntryText}
-                                    style={styles.entryTextArea}
+                                    inputStyle={styles.entryTextArea}
                                     multiline
                                     numberOfLines={8}
                                     textAlignVertical="top"

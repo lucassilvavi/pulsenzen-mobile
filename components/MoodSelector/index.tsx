@@ -6,9 +6,7 @@ import { fontSize, spacing } from '@/utils/responsive';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
-
-const { width } = Dimensions.get('window');
+import { ActivityIndicator, Alert, Animated, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface Mood {
   id: MoodLevel;
@@ -205,7 +203,8 @@ export default function MoodSelector() {
       } else {
         throw new Error(response.message);
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('Erro ao salvar mood:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
       // Volta as animações ao normal

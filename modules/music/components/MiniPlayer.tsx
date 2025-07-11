@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useRef } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Animated, Dimensions, GestureResponderEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PanGestureHandler, PanGestureHandlerStateChangeEvent, State } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import usePlayback from '../hooks/usePlayback';
 import musicService from '../services/MusicService';
@@ -43,7 +43,7 @@ export default function MiniPlayer() {
     });
   };
 
-  const handleMiniPlayerPlayPause = async (e?: any) => {
+  const handleMiniPlayerPlayPause = async (e?: GestureResponderEvent) => {
     try {
       if (e) e.stopPropagation();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -58,7 +58,7 @@ export default function MiniPlayer() {
     }
   };
 
-  const handleMiniPlayerNext = async (e?: any) => {
+  const handleMiniPlayerNext = async (e?: GestureResponderEvent) => {
     try {
       if (e) e.stopPropagation();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -68,7 +68,7 @@ export default function MiniPlayer() {
     }
   };
 
-  const handleMiniPlayerPrevious = async (e?: any) => {
+  const handleMiniPlayerPrevious = async (e?: GestureResponderEvent) => {
     try {
       if (e) e.stopPropagation();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -84,7 +84,7 @@ export default function MiniPlayer() {
     { useNativeDriver: true }
   );
 
-  const onHandlerStateChange = (event: any) => {
+  const onHandlerStateChange = (event: PanGestureHandlerStateChangeEvent) => {
     if (event.nativeEvent.state === State.END) {
       const { translationX: translation, velocityX } = event.nativeEvent;
       

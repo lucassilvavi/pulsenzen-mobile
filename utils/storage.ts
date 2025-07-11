@@ -15,7 +15,7 @@ const STORAGE_KEYS = {
 };
 
 // User profile storage
-export const saveUserProfile = async (profile) => {
+export const saveUserProfile = async (profile: any) => {
   try {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
     return true;
@@ -36,7 +36,7 @@ export const getUserProfile = async () => {
 };
 
 // Mood entries storage
-export const saveMoodEntry = async (entry) => {
+export const saveMoodEntry = async (entry: any) => {
   try {
     const existingEntries = await getMoodEntries();
     const updatedEntries = [...(existingEntries || []), entry];
@@ -59,12 +59,12 @@ export const getMoodEntries = async () => {
 };
 
 // Journal entries storage
-export const saveJournalEntry = async (entry) => {
+export const saveJournalEntry = async (entry: any) => {
   try {
     const existingEntries = await getJournalEntries();
     
     // Check if entry already exists (for updates)
-    const entryIndex = existingEntries.findIndex(e => e.id === entry.id);
+    const entryIndex = existingEntries.findIndex((e: any) => e.id === entry.id);
     
     let updatedEntries;
     if (entryIndex >= 0) {
@@ -94,20 +94,20 @@ export const getJournalEntries = async () => {
   }
 };
 
-export const getJournalEntryById = async (id) => {
+export const getJournalEntryById = async (id: any) => {
   try {
     const entries = await getJournalEntries();
-    return entries.find(entry => entry.id === id) || null;
+    return entries.find((entry: any) => entry.id === id) || null;
   } catch (error) {
     console.error('Error getting journal entry by id:', error);
     return null;
   }
 };
 
-export const deleteJournalEntry = async (id) => {
+export const deleteJournalEntry = async (id: any) => {
   try {
     const entries = await getJournalEntries();
-    const updatedEntries = entries.filter(entry => entry.id !== id);
+    const updatedEntries = entries.filter((entry: any) => entry.id !== id);
     await AsyncStorage.setItem(STORAGE_KEYS.JOURNAL_ENTRIES, JSON.stringify(updatedEntries));
     return true;
   } catch (error) {
@@ -117,7 +117,7 @@ export const deleteJournalEntry = async (id) => {
 };
 
 // Session tracking
-export const saveSession = async (sessionType, sessionData) => {
+export const saveSession = async (sessionType: any, sessionData: any) => {
   try {
     let storageKey;
     
@@ -150,7 +150,7 @@ export const saveSession = async (sessionType, sessionData) => {
   }
 };
 
-export const getSessions = async (sessionType) => {
+export const getSessions = async (sessionType: any) => {
   try {
     let storageKey;
     
@@ -177,7 +177,7 @@ export const getSessions = async (sessionType) => {
 };
 
 // App settings
-export const saveAppSettings = async (settings) => {
+export const saveAppSettings = async (settings: any) => {
   try {
     const existingSettings = await getAppSettings();
     const updatedSettings = { ...existingSettings, ...settings };
@@ -300,7 +300,7 @@ export const getAchievements = async () => {
   }
 };
 
-export const unlockAchievement = async (achievementId) => {
+export const unlockAchievement = async (achievementId: any) => {
   try {
     const achievements = await getAchievements();
     
