@@ -1,7 +1,9 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_CONFIG } from '../config/api';
+import { secureStorage } from '../utils/secureStorage';
+import { logger } from '../utils/logger';
+import { networkManager } from '../utils/networkManager';
+import { appConfig } from '../config/appConfig';
 
-const API_BASE_URL = API_CONFIG.BASE_URL;
+const API_BASE_URL = appConfig.getApiUrl();
 
 export interface RegisterData {
   email: string;
@@ -52,27 +54,49 @@ class AuthService {
    */
   static async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+      logger.info('AuthService', 'Attempting user registration', { email: userData.email });
 
-      const result = await response.json();
+      const response = await networkManager.post<{ user: User; token: string }>(
+        '/auth/register',
+        userData,
+        {
+          timeout: 15000,
+          retries: 2,
+          priority: 'high',
+          tags: ['auth'],
+        }
+      );
 
-      if (result.success && result.data) {
+      if (response.success && response.data) {
         // Save token and user data for persistent login
-        await this.saveAuthData(result.data.token, result.data.user);
+        await this.saveAuthData(response.data.token, response.data.user);
         
         // Clear onboarding status for new users (they need to complete onboarding)
-        await AsyncStorage.removeItem('onboardingDone');
-      }
+        await secureStorage.removeItem('onboarding_done');
 
-      return result;
+        logger.info('AuthService', 'User registration successful', { 
+          userId: response.data.user.id 
+        });
+
+        return {
+          success: true,
+          data: response.data,
+          message: 'Registration successful',
+        };
+      } else {
+        logger.warn('AuthService', 'Registration failed', { 
+          error: response.error,
+          status: response.status 
+        });
+
+        return {
+          success: false,
+          error: response.error || 'Registration failed',
+          message: response.error || 'Failed to register. Please try again.',
+        };
+      }
     } catch (error) {
-      console.error('Register error:', error);
+      logger.error('AuthService', 'Registration error', error as Error, { email: userData.email });
       return {
         success: false,
         error: 'Network error',
@@ -86,24 +110,46 @@ class AuthService {
    */
   static async login(credentials: LoginData): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      logger.info('AuthService', 'Attempting user login', { email: credentials.email });
 
-      const result = await response.json();
+      const response = await networkManager.post<{ user: User; token: string }>(
+        '/auth/login',
+        credentials,
+        {
+          timeout: 15000,
+          retries: 2,
+          priority: 'high',
+          tags: ['auth'],
+        }
+      );
 
-      if (result.success && result.data) {
+      if (response.success && response.data) {
         // Save token and user data for persistent login
-        await this.saveAuthData(result.data.token, result.data.user);
-      }
+        await this.saveAuthData(response.data.token, response.data.user);
 
-      return result;
+        logger.info('AuthService', 'User login successful', { 
+          userId: response.data.user.id 
+        });
+
+        return {
+          success: true,
+          data: response.data,
+          message: 'Login successful',
+        };
+      } else {
+        logger.warn('AuthService', 'Login failed', { 
+          error: response.error,
+          status: response.status 
+        });
+
+        return {
+          success: false,
+          error: response.error || 'Login failed',
+          message: response.error || 'Invalid credentials',
+        };
+      }
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('AuthService', 'Login error', error as Error, { email: credentials.email });
       return {
         success: false,
         error: 'Network error',
