@@ -9,12 +9,12 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -99,7 +99,7 @@ export default function AuthScreen() {
           // Don't navigate manually - let the NavigationHandler in _layout handle it
         } else {
           // For registration, always go to setup (new users need onboarding)
-          router.replace('/onboarding/setup');
+          router.replace('/onboarding/benefits');
         }
       } else {
         Alert.alert('Erro', result.message);

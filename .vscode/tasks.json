@@ -1,0 +1,87 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Start Mobile Development",
+      "type": "shell",
+      "command": "echo",
+      "args": [
+        "🚀 Starting PulseZen Mobile App Development...\n📋 Available commands:\n  • npm start - Start Metro bundler\n  • npm run ios - Start iOS simulator\n  • npm run android - Start Android emulator\n  • npm run test:integration - Test API integration\n\n💡 Make sure API server is running first!"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📱 Start Metro",
+      "type": "shell",
+      "command": "npm",
+      "args": ["start"],
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting",
+          "endsPattern": "Metro waiting"
+        }
+      }
+    },
+    {
+      "label": "🧪 Run Integration Tests",
+      "type": "shell",
+      "command": "node",
+      "args": ["scripts/test-integration.js"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📱 iOS Simulator",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "ios"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🤖 Android Emulator",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "android"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "new"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,11 +1,49 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { appConfig } from '../config/appConfig';
 
+// Fallback storage for when AsyncStorage is not available
+const fallbackStorage = new Map<string, string>();
+
 // Mock implementations for now - replace with real ones in production
 const MockSecureStore = {
-  getItemAsync: async (key: string) => AsyncStorage.getItem(`secure_${key}`),
-  setItemAsync: async (key: string, value: string) => AsyncStorage.setItem(`secure_${key}`, value),
-  deleteItemAsync: async (key: string) => AsyncStorage.removeItem(`secure_${key}`),
+  getItemAsync: async (key: string) => {
+    try {
+      if (AsyncStorage && AsyncStorage.getItem) {
+        return await AsyncStorage.getItem(`secure_${key}`);
+      } else {
+        return fallbackStorage.get(`secure_${key}`) || null;
+      }
+    } catch (error) {
+      console.warn('AsyncStorage not available, using fallback:', error);
+      return fallbackStorage.get(`secure_${key}`) || null;
+    }
+  },
+  
+  setItemAsync: async (key: string, value: string) => {
+    try {
+      if (AsyncStorage && AsyncStorage.setItem) {
+        return await AsyncStorage.setItem(`secure_${key}`, value);
+      } else {
+        fallbackStorage.set(`secure_${key}`, value);
+      }
+    } catch (error) {
+      console.warn('AsyncStorage not available, using fallback:', error);
+      fallbackStorage.set(`secure_${key}`, value);
+    }
+  },
+  
+  deleteItemAsync: async (key: string) => {
+    try {
+      if (AsyncStorage && AsyncStorage.removeItem) {
+        return await AsyncStorage.removeItem(`secure_${key}`);
+      } else {
+        fallbackStorage.delete(`secure_${key}`);
+      }
+    } catch (error) {
+      console.warn('AsyncStorage not available, using fallback:', error);
+      fallbackStorage.delete(`secure_${key}`);
+    }
+  },
 };
 
 const MockCrypto = {
@@ -68,6 +106,27 @@ class SecureStorageManager {
     return Array.from(randomBytes, (byte: number) => byte.toString(16).padStart(2, '0')).join('');
   }
 
+  private isValidBase64(str: string): boolean {
+    try {
+      // Check if string has valid base64 format
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      if (!base64Regex.test(str)) {
+        return false;
+      }
+      
+      // Check if length is valid (must be multiple of 4)
+      if (str.length % 4 !== 0) {
+        return false;
+      }
+      
+      // Try to decode - if it fails, it's not valid base64
+      atob(str);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async encrypt(data: string): Promise<string> {
     if (!this.encryptionKey || !appConfig.getConfig().security.encryptionEnabled) {
       return data;
@@ -91,6 +150,12 @@ class SecureStorageManager {
 
   private async decrypt(encryptedData: string): Promise<string> {
     if (!this.encryptionKey || !appConfig.getConfig().security.encryptionEnabled) {
+      return encryptedData;
+    }
+
+    // Validate if data is actually base64 encoded
+    if (!this.isValidBase64(encryptedData)) {
+      console.warn('Data is not valid base64, returning as-is');
       return encryptedData;
     }
 
@@ -172,14 +237,44 @@ class SecureStorageManager {
       } else {
         rawData = await AsyncStorage.getItem(key);
         if (rawData && options.encrypt !== false) {
-          rawData = await this.decrypt(rawData);
+          // Only try to decrypt if the data looks like it might be encrypted
+          if (this.isValidBase64(rawData)) {
+            rawData = await this.decrypt(rawData);
+          } else {
+            console.warn(`Data for key ${key} is not valid base64, skipping decryption`);
+          }
         }
       }
 
       if (!rawData) return null;
 
-      const wrappedData: StorageItem<T> = JSON.parse(rawData);
-      return this.unwrapData(wrappedData);
+      // Try to parse as new format first
+      try {
+        const wrappedData: StorageItem<T> = JSON.parse(rawData);
+        
+        // Validate that it has the expected structure
+        if (wrappedData && typeof wrappedData === 'object' && 'data' in wrappedData && 'timestamp' in wrappedData) {
+          return this.unwrapData(wrappedData);
+        } else {
+          // If it doesn't have the expected structure, treat as legacy data
+          console.warn(`Data for key ${key} doesn't match expected format, treating as legacy`);
+          return rawData as unknown as T;
+        }
+      } catch (parseError) {
+        // If parsing fails, try to handle legacy data
+        console.warn(`Legacy data format detected for key ${key}, attempting migration`);
+        
+        // If it's a simple string value (like old token format)
+        if (typeof rawData === 'string' && !rawData.startsWith('{')) {
+          // Return as-is for simple strings
+          return rawData as unknown as T;
+        }
+        
+        // If it looks like old JSON but corrupted, clear it
+        console.warn(`Corrupted data detected for key ${key}, clearing...`);
+        await this.removeItem(key, options.useSecureStore);
+        return null;
+      }
     } catch (error) {
       console.error(`Failed to retrieve item ${key}:`, error);
       return null;
@@ -263,6 +358,138 @@ class SecureStorageManager {
     } catch (error) {
       console.error('Failed to cleanup expired items:', error);
       return 0;
+    }
+  }
+
+  /**
+   * Clean corrupted or incompatible data on app startup
+   */
+  public async cleanupCorruptedData(): Promise<number> {
+    try {
+      const keys = await this.getAllKeys();
+      let cleanedCount = 0;
+      
+      for (const key of keys) {
+        try {
+          const rawData = await AsyncStorage.getItem(key);
+          if (rawData) {
+            // If the data looks like it should be encrypted but isn't valid base64
+            const config = appConfig.getConfig();
+            if (config.security.encryptionEnabled && this.encryptionKey && !key.startsWith('secure_')) {
+              if (!this.isValidBase64(rawData) && rawData.startsWith('{')) {
+                // This might be unencrypted JSON that should be encrypted
+                console.warn(`Found unencrypted data for key: ${key}, re-encrypting...`);
+                const encrypted = await this.encrypt(rawData);
+                await AsyncStorage.setItem(key, encrypted);
+                continue;
+              }
+            }
+            
+            // Try to parse the data to see if it's valid
+            if (rawData.startsWith('{')) {
+              JSON.parse(rawData);
+            } else if (this.isValidBase64(rawData)) {
+              // Try to decrypt if it looks encrypted
+              await this.decrypt(rawData);
+            }
+          }
+        } catch (parseError) {
+          console.warn(`Removing corrupted data for key: ${key}`, parseError);
+          await this.removeItem(key);
+          cleanedCount++;
+        }
+      }
+      
+      if (cleanedCount > 0) {
+        console.log(`Cleaned up ${cleanedCount} corrupted storage items`);
+      }
+      
+      return cleanedCount;
+    } catch (error) {
+      console.error('Failed to cleanup corrupted data:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Force clear all storage data - use with caution
+   */
+  public async forceClearAllData(): Promise<boolean> {
+    try {
+      console.warn('Force clearing all storage data...');
+      
+      // Clear AsyncStorage
+      await AsyncStorage.clear();
+      
+      // Clear fallback storage
+      fallbackStorage.clear();
+      
+      // Reset encryption key
+      this.encryptionKey = null;
+      await this.initializeEncryption();
+      
+      console.log('All storage data cleared successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to force clear storage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check storage health and return stats
+   */
+  public async getStorageHealth(): Promise<{
+    totalKeys: number;
+    corruptedKeys: number;
+    encryptedKeys: number;
+    totalSize: number;
+    isHealthy: boolean;
+  }> {
+    try {
+      const keys = await this.getAllKeys();
+      let corruptedKeys = 0;
+      let encryptedKeys = 0;
+      
+      for (const key of keys) {
+        try {
+          const rawData = await AsyncStorage.getItem(key);
+          if (rawData) {
+            // Check if data is base64 (potentially encrypted)
+            if (this.isValidBase64(rawData)) {
+              encryptedKeys++;
+            }
+            
+            // Try to parse/decrypt
+            if (rawData.startsWith('{')) {
+              JSON.parse(rawData);
+            } else if (this.isValidBase64(rawData)) {
+              await this.decrypt(rawData);
+            }
+          }
+        } catch {
+          corruptedKeys++;
+        }
+      }
+      
+      const totalSize = await this.getStorageSize();
+      
+      return {
+        totalKeys: keys.length,
+        corruptedKeys,
+        encryptedKeys,
+        totalSize,
+        isHealthy: corruptedKeys === 0,
+      };
+    } catch (error) {
+      console.error('Failed to check storage health:', error);
+      return {
+        totalKeys: 0,
+        corruptedKeys: 0,
+        encryptedKeys: 0,
+        totalSize: 0,
+        isHealthy: false,
+      };
     }
   }
 }

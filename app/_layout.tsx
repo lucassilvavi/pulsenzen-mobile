@@ -1,9 +1,13 @@
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import SafeMiniPlayer from '@/components/SafeMiniPlayer';
 import { AppProvider } from '@/context/AppContext';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { MiniPlayer } from '@/modules/music/components';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthProvider } from '@/context/AuthContext';
+import { useNavigationLogic } from '@/hooks/useNavigationLogic';
+import { MusicProvider } from '@/modules/music/context/MusicContext';
+import { logger } from '@/utils/secureLogger';
+import { initializeStorage } from '@/utils/storageInit';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
@@ -14,45 +18,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 // Keep splash screen visible while loading resources
 SplashScreen.preventAutoHideAsync();
 
-// Component that handles navigation logic using AuthContext
+// Component that handles navigation logic using the custom hook
 function NavigationHandler({ children }: { children: React.ReactNode }) {
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { isNavigationReady } = useNavigationLogic();
 
-  useEffect(() => {
-    async function checkOnboardingStatus() {
-      const done = await AsyncStorage.getItem('onboardingDone');
-      const newStatus = done === 'true';
-      setOnboardingDone(newStatus);
-      console.log('Onboarding status checked:', { done, newStatus, isAuthenticated });
-    }
-    checkOnboardingStatus();
-  }, [user, isAuthenticated]); // Re-check when user or auth status changes
-
-  useEffect(() => {
-    // Navigation logic based on auth and onboarding state
-    console.log('Navigation check:', { isLoading, isAuthenticated, onboardingDone, pathname });
-    
-    if (!isLoading && onboardingDone !== null) {
-      if (!isAuthenticated && !pathname.includes('/onboarding')) {
-        // Not authenticated, redirect to auth onboarding
-        console.log('Redirecting to welcome (not authenticated)');
-        router.replace('/onboarding/welcome');
-      } else if (isAuthenticated && !onboardingDone && !pathname.includes('/onboarding/setup')) {
-        // Authenticated but onboarding not done, go to setup
-        console.log('Redirecting to setup (authenticated but no onboarding)');
-        router.replace('/onboarding/setup');
-      } else if (isAuthenticated && onboardingDone && pathname.includes('/onboarding')) {
-        // Authenticated and onboarded, go to main app
-        console.log('Redirecting to home (authenticated and onboarded)');
-        router.replace('/');
-      }
-    }
-  }, [isLoading, isAuthenticated, onboardingDone, pathname, router]);
-
-  if (isLoading || onboardingDone === null) {
+  if (!isNavigationReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
@@ -77,11 +47,22 @@ export default function RootLayout() {
   useEffect(() => {
     async function prepare() {
       try {
+        logger.info('RootLayout', 'Starting app initialization');
+        
+        // Initialize storage and clean up any corrupted data first
+        const storageInitialized = await initializeStorage();
+        
+        if (!storageInitialized) {
+          logger.warn('RootLayout', 'Storage initialization failed, some features may not work properly');
+        }
+        
         // Pre-load fonts, make API calls, etc.
         // Artificial delay for demo purposes
         await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        logger.info('RootLayout', 'App initialization completed successfully');
       } catch (e) {
-        console.warn(e);
+        logger.error('RootLayout', 'App preparation failed', e as Error);
       } finally {
         // Tell the application to render
         setAppIsReady(true);
@@ -108,25 +89,27 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider initialMetrics={{
-        frame: { x: 0, y: 0, width: 0, height: 0 },
-        insets: { top: 0, left: 0, right: 0, bottom: 0 }
-      }}>
-        <AuthProvider>
-          <AppProvider>
-            <NavigationHandler>
-              {/* Using regular View instead of ThemedView to avoid potential issues */}
-              <View style={[styles.container, { backgroundColor: 'white' }]}>
-                <StatusBar style="auto" />
-            {/* Stack Navigation */}
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: 'transparent' },
-                animation: 'slide_from_right',
-              }}
-            >
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.container}>
+        <SafeAreaProvider initialMetrics={{
+          frame: { x: 0, y: 0, width: 0, height: 0 },
+          insets: { top: 0, left: 0, right: 0, bottom: 0 }
+        }}>
+          <AuthProvider>
+            <AppProvider>
+              <MusicProvider>
+                <NavigationHandler>
+                {/* Using regular View instead of ThemedView to avoid potential issues */}
+                <View style={[styles.container, { backgroundColor: 'white' }]}>
+                  <StatusBar style="auto" />
+              {/* Stack Navigation */}
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: 'transparent' },
+                  animation: 'slide_from_right',
+                }}
+              >
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen 
                 name="profile" 
@@ -211,13 +194,15 @@ export default function RootLayout() {
               />
             </Stack>
             {/* Mini Player - Aparece quando uma música está tocando */}
-            <MiniPlayer />
+            <SafeMiniPlayer />
           </View>
             </NavigationHandler>
+            </MusicProvider>
           </AppProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

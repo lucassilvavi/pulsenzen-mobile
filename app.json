@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "pulsezenapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "bundleIdentifier": "com.lucassilvavi.pulsezenapp",
       "supportsTablet": true,
@@ -54,6 +54,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "updates": {
+      "enabled": false,
+      "fallbackToCacheTimeout": 0
     },
     "extra": {
       "router": {},

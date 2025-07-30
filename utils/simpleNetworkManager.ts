@@ -1,0 +1,293 @@
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axiosRetry from 'axios-retry';
+import { APP_CONSTANTS, ERROR_CODES } from '../constants/appConstants';
+import { NetworkRequestConfig, NetworkResponse } from '../types/api';
+import { cacheManager } from './cacheManager';
+import { performanceMonitor } from './performanceMonitor';
+import { logger } from './secureLogger';
+
+class SimpleNetworkManager {
+  private client: AxiosInstance;
+  private pendingRequests: Map<string, Promise<any>> = new Map();
+
+  constructor() {
+    this.client = axios.create({
+      timeout: APP_CONSTANTS.API.TIMEOUT,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Configure retry logic
+    axiosRetry(this.client, {
+      retries: APP_CONSTANTS.API.RETRY_ATTEMPTS,
+      retryDelay: (retryCount) => {
+        const delay = Math.min(
+          APP_CONSTANTS.API.RETRY_DELAY_BASE * Math.pow(2, retryCount),
+          APP_CONSTANTS.API.RETRY_DELAY_MAX
+        );
+        return delay + Math.random() * 1000; // Add jitter
+      },
+      retryCondition: (error) => {
+        // Retry on network errors and 5xx responses, but not 4xx (except 429)
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+               (error.response?.status === 429);
+      },
+    });
+
+    // Request interceptor
+    this.client.interceptors.request.use(
+      (config) => {
+        const startTime = Date.now();
+        (config as any).startTime = startTime;
+        
+        logger.debug('NetworkManager', 'Request started', {
+          method: config.method?.toUpperCase(),
+          url: this.sanitizeUrl(config.url || ''),
+        });
+        
+        return config;
+      },
+      (error) => {
+        logger.error('NetworkManager', 'Request interceptor error', error);
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor
+    this.client.interceptors.response.use(
+      (response) => {
+        const duration = Date.now() - ((response.config as any).startTime || 0);
+        
+        performanceMonitor.trackApiCall(
+          this.getEndpointKey(response.config.url || ''),
+          response.config.method?.toUpperCase() || 'GET',
+          duration,
+          response.status
+        );
+
+        logger.debug('NetworkManager', 'Request completed', {
+          method: response.config.method?.toUpperCase(),
+          url: this.sanitizeUrl(response.config.url || ''),
+          status: response.status,
+          duration,
+        });
+
+        return response;
+      },
+      (error) => {
+        const duration = Date.now() - ((error.config as any)?.startTime || 0);
+        const status = error.response?.status || 0;
+        
+        performanceMonitor.trackApiCall(
+          this.getEndpointKey(error.config?.url || ''),
+          error.config?.method?.toUpperCase() || 'GET',
+          duration,
+          status
+        );
+
+        logger.error('NetworkManager', 'Request failed', error, {
+          method: error.config?.method?.toUpperCase(),
+          url: this.sanitizeUrl(error.config?.url || ''),
+          status,
+          duration,
+        });
+
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  private sanitizeUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+    } catch {
+      return '[INVALID_URL]';
+    }
+  }
+
+  private getEndpointKey(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.host}${urlObj.pathname}`;
+    } catch {
+      return url;
+    }
+  }
+
+  private getCacheKey(url: string, config: NetworkRequestConfig): string {
+    const method = config.method || 'GET';
+    const body = config.body ? JSON.stringify(config.body) : '';
+    return `http_cache_${method}_${url}_${body}`;
+  }
+
+  public async request<T = any>(
+    url: string, 
+    config: NetworkRequestConfig = {}
+  ): Promise<NetworkResponse<T>> {
+    const startTime = Date.now();
+    const method = config.method || 'GET';
+    const cacheKey = this.getCacheKey(url, config);
+
+    try {
+      // Check cache for GET requests
+      if (method === 'GET' && config.cache !== false) {
+        const cachedResponse = await cacheManager.get<T>(cacheKey);
+        if (cachedResponse) {
+          logger.debug('NetworkManager', 'Cache hit', { url: this.sanitizeUrl(url) });
+          return {
+            success: true,
+            data: cachedResponse,
+            status: 200,
+            cached: true,
+            duration: Date.now() - startTime,
+          };
+        }
+      }
+
+      // Check for duplicate in-flight requests
+      if (this.pendingRequests.has(cacheKey)) {
+        logger.debug('NetworkManager', 'Duplicate request detected, waiting for existing', {
+          url: this.sanitizeUrl(url)
+        });
+        return this.pendingRequests.get(cacheKey);
+      }
+
+      // Create axios config
+      const axiosConfig: AxiosRequestConfig = {
+        method: config.method as any || 'GET',
+        url,
+        headers: config.headers,
+        data: config.body,
+        timeout: config.timeout || APP_CONSTANTS.API.TIMEOUT,
+      };
+
+      // Create request promise
+      const requestPromise = this.executeRequest<T>(axiosConfig, config, cacheKey, startTime);
+      this.pendingRequests.set(cacheKey, requestPromise);
+
+      try {
+        const response = await requestPromise;
+        this.pendingRequests.delete(cacheKey);
+        return response;
+      } catch (error) {
+        this.pendingRequests.delete(cacheKey);
+        throw error;
+      }
+
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      
+      return {
+        success: false,
+        error: this.getErrorMessage(error),
+        status: error.response?.status || 0,
+        duration,
+      };
+    }
+  }
+
+  private async executeRequest<T>(
+    axiosConfig: AxiosRequestConfig,
+    config: NetworkRequestConfig,
+    cacheKey: string,
+    startTime: number
+  ): Promise<NetworkResponse<T>> {
+    try {
+      const response: AxiosResponse<T> = await this.client.request(axiosConfig);
+      const duration = Date.now() - startTime;
+
+      // Cache successful GET responses
+      if (axiosConfig.method?.toUpperCase() === 'GET' && config.cache !== false && response.data) {
+        await cacheManager.set(cacheKey, response.data, {
+          ttl: config.cacheTtl || APP_CONSTANTS.API.CACHE_TTL_DEFAULT,
+          priority: config.priority || 'medium',
+          tags: config.tags || ['api_response'],
+        });
+      }
+
+      return {
+        success: true,
+        data: response.data,
+        status: response.status,
+        duration,
+        headers: response.headers as Record<string, string>,
+      };
+
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      const status = error.response?.status || 0;
+
+      throw {
+        success: false,
+        error: this.getErrorMessage(error),
+        status,
+        duration,
+        retryCount: error.config?.['axios-retry']?.retryCount || 0,
+      };
+    }
+  }
+
+  private getErrorMessage(error: any): string {
+    if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
+      return ERROR_CODES.NETWORK_ERROR;
+    }
+    
+    if (error.code === 'ECONNREFUSED') {
+      return ERROR_CODES.CONNECTION_ERROR;
+    }
+    
+    if (error.response?.status === 401) {
+      return ERROR_CODES.UNAUTHORIZED;
+    }
+    
+    if (error.response?.status === 429) {
+      return ERROR_CODES.RATE_LIMITED;
+    }
+    
+    if (error.response?.status >= 500) {
+      return ERROR_CODES.SERVICE_UNAVAILABLE;
+    }
+    
+    return error.message || ERROR_CODES.UNKNOWN_ERROR;
+  }
+
+  // Convenience methods
+  public async get<T = any>(url: string, config: Omit<NetworkRequestConfig, 'method'> = {}): Promise<NetworkResponse<T>> {
+    return this.request<T>(url, { ...config, method: 'GET' });
+  }
+
+  public async post<T = any>(url: string, data?: any, config: Omit<NetworkRequestConfig, 'method' | 'body'> = {}): Promise<NetworkResponse<T>> {
+    return this.request<T>(url, { ...config, method: 'POST', body: data });
+  }
+
+  public async put<T = any>(url: string, data?: any, config: Omit<NetworkRequestConfig, 'method' | 'body'> = {}): Promise<NetworkResponse<T>> {
+    return this.request<T>(url, { ...config, method: 'PUT', body: data });
+  }
+
+  public async delete<T = any>(url: string, config: Omit<NetworkRequestConfig, 'method'> = {}): Promise<NetworkResponse<T>> {
+    return this.request<T>(url, { ...config, method: 'DELETE' });
+  }
+
+  // Utility methods
+  public clearCache(tags?: string[]): void {
+    if (tags) {
+      tags.forEach(tag => cacheManager.invalidateByTag(tag));
+    } else {
+      cacheManager.invalidateByTag('api_response');
+    }
+    logger.info('NetworkManager', 'Cache cleared', { tags });
+  }
+
+  public getQueuedRequestsCount(): number {
+    return this.pendingRequests.size;
+  }
+}
+
+// Export singleton instance
+export const simpleNetworkManager = new SimpleNetworkManager();
+export default simpleNetworkManager;
+
+// For backward compatibility, we'll alias it
+export const networkManager = simpleNetworkManager;

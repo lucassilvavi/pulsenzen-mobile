@@ -5,11 +5,11 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { ProfileService } from '@/modules/profile';
-import { saveOnboardingData } from '@/services/onboardingService';
 import { fontSize, spacing } from '@/utils/responsive';
+import { logger } from '@/utils/secureLogger';
+import { secureStorage } from '@/utils/secureStorage';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -31,7 +31,7 @@ const experienceLevels = [
 
 export default function SetupScreen() {
     const router = useRouter();
-    const { user, isAuthenticated, markOnboardingComplete } = useAuth();
+    const { user, isAuthenticated, markOnboardingComplete, completeOnboarding, updateProfile } = useAuth();
     const [name, setName] = useState('');
     const [sex, setSex] = useState('');
     const [age, setAge] = useState('');
@@ -44,6 +44,19 @@ export default function SetupScreen() {
                 ? prev.filter(id => id !== goalId)
                 : [...prev, goalId]
         );
+    };
+
+    const forceNavigateToHome = () => {
+        logger.info("OnboardingSetup", 'Navigating to home screen...');
+        
+        // Simple and direct navigation to home screen
+        try {
+            router.replace('/');
+        } catch (e) {
+            logger.info("OnboardingSetup", 'router.replace failed, trying push:', e);
+            // Fallback: use push if replace fails
+            router.push('/');
+        }
     };
 
     const handleFinish = async () => {
@@ -76,40 +89,98 @@ export default function SetupScreen() {
         }
         
         try {
-            // Save onboarding data to API (future implementation)
-            await saveOnboardingData({
-                name: name.trim(),
-                sex,
-                age,
+            logger.info("OnboardingSetup", 'Starting onboarding completion...');
+            logger.info("OnboardingSetup", 'User authenticated:', isAuthenticated);
+            logger.info("OnboardingSetup", 'User data:', user);
+
+            // Calculate date of birth from age
+            const currentYear = new Date().getFullYear();
+            const birthYear = currentYear - parseInt(age);
+            const dateOfBirth = `${birthYear}-01-01`; // Default to January 1st
+
+            // Create onboarding data object
+            const onboardingData = {
+                dateOfBirth,
                 goals: selectedGoals,
-                experience: selectedExperience,
-            });
+                mentalHealthConcerns: [], // Can be added later in a more detailed form
+                preferredActivities: selectedGoals, // Use goals as preferred activities for now
+                currentStressLevel: selectedExperience === 'beginner' ? 7 : selectedExperience === 'intermediate' ? 5 : 3,
+                sleepHours: 8, // Default value
+                exerciseFrequency: selectedExperience === 'beginner' ? 'rarely' : selectedExperience === 'intermediate' ? 'sometimes' : 'regularly',
+                preferredContactMethod: 'in-app',
+                notificationPreferences: {
+                    reminders: true,
+                    progress: true,
+                    tips: true,
+                },
+            };
+
+            logger.info("OnboardingSetup", 'Onboarding data prepared:', onboardingData);
+
+            // Complete onboarding through API
+            const result = await completeOnboarding(onboardingData);
             
-            // Save user profile using ProfileService with user info from auth
-            await ProfileService.saveUserProfile({
-                id: user.id,
-                name: name.trim(),
-                email: user.email,
-                avatar: '',
-                sex,
-                age: parseInt(age),
-                goals: selectedGoals,
-                experience: selectedExperience,
-                joinDate: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            });
+            logger.info("OnboardingSetup", 'Complete onboarding result:', result);
+            
+            if (result.success) {
+                logger.info("OnboardingSetup", 'Onboarding API call successful, updating profile...');
+                
+                // Also update profile with additional info
+                const profileResult = await updateProfile({
+                    firstName: name.trim(),
+                    // Add other profile fields if needed
+                });
+                
+                logger.info("OnboardingSetup", 'Profile update result:', profileResult);
 
-            // Mark onboarding as completed
-            await markOnboardingComplete();
+                // Mark onboarding as complete to trigger navigation
+                await markOnboardingComplete();
 
-            Alert.alert(
-                'Perfil criado!', 
-                'Seu perfil foi configurado com sucesso. Bem-vindo ao PulseZen!',
-                [{ text: 'OK', onPress: () => router.replace('/') }]
-            );
+                // Verify onboarding was marked as complete
+                const onboardingCheck = await secureStorage.getItem<string>('onboardingDone');
+                logger.info("OnboardingSetup", 'Onboarding status after completion:', onboardingCheck);
+
+                logger.info("OnboardingSetup", 'Onboarding completed successfully, navigating to home...');
+
+                // Force navigation using our robust method
+                forceNavigateToHome();
+                
+            } else {
+                console.error('Onboarding failed:', result);
+                
+                // If the error is related to authentication, try to mark onboarding as complete locally
+                if (result.message?.includes('401') || result.message?.includes('authorization') || result.message?.includes('Authentication failed') || result.message?.includes('Failed to complete onboarding')) {
+                    logger.info("OnboardingSetup", 'Authentication/API issue detected, completing onboarding locally...');
+                    
+                    // Update profile locally
+                    try {
+                        await updateProfile({
+                            firstName: name.trim(),
+                        });
+                    } catch (profileError) {
+                        logger.info("OnboardingSetup", 'Profile update failed, but continuing with local completion');
+                    }
+                    
+                    // Mark onboarding as complete locally even if API call failed
+                    await markOnboardingComplete();
+                    
+                    // Verify onboarding was marked as complete locally
+                    const onboardingCheck = await secureStorage.getItem<string>('onboardingDone');
+                    logger.info("OnboardingSetup", 'Local onboarding status after completion:', onboardingCheck);
+                    
+                    // Navigate to home
+                    forceNavigateToHome();
+                    
+                    // Show a success message since the user completed all steps
+                    setTimeout(() => {
+                        Alert.alert('Bem-vindo!', 'Seu perfil foi configurado. Você pode sincronizar seus dados mais tarde nas configurações.');
+                    }, 1000);
+                } else {
+                    Alert.alert('Erro', result.message || 'Não foi possível completar o onboarding. Tente novamente.');
+                }
+            }
         } catch (error) {
-            console.error('Error saving user preferences:', error);
+            console.error('Error completing onboarding:', error);
             Alert.alert('Erro', 'Não foi possível salvar suas preferências. Tente novamente.');
         }
     };

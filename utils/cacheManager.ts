@@ -1,6 +1,6 @@
-import { secureStorage } from './secureStorage';
 import { logger } from './logger';
 import { performanceMonitor } from './performanceMonitor';
+import { secureStorage } from './secureStorage';
 
 export interface CacheOptions {
   ttl?: number; // Time to live in milliseconds

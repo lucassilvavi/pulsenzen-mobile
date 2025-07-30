@@ -5,10 +5,11 @@ import MusicApiService from './MusicApiService';
 import PlaylistManager, { RepeatMode } from './PlaylistManager';
 
 /**
- * MusicService - Refactored music service using specialized components
+ * MusicServiceV2 - Refactored music service using specialized components
  * 
  * This service acts as a facade over the AudioEngine and PlaylistManager,
- * providing a simplified interface for music operations.
+ * providing a simplified interface for music operations while maintaining
+ * backward compatibility with existing code.
  * 
  * Key improvements:
  * - Decomposed responsibilities
@@ -17,7 +18,7 @@ import PlaylistManager, { RepeatMode } from './PlaylistManager';
  * - Enhanced logging
  * - Performance optimizations
  */
-export class MusicService {
+export class MusicServiceV2 {
   private audioEngine: AudioEngine;
   private playlistManager: PlaylistManager;
   private listeners = new Set<(state: any) => void>();
@@ -33,11 +34,11 @@ export class MusicService {
 
   private async initialize(): Promise<void> {
     try {
-      logger.info('MusicService', 'Initializing music service');
+      logger.info('MusicServiceV2', 'Initializing music service');
       this.isInitialized = true;
-      logger.info('MusicService', 'Music service initialized successfully');
+      logger.info('MusicServiceV2', 'Music service initialized successfully');
     } catch (error) {
-      logger.error('MusicService', 'Failed to initialize music service', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to initialize music service', error instanceof Error ? error : undefined);
     }
   }
 
@@ -54,7 +55,7 @@ export class MusicService {
   }
 
   private async handleTrackFinished(): Promise<void> {
-    logger.debug('MusicService', 'Track finished, handling repeat/next logic');
+    logger.debug('MusicServiceV2', 'Track finished, handling repeat/next logic');
     
     const repeatMode = this.playlistManager.getRepeatMode();
     
@@ -85,7 +86,7 @@ export class MusicService {
         if (this.playlistManager.hasNext()) {
           await this.playNext();
         } else {
-          logger.info('MusicService', 'Reached end of playlist, stopping playback');
+          logger.info('MusicServiceV2', 'Reached end of playlist, stopping playback');
         }
         break;
     }
@@ -99,7 +100,7 @@ export class MusicService {
     playlistName?: string, 
     playlistId?: string
   ): Promise<void> {
-    logger.info('MusicService', 'Playing track', { 
+    logger.info('MusicServiceV2', 'Playing track', { 
       trackId: track.id, 
       title: track.title,
       hasPlaylist: !!playlist 
@@ -132,7 +133,7 @@ export class MusicService {
       });
 
     } catch (error) {
-      logger.error('MusicService', 'Failed to play track', error instanceof Error ? error : undefined, {
+      logger.error('MusicServiceV2', 'Failed to play track', error instanceof Error ? error : undefined, {
         trackId: track.id,
         title: track.title,
       });
@@ -151,7 +152,7 @@ export class MusicService {
         position: this.audioEngine.getStatus().position,
       });
     } catch (error) {
-      logger.error('MusicService', 'Failed to pause track', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to pause track', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -166,7 +167,7 @@ export class MusicService {
         position: this.audioEngine.getStatus().position,
       });
     } catch (error) {
-      logger.error('MusicService', 'Failed to resume track', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to resume track', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -180,7 +181,7 @@ export class MusicService {
         trackId: this.currentTrack?.id,
       });
     } catch (error) {
-      logger.error('MusicService', 'Failed to stop track', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to stop track', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -196,7 +197,7 @@ export class MusicService {
         position: positionSeconds,
       });
     } catch (error) {
-      logger.error('MusicService', 'Failed to seek', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to seek', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -216,10 +217,10 @@ export class MusicService {
           repeatMode: this.playlistManager.getRepeatMode(),
         });
       } else {
-        logger.debug('MusicService', 'No next track available');
+        logger.debug('MusicServiceV2', 'No next track available');
       }
     } catch (error) {
-      logger.error('MusicService', 'Failed to play next track', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to play next track', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -239,10 +240,10 @@ export class MusicService {
           repeatMode: this.playlistManager.getRepeatMode(),
         });
       } else {
-        logger.debug('MusicService', 'No previous track available');
+        logger.debug('MusicServiceV2', 'No previous track available');
       }
     } catch (error) {
-      logger.error('MusicService', 'Failed to play previous track', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to play previous track', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -320,7 +321,7 @@ export class MusicService {
       try {
         listener(state);
       } catch (error) {
-        logger.error('MusicService', 'Error in playback listener', error instanceof Error ? error : undefined);
+        logger.error('MusicServiceV2', 'Error in playback listener', error instanceof Error ? error : undefined);
       }
     });
   }
@@ -331,7 +332,7 @@ export class MusicService {
       const result = await MusicApiService.searchTracks({});
       return result.tracks;
     } catch (error) {
-      logger.error('MusicService', 'Failed to get all tracks', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to get all tracks', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -340,7 +341,7 @@ export class MusicService {
     try {
       return await MusicApiService.getTracksByCategory(categoryId);
     } catch (error) {
-      logger.error('MusicService', 'Failed to get tracks by category', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to get tracks by category', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -349,7 +350,7 @@ export class MusicService {
     try {
       return await MusicApiService.getCategories();
     } catch (error) {
-      logger.error('MusicService', 'Failed to get categories', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to get categories', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -358,7 +359,7 @@ export class MusicService {
     try {
       return await MusicApiService.getPlaylists();
     } catch (error) {
-      logger.error('MusicService', 'Failed to get playlists', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to get playlists', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -367,7 +368,7 @@ export class MusicService {
     try {
       return await MusicApiService.getPlaylist(playlistId);
     } catch (error) {
-      logger.error('MusicService', 'Failed to get playlist', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to get playlist', error instanceof Error ? error : undefined);
       throw error;
     }
   }
@@ -375,7 +376,7 @@ export class MusicService {
   // Sharing functionality
   async shareCurrentTrack(): Promise<boolean> {
     if (!this.currentTrack) {
-      logger.warn('MusicService', 'Cannot share: no current track');
+      logger.warn('MusicServiceV2', 'Cannot share: no current track');
       return false;
     }
 
@@ -397,7 +398,7 @@ export class MusicService {
       
       return true;
     } catch (error) {
-      logger.error('MusicService', 'Failed to share track', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to share track', error instanceof Error ? error : undefined);
       return false;
     }
   }
@@ -410,15 +411,15 @@ export class MusicService {
       this.currentTrack = null;
       this.notifyListeners();
       
-      logger.info('MusicService', 'Music stopped and cleared');
+      logger.info('MusicServiceV2', 'Music stopped and cleared');
     } catch (error) {
-      logger.error('MusicService', 'Failed to stop and clear music', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Failed to stop and clear music', error instanceof Error ? error : undefined);
     }
   }
 
   async cleanup(): Promise<void> {
     try {
-      logger.info('MusicService', 'Cleaning up music service');
+      logger.info('MusicServiceV2', 'Cleaning up music service');
       
       await this.audioEngine.cleanup();
       this.playlistManager.clear();
@@ -426,12 +427,12 @@ export class MusicService {
       this.currentTrack = null;
       this.isInitialized = false;
       
-      logger.info('MusicService', 'Music service cleanup completed');
+      logger.info('MusicServiceV2', 'Music service cleanup completed');
     } catch (error) {
-      logger.error('MusicService', 'Error during cleanup', error instanceof Error ? error : undefined);
+      logger.error('MusicServiceV2', 'Error during cleanup', error instanceof Error ? error : undefined);
     }
   }
 }
 
-// Export singleton instance
-export default new MusicService();
+// Export singleton instance for backward compatibility
+export default new MusicServiceV2();

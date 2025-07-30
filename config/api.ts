@@ -3,11 +3,11 @@
 // To find your IP: ifconfig | grep -E "inet " | grep -v "127.0.0.1"
 
 export const API_CONFIG = {
-  // Development configuration (local network)
-  BASE_URL: 'http://192.168.3.75:3333/api/v1',
+  // Use environment variables for configuration
+  BASE_URL: `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/${process.env.EXPO_PUBLIC_API_VERSION}`,
   
-  // Production configuration (to be updated when deployed)
-  // BASE_URL: 'https://your-production-domain.com/api/v1',
+  // Fallback to development configuration
+  // BASE_URL: 'http://192.168.3.75:3333/api/v1',
   
   // API endpoints
   ENDPOINTS: {
@@ -16,11 +16,24 @@ export const API_CONFIG = {
       LOGIN: '/auth/login',
       LOGOUT: '/auth/logout',
       PROFILE: '/auth/profile',
+      UPDATE_PROFILE: '/auth/profile',
+      COMPLETE_ONBOARDING: '/auth/complete-onboarding',
+      REFRESH_TOKEN: '/auth/refresh-token',
       VALIDATE_PASSWORD: '/auth/validate-password'
     },
     JOURNAL: {
       BASE: '/journal',
-      ENTRIES: '/journal/entries'
+      ENTRIES: '/journal/entries',
+      PROMPTS: '/journal/prompts',
+      SEARCH: '/journal/search',
+      STATS: '/journal/stats'
+    },
+    MUSIC: {
+      BASE: '/music',
+      CATEGORIES: '/music/categories',
+      TRACKS: '/music/tracks',
+      PLAYLISTS: '/music/playlists',
+      FAVORITES: '/music/favorites'
     },
     HEALTH: '/health'
   },

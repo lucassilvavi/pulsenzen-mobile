@@ -22,22 +22,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { logger } from '../../../utils/logger';
 import { usePlaybackControls, usePlaybackState } from '../context/MusicContext';
 
-// Simple color mappings for cleaner code
-const colors = {
-  card: Colors.white,
-  divider: Colors.gray[200],
-  primary: Colors.primary[600],
-  primaryLight: Colors.primary[100],
-  textPrimary: Colors.light.text,
-  textSecondary: Colors.gray[600],
-  textDisabled: Colors.gray[400],
-  shadow: Colors.gray[500],
-};
-
 const { width } = Dimensions.get('window');
 
 /**
- * MiniPlayer - Refactored mini player using new context architecture
+ * MiniPlayerV2 - Refactored mini player using new context architecture
  * 
  * Key improvements:
  * - Uses new context for state management
@@ -46,7 +34,7 @@ const { width } = Dimensions.get('window');
  * - Enhanced error handling and logging
  * - Cleaner component structure
  */
-const MiniPlayer = React.memo(() => {
+const MiniPlayerV2 = React.memo(() => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   
@@ -82,7 +70,7 @@ const MiniPlayer = React.memo(() => {
         source: 'mini_player_tap',
       });
     } catch (error) {
-      logger.error('MiniPlayer', 'Error navigating to music player', error instanceof Error ? error : undefined);
+      logger.error('MiniPlayerV2', 'Error navigating to music player', error instanceof Error ? error : undefined);
     }
   };
 
@@ -97,7 +85,7 @@ const MiniPlayer = React.memo(() => {
         await controls.resume();
       }
     } catch (error) {
-      logger.error('MiniPlayer', 'Error toggling play/pause in mini-player', error instanceof Error ? error : undefined);
+      logger.error('MiniPlayerV2', 'Error toggling play/pause in mini-player', error instanceof Error ? error : undefined);
     }
   };
 
@@ -109,7 +97,7 @@ const MiniPlayer = React.memo(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await controls.next();
     } catch (error) {
-      logger.error('MiniPlayer', 'Error playing next in mini-player', error instanceof Error ? error : undefined);
+      logger.error('MiniPlayerV2', 'Error playing next in mini-player', error instanceof Error ? error : undefined);
     }
   };
 
@@ -121,7 +109,7 @@ const MiniPlayer = React.memo(() => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       await controls.previous();
     } catch (error) {
-      logger.error('MiniPlayer', 'Error playing previous in mini-player', error instanceof Error ? error : undefined);
+      logger.error('MiniPlayerV2', 'Error playing previous in mini-player', error instanceof Error ? error : undefined);
     }
   };
 
@@ -181,7 +169,7 @@ const MiniPlayer = React.memo(() => {
               dismissDirection: translation > 0 ? 'right' : 'left',
             });
           } catch (error) {
-            logger.error('MiniPlayer', 'Error during swipe dismiss', error instanceof Error ? error : undefined);
+            logger.error('MiniPlayerV2', 'Error during swipe dismiss', error instanceof Error ? error : undefined);
           }
         });
       } else {
@@ -305,7 +293,7 @@ const MiniPlayer = React.memo(() => {
   );
 });
 
-MiniPlayer.displayName = 'MiniPlayer';
+MiniPlayerV2.displayName = 'MiniPlayerV2';
 
 const styles = StyleSheet.create({
   container: {
@@ -381,4 +369,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MiniPlayer;
+export default MiniPlayerV2;

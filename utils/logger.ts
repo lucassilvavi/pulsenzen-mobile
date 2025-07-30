@@ -46,6 +46,7 @@ class LoggingManager {
   private logBuffer: LogEntry[] = [];
   private metricsBuffer: PerformanceMetric[] = [];
   private eventsBuffer: UserEvent[] = [];
+  private flushInterval?: number;
   private isInitialized = false;
 
   private constructor() {
@@ -191,11 +192,14 @@ class LoggingManager {
 
   private startPeriodicFlush(): void {
     // Flush every 30 seconds
-    setInterval(() => {
+    const flushInterval = setInterval(() => {
       this.flushLogs();
       this.flushMetrics();
       this.flushEvents();
     }, 30000);
+
+    // Store interval for cleanup
+    this.flushInterval = flushInterval;
 
     // Flush on app state changes
     // AppState.addEventListener('change', (nextAppState) => {

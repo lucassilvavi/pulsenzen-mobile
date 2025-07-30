@@ -1,7 +1,7 @@
 import { appConfig } from '../config/appConfig';
+import { cacheManager } from './cacheManager';
 import { logger } from './logger';
 import { performanceMonitor } from './performanceMonitor';
-import { cacheManager } from './cacheManager';
 
 export interface RequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
