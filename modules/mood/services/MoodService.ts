@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PERIOD_HOURS, PERIOD_LABELS, STORAGE_KEYS } from '../constants';
 import { MoodEntry, MoodLevel, MoodPeriod, MoodResponse, MoodStats } from '../types';
+import { logger } from '../../../utils/secureLogger';
 
 /**
  * Mood Service - Modular implementation
@@ -39,7 +40,7 @@ class MoodService {
         entry.date === today && entry.period === currentPeriod
       );
     } catch (error) {
-      console.error('Erro ao verificar resposta do dia:', error);
+      logger.error('MoodService', 'Erro ao verificar resposta do dia', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -84,7 +85,7 @@ class MoodService {
         data: entry
       };
     } catch (error) {
-      console.error('Erro ao salvar humor:', error);
+      logger.error('MoodService', 'Erro ao salvar humor', error instanceof Error ? error : new Error(String(error)));
       return { 
         success: false, 
         message: 'Erro ao registrar humor. Tente novamente.' 
@@ -104,7 +105,7 @@ class MoodService {
       throw new Error('Erro de conexão com o servidor');
     }
     
-    console.log('Mood enviado para o backend:', entry);
+    logger.debug('MoodService', 'Mood enviado para o backend', { entryId: entry.id, timestamp: entry.timestamp });
   }
 
   /**
@@ -115,7 +116,7 @@ class MoodService {
       const data = await AsyncStorage.getItem(this.STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('Erro ao recuperar entradas de humor:', error);
+      logger.error('MoodService', 'Erro ao recuperar entradas de humor', error instanceof Error ? error : new Error(String(error)));
       return [];
     }
   }

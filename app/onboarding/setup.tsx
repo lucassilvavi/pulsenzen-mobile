@@ -146,7 +146,7 @@ export default function SetupScreen() {
                 forceNavigateToHome();
                 
             } else {
-                console.error('Onboarding failed:', result);
+                logger.error('OnboardingSetup', 'Onboarding failed', new Error(result.message || 'Unknown error'));
                 
                 // If the error is related to authentication, try to mark onboarding as complete locally
                 if (result.message?.includes('401') || result.message?.includes('authorization') || result.message?.includes('Authentication failed') || result.message?.includes('Failed to complete onboarding')) {
@@ -180,7 +180,7 @@ export default function SetupScreen() {
                 }
             }
         } catch (error) {
-            console.error('Error completing onboarding:', error);
+            logger.error('OnboardingSetup', 'Error completing onboarding', error instanceof Error ? error : new Error(String(error)));
             Alert.alert('Erro', 'Não foi possível salvar suas preferências. Tente novamente.');
         }
     };

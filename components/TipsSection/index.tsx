@@ -14,7 +14,7 @@ type TipsSectionProps = {
 
 export default function TipsSection({ title, tips, style }: TipsSectionProps) {
   return (
-    <Card style={[styles.card, style]}>
+    <Card style={[styles.card, style] as any}>
       <ThemedText type="subtitle">{title}</ThemedText>
       <ThemedView style={styles.tipsList}>
         {tips.map((tip, idx) => (

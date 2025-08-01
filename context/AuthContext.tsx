@@ -1,5 +1,6 @@
 import AuthService, { OnboardingData, User, UserProfile } from '@/services/authService';
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { useMemoizedContextValue, useStableCallback } from '@/hooks/usePerformanceOptimization';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 interface AuthContextType {
   user: User | null;
@@ -33,9 +34,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = useMemo(() => !!user, [user]);
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useStableCallback(async () => {
     try {
       setIsLoading(true);
       const isAuth = await AuthService.isAuthenticated();
@@ -58,9 +59,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const login = async (email: string, password: string) => {
+  const login = useStableCallback(async (email: string, password: string) => {
     try {
       setIsLoading(true);
       const result = await AuthService.login({ email, password });
@@ -77,9 +78,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const register = async (userData: {
+  const register = useStableCallback(async (userData: {
     email: string;
     password: string;
     password_confirmation: string;
@@ -102,9 +103,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const logout = async () => {
+  const logout = useStableCallback(async () => {
     try {
       setIsLoading(true);
       await AuthService.logout();
@@ -115,9 +116,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const refreshProfile = async () => {
+  const refreshProfile = useStableCallback(async () => {
     try {
       if (user) {
         const profile = await AuthService.getProfile();
@@ -126,9 +127,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Refresh profile error:', error);
     }
-  };
+  });
 
-  const completeOnboarding = async (onboardingData: OnboardingData) => {
+  const completeOnboarding = useStableCallback(async (onboardingData: OnboardingData) => {
     try {
       setIsLoading(true);
       const result = await AuthService.completeOnboarding(onboardingData);
@@ -149,9 +150,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const updateProfile = async (profileData: any) => {
+  const updateProfile = useStableCallback(async (profileData: any) => {
     try {
       setIsLoading(true);
       const result = await AuthService.updateProfile(profileData);
@@ -168,9 +169,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
-  const markOnboardingComplete = async () => {
+  const markOnboardingComplete = useStableCallback(async () => {
     try {
       if (user) {
         await AuthService.markOnboardingComplete(user.id);
@@ -179,13 +180,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Mark onboarding complete error:', error);
     }
-  };
+  });
 
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
-  const value = {
+  // Optimize context value with memoization
+  const contextValue = useMemoizedContextValue({
     user,
     userProfile,
     isAuthenticated,
@@ -198,10 +200,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     completeOnboarding,
     updateProfile,
     markOnboardingComplete,
-  };
+  });
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

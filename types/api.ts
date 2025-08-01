@@ -12,9 +12,9 @@ export interface ApiSuccessResponse<T = any> extends BaseApiResponse {
 
 export interface ApiErrorResponse extends BaseApiResponse {
   success: false;
-  error: string;
-  code?: string;
-  details?: Record<string, any>;
+  message: string;
+  error?: string;
+  details?: Record<string, unknown>;
 }
 
 export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
@@ -126,15 +126,15 @@ export interface OnboardingCompleteResponse extends BaseApiResponse {
 // Network types
 export interface NetworkRequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  headers?: Record<string, string>;
-  body?: any;
   timeout?: number;
   retries?: number;
+  retryDelay?: number;
+  headers?: Record<string, string>;
+  body?: unknown;
   cache?: boolean;
   cacheTtl?: number;
   priority?: 'low' | 'medium' | 'high';
   tags?: string[];
-  offline?: boolean;
 }
 
 export interface NetworkResponse<T = any> {
@@ -213,38 +213,52 @@ export function isApiErrorResponse(response: ApiResponse): response is ApiErrorR
   return response.success === false && 'error' in response;
 }
 
-export function isValidUser(data: any): data is User {
+export function isValidUser(data: unknown): data is User {
   return (
-    data &&
+    data != null &&
     typeof data === 'object' &&
-    typeof data.id === 'string' &&
-    typeof data.email === 'string' &&
-    typeof data.emailVerified === 'boolean'
+    'id' in data &&
+    'email' in data &&
+    'emailVerified' in data &&
+    typeof (data as any).id === 'string' &&
+    typeof (data as any).email === 'string' &&
+    typeof (data as any).emailVerified === 'boolean'
   );
 }
 
-export function isValidAuthData(data: any): data is AuthData {
+export function isValidAuthData(data: unknown): data is AuthData {
   return (
-    data &&
+    data != null &&
     typeof data === 'object' &&
-    isValidUser(data.user) &&
-    typeof data.token === 'string'
+    'user' in data &&
+    'token' in data &&
+    isValidUser((data as any).user) &&
+    typeof (data as any).token === 'string'
   );
 }
 
-export function isValidOnboardingData(data: any): data is OnboardingData {
+export function isValidOnboardingData(data: unknown): data is OnboardingData {
   return (
-    data &&
+    data != null &&
     typeof data === 'object' &&
-    typeof data.dateOfBirth === 'string' &&
-    Array.isArray(data.goals) &&
-    Array.isArray(data.mentalHealthConcerns) &&
-    Array.isArray(data.preferredActivities) &&
-    typeof data.currentStressLevel === 'number' &&
-    typeof data.sleepHours === 'number' &&
-    typeof data.exerciseFrequency === 'string' &&
-    typeof data.preferredContactMethod === 'string' &&
-    data.notificationPreferences &&
-    typeof data.notificationPreferences === 'object'
+    'dateOfBirth' in data &&
+    'goals' in data &&
+    'mentalHealthConcerns' in data &&
+    'preferredActivities' in data &&
+    'currentStressLevel' in data &&
+    'sleepHours' in data &&
+    'exerciseFrequency' in data &&
+    'preferredContactMethod' in data &&
+    'notificationPreferences' in data &&
+    typeof (data as any).dateOfBirth === 'string' &&
+    Array.isArray((data as any).goals) &&
+    Array.isArray((data as any).mentalHealthConcerns) &&
+    Array.isArray((data as any).preferredActivities) &&
+    typeof (data as any).currentStressLevel === 'number' &&
+    typeof (data as any).sleepHours === 'number' &&
+    typeof (data as any).exerciseFrequency === 'string' &&
+    typeof (data as any).preferredContactMethod === 'string' &&
+    (data as any).notificationPreferences &&
+    typeof (data as any).notificationPreferences === 'object'
   );
 }

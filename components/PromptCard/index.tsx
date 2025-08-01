@@ -22,7 +22,7 @@ export default function PromptCard({
   style,
 }: PromptCardProps) {
   return (
-    <Card style={[styles.card, style]}>
+    <Card style={[styles.card, style] as any}>
       <ThemedView style={[styles.icon, { backgroundColor: iconBg }]}>
         <IconSymbol name={icon} size={24} color={iconColor} />
       </ThemedView>

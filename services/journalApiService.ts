@@ -1,4 +1,5 @@
 import { API_CONFIG } from '../config/api';
+import { logger } from '../utils/secureLogger';
 import AuthService from './authService';
 
 // Configuração da API
@@ -90,7 +91,7 @@ export interface CreateJournalEntryData {
   content: string
   category?: string
   moodTagIds?: string[]
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 export interface UpdateJournalEntryData {
@@ -98,6 +99,40 @@ export interface UpdateJournalEntryData {
   content?: string
   category?: string
   moodTagIds?: string[]
+}
+
+export interface SearchFilters {
+  category?: string
+  dateFrom?: string
+  dateTo?: string
+  moodTags?: string[]
+  sentiment?: 'positive' | 'negative' | 'neutral'
+  keywords?: string[]
+}
+
+export interface JournalPromptFilters {
+  category?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
+  isActive?: boolean
+}
+
+export interface StatsFilters {
+  dateFrom?: string
+  dateTo?: string
+  category?: string
+}
+
+export interface UserRegistrationData {
+  email: string
+  password: string
+  password_confirmation: string
+  firstName: string
+  lastName: string
+  preferences?: {
+    notifications?: boolean
+    theme?: 'light' | 'dark'
+    language?: string
+  }
 }
 
 export interface GetEntriesFilters {
@@ -138,7 +173,7 @@ class JournalApiService {
 
       return await this.handleApiResponse(response)
     } catch (error) {
-      console.error(`Erro na requisição para ${endpoint}:`, error)
+      logger.error('JournalApiService', `Erro na requisição para ${endpoint}`, error instanceof Error ? error : new Error(String(error)))
       throw error
     }
   }
@@ -231,7 +266,7 @@ class JournalApiService {
   /**
    * Busca entradas do journal
    */
-  async searchJournalEntries(query: string, filters: any = {}): Promise<JournalEntry[]> {
+  async searchJournalEntries(query: string, filters: SearchFilters = {}): Promise<JournalEntry[]> {
     const queryParams = new URLSearchParams({ q: query })
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -263,7 +298,7 @@ class JournalApiService {
   /**
    * Busca prompts para o journal
    */
-  async getJournalPrompts(filters: any = {}): Promise<JournalPrompt[]> {
+  async getJournalPrompts(filters: JournalPromptFilters = {}): Promise<JournalPrompt[]> {
     const queryParams = new URLSearchParams()
     
     Object.entries(filters).forEach(([key, value]) => {
@@ -303,12 +338,78 @@ class JournalApiService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      // Test with the health endpoint which doesn't require auth
-      const response = await fetch(`${API_BASE_URL.replace('/api/v1', '')}/health`)
-      return response.ok
+      const response = await this.makeRequest('/health')
+      return response.success
     } catch (error) {
-      console.error('Erro ao testar conexão:', error)
+      logger.error('JournalApiService', 'Erro ao testar conexão', error instanceof Error ? error : new Error(String(error)))
       return false
+    }
+  }
+
+  // Alias methods for compatibility with useJournalApi hook
+  async getEntries(page: number = 1, limit: number = 10, filters: GetEntriesFilters = {}): Promise<{
+    success: boolean;
+    data: { entries: JournalEntry[]; total: number; };
+    message?: string;
+  }> {
+    try {
+      const paginatedFilters = { ...filters, page, limit };
+      const result = await this.getJournalEntries(paginatedFilters);
+      return {
+        success: true,
+        data: {
+          entries: result.entries,
+          total: result.total
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: { entries: [], total: 0 },
+        message: error instanceof Error ? error.message : 'Failed to get entries'
+      };
+    }
+  }
+
+  async createEntry(entryData: CreateJournalEntryData): Promise<JournalEntry> {
+    return this.createJournalEntry(entryData);
+  }
+
+  async updateEntry(id: string, entryData: UpdateJournalEntryData): Promise<JournalEntry> {
+    return this.updateJournalEntry(id, entryData);
+  }
+
+  async deleteEntry(id: string): Promise<boolean> {
+    return this.deleteJournalEntry(id);
+  }
+
+  async getPrompts(category?: string): Promise<JournalPrompt[]> {
+    return this.getJournalPrompts(category ? { category } : {});
+  }
+
+  async getStats(filters?: StatsFilters): Promise<JournalStats> {
+    return this.getJournalStats();
+  }
+
+  async searchEntries(query: string, filters: SearchFilters = {}): Promise<JournalEntry[]> {
+    return this.searchJournalEntries(query, filters);
+  }
+
+  async login(email: string, password: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await AuthService.login({ email, password });
+      return { success: result.success, message: result.message };
+    } catch (error) {
+      return { success: false, message: 'Login failed' };
+    }
+  }
+
+  async register(userData: UserRegistrationData): Promise<{ success: boolean; message: string }> {
+    try {
+      const result = await AuthService.register(userData);
+      return { success: result.success, message: result.message };
+    } catch (error) {
+      return { success: false, message: 'Registration failed' };
     }
   }
 }

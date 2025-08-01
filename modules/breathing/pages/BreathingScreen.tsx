@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +12,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import TipsSection from '@/components/TipsSection';
 import { colors } from '@/constants/theme';
+import { useAccessibilityProps, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { fontSize, spacing } from '@/utils/responsive';
 import BreathingTechniquesSection from '../components/BreathingTechniquesSection';
 import { breathingBenefits, breathingTechniques, breathingTips } from '../constants';
@@ -18,6 +20,10 @@ import { BreathingTechnique } from '../types';
 
 export default function BreathingScreen() {
   const insets = useSafeAreaInsets();
+  
+  // Accessibility hooks
+  const { createButtonProps } = useAccessibilityProps();
+  const { announceNavigation } = useScreenReaderAnnouncement();
 
   const handleSessionPress = (technique: BreathingTechnique) => {
     router.push({
@@ -25,6 +31,14 @@ export default function BreathingScreen() {
       params: { technique: JSON.stringify(technique) },
     });
   };
+
+  // Announce screen content when component mounts
+  useEffect(() => {
+    announceNavigation(
+      'Tela de Respiração',
+      'Página de exercícios de respiração carregada. Aqui você pode escolher entre diferentes técnicas de respiração para relaxar e reduzir o estresse.'
+    );
+  }, [announceNavigation]);
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top + 20 }]}>
@@ -35,10 +49,24 @@ export default function BreathingScreen() {
       
       {/* Custom Header */}
       <View style={styles.customHeader}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => router.back()} 
+          style={styles.backButton}
+          {...createButtonProps(
+            'Voltar',
+            'Toque para voltar à tela anterior',
+            false
+          )}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Respiração</ThemedText>
+        <ThemedText 
+          style={styles.headerTitle}
+          accessibilityRole="header"
+          accessibilityLabel="Título da página: Respiração"
+        >
+          Respiração
+        </ThemedText>
         <View style={styles.headerRight} />
       </View>
       
@@ -46,6 +74,10 @@ export default function BreathingScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        accessible={true}
+        accessibilityRole="scrollbar"
+        accessibilityLabel="Conteúdo da página de respiração"
+        accessibilityHint="Role para ver as técnicas de respiração, benefícios e dicas"
       >
         <SectionIntro title="Respire e relaxe">
           Exercícios de respiração podem ajudar a reduzir o estresse, 

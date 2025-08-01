@@ -36,7 +36,9 @@ export function useJournalEntries() {
           setPage(prev => prev + 1)
         }
         
-        setHasMore(response.data.hasMore || false)
+        // Calculate if there are more entries based on total and current count
+        const currentCount = reset ? newEntries.length : entries.length + newEntries.length
+        setHasMore(currentCount < response.data.total)
       } else {
         throw new Error(response.message || 'Erro ao carregar entradas')
       }
@@ -215,11 +217,8 @@ export function useJournalSearch() {
     try {
       const response = await journalApiService.searchEntries(query, filters)
       
-      if (response.success) {
-        setResults(response.data || [])
-      } else {
-        throw new Error(response.message || 'Erro na busca')
-      }
+      // searchEntries returns JournalEntry[] directly, not a response object
+      setResults(response || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro na busca')
       setResults([])
@@ -251,7 +250,11 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setIsAuthenticated(journalApiService.isAuthenticated())
+    const checkAuth = async () => {
+      const authStatus = await journalApiService.isAuthenticated()
+      setIsAuthenticated(authStatus)
+    }
+    checkAuth()
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
@@ -263,7 +266,7 @@ export function useAuth() {
       
       if (response.success) {
         setIsAuthenticated(true)
-        return response.data
+        return response // Return the whole response instead of response.data
       } else {
         throw new Error(response.message || 'Erro no login')
       }
@@ -285,7 +288,7 @@ export function useAuth() {
       
       if (response.success) {
         setIsAuthenticated(true)
-        return response.data
+        return response // Return the whole response instead of response.data
       } else {
         throw new Error(response.message || 'Erro no registro')
       }

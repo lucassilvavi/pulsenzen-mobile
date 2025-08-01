@@ -10,7 +10,7 @@ type SectionIntroProps = {
 
 export default function SectionIntro({ title, children, style }: SectionIntroProps) {
   return (
-    <Card style={[styles.card, style]}>
+    <Card style={[styles.card, style] as any}>
       <ThemedText type="subtitle">{title}</ThemedText>
       <ThemedText style={styles.text}>{children}</ThemedText>
     </Card>

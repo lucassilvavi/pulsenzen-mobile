@@ -249,39 +249,31 @@ export const commonStyles = StyleSheet.create({
   shadowLarge: shadows.large,
   
   // Spacing helpers
-  marginBottom: {
-    xs: { marginBottom: spacing.xs },
-    sm: { marginBottom: spacing.sm },
-    md: { marginBottom: spacing.md },
-    lg: { marginBottom: spacing.lg },
-    xl: { marginBottom: spacing.xl },
-  },
+  marginBottomXs: { marginBottom: spacing.xs },
+  marginBottomSm: { marginBottom: spacing.sm },
+  marginBottomMd: { marginBottom: spacing.md },
+  marginBottomLg: { marginBottom: spacing.lg },
+  marginBottomXl: { marginBottom: spacing.xl },
   
-  marginTop: {
-    xs: { marginTop: spacing.xs },
-    sm: { marginTop: spacing.sm },
-    md: { marginTop: spacing.md },
-    lg: { marginTop: spacing.lg },
-    xl: { marginTop: spacing.xl },
-  },
+  marginTopXs: { marginTop: spacing.xs },
+  marginTopSm: { marginTop: spacing.sm },
+  marginTopMd: { marginTop: spacing.md },
+  marginTopLg: { marginTop: spacing.lg },
+  marginTopXl: { marginTop: spacing.xl },
   
-  padding: {
-    xs: { padding: spacing.xs },
-    sm: { padding: spacing.sm },
-    md: { padding: spacing.md },
-    lg: { padding: spacing.lg },
-    xl: { padding: spacing.xl },
-  },
+  paddingXs: { padding: spacing.xs },
+  paddingSm: { padding: spacing.sm },
+  paddingMd: { padding: spacing.md },
+  paddingLg: { padding: spacing.lg },
+  paddingXl: { padding: spacing.xl },
   
   // Border radius helpers
-  rounded: {
-    xs: { borderRadius: borderRadius.xs },
-    sm: { borderRadius: borderRadius.sm },
-    md: { borderRadius: borderRadius.md },
-    lg: { borderRadius: borderRadius.lg },
-    xl: { borderRadius: borderRadius.xl },
-    full: { borderRadius: borderRadius.round },
-  },
+  roundedXs: { borderRadius: borderRadius.xs },
+  roundedSm: { borderRadius: borderRadius.sm },
+  roundedMd: { borderRadius: borderRadius.md },
+  roundedLg: { borderRadius: borderRadius.lg },
+  roundedXl: { borderRadius: borderRadius.xl },
+  roundedFull: { borderRadius: borderRadius.round },
 });
 
 export default {

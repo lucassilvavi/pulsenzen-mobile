@@ -2,6 +2,7 @@ import Card from '@/components/base/Card';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAccessibilityProps } from '@/hooks/useAccessibility';
 import { StyleSheet } from 'react-native';
 
 type BreathingTechniqueCardProps = {
@@ -19,19 +20,51 @@ export default function BreathingTechniqueCard({
   description,
   onPress,
 }: BreathingTechniqueCardProps) {
+  const { createButtonProps } = useAccessibilityProps();
+
   return (
-    <Card style={styles.card} onPress={onPress}>
+    <Card 
+      style={styles.card} 
+      onPress={onPress}
+      {...createButtonProps(
+        `${title}, ${duration}`,
+        `${description}. Toque para iniciar a sessão de ${title}.`,
+        false
+      )}
+    >
       <ThemedView style={styles.header}>
-        <ThemedView style={[styles.iconCircle, { backgroundColor: icon.bg }]}>
+        <ThemedView 
+          style={[styles.iconCircle, { backgroundColor: icon.bg }]}
+          accessibilityElementsHidden={true}
+        >
           <IconSymbol name={icon.name} size={24} color={icon.color} />
         </ThemedView>
         <ThemedView style={styles.info}>
-          <ThemedText style={styles.title}>{title}</ThemedText>
-          <ThemedText style={styles.duration}>{duration}</ThemedText>
+          <ThemedText 
+            style={styles.title}
+            accessibilityElementsHidden={true}
+          >
+            {title}
+          </ThemedText>
+          <ThemedText 
+            style={styles.duration}
+            accessibilityElementsHidden={true}
+          >
+            {duration}
+          </ThemedText>
         </ThemedView>
-        <IconSymbol name="chevron.right" size={20} color="#757575" />
+        <IconSymbol 
+          name="chevron.right" 
+          size={20} 
+          color="#757575"
+        />
       </ThemedView>
-      <ThemedText style={styles.description}>{description}</ThemedText>
+      <ThemedText 
+        style={styles.description}
+        accessibilityElementsHidden={true}
+      >
+        {description}
+      </ThemedText>
     </Card>
   );
 }

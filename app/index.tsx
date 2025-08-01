@@ -4,6 +4,7 @@ import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
 import StreakSection from '@/components/StreakSection';
 import { ThemedView } from '@/components/ThemedView';
+import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { MoodSelector } from '@/modules/mood';
 import { ProfileService } from '@/modules/profile';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [userName, setUserName] = useState('');
+  
+  // Accessibility hooks
+  const accessibilityState = useAccessibilityState();
+  const { announceNavigation } = useScreenReaderAnnouncement();
 
   useEffect(() => {
     (async () => {
@@ -22,6 +27,16 @@ export default function HomeScreen() {
       setUserName(profile?.name || '');
     })();
   }, []);
+
+  // Announce screen content when loading
+  useEffect(() => {
+    if (userName && accessibilityState?.screenReaderEnabled) {
+      announceNavigation(
+        'Tela Principal',
+        `Bem-vindo, ${userName}. Tela principal do PulseZen carregada. Aqui você pode selecionar seu humor, ver citações diárias e acessar exercícios de respiração.`
+      );
+    }
+  }, [userName, accessibilityState?.screenReaderEnabled, announceNavigation]);
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
@@ -34,6 +49,10 @@ export default function HomeScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        accessible={true}
+        accessibilityRole="scrollbar"
+        accessibilityLabel="Conteúdo principal da tela"
+        accessibilityHint="Role para navegar pelas seções da tela principal"
       >
         <HeaderSection userName={userName} />
         <MoodSelector />

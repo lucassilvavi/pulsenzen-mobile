@@ -25,6 +25,18 @@ export function useNavigationLogic() {
   // Use ref to prevent multiple navigation calls
   const navigationInProgress = useRef(false);
   const lastRoute = useRef<string>('');
+  const cleanupTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+
+  // Cleanup function for all timeouts
+  const cleanupAllTimeouts = () => {
+    cleanupTimeouts.current.forEach(timeout => clearTimeout(timeout));
+    cleanupTimeouts.current = [];
+  };
+
+  // Add timeout to cleanup list
+  const addTimeout = (timeout: ReturnType<typeof setTimeout>) => {
+    cleanupTimeouts.current.push(timeout);
+  };
 
   // Check onboarding status
   const checkOnboardingStatus = async (): Promise<boolean> => {
@@ -87,10 +99,11 @@ export function useNavigationLogic() {
       
       await router.replace(route as any);
       
-      // Reset navigation lock after a delay
-      setTimeout(() => {
+      // Reset navigation lock after a delay with cleanup tracking
+      const timeoutId = setTimeout(() => {
         navigationInProgress.current = false;
       }, 1000);
+      addTimeout(timeoutId);
       
     } catch (error) {
       logger.error('NavigationHook', 'Navigation failed', error as Error, {
@@ -151,6 +164,15 @@ export function useNavigationLogic() {
   const forceNavigation = (route: string, reason: string = 'Force navigation') => {
     navigateToRoute(route, reason);
   };
+
+  // Cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      cleanupAllTimeouts();
+      navigationInProgress.current = false;
+      logger.debug('NavigationHook', 'Cleaning up navigation hook resources');
+    };
+  }, []);
 
   return {
     isNavigationReady: navigationState.isReady,

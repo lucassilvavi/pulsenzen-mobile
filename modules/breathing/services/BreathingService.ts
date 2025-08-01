@@ -15,7 +15,7 @@ export class BreathingService {
   // Save a breathing session
   static async saveSession(session: BreathingSession): Promise<void> {
     // In a real app, this would save to API or local storage
-    console.log('Saving breathing session:', session);
+    // console.log('Saving breathing session:', session);
     return Promise.resolve();
   }
 

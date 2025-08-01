@@ -4,6 +4,7 @@
  */
 
 import { CopingStrategy, EmergencyContact, SOSSession, SOSStats } from '../types';
+import { logger } from '../../../utils/secureLogger';
 
 // TODO: Criar models quando necessário
 interface ApiSOSResponse<T> {
@@ -69,7 +70,7 @@ class SOSApiService {
 
       return await response.json();
     } catch (error) {
-      console.error('SOS API Request failed:', error);
+      logger.error('SOSApiService', 'SOS API Request failed', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -129,7 +130,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getCopingStrategies();
     } catch (error) {
-      console.error('Failed to fetch coping strategies:', error);
+      logger.error('SOSApiService', 'Failed to fetch coping strategies', error instanceof Error ? error : new Error(String(error)));
       // Fallback para service mock
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getCopingStrategies();
@@ -147,7 +148,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getCopingStrategy(id);
     } catch (error) {
-      console.error('Failed to fetch coping strategy:', error);
+      logger.error('SOSApiService', 'Failed to fetch coping strategy', error instanceof Error ? error : new Error(String(error)));
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getCopingStrategy(id);
     }
@@ -164,7 +165,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getEmergencyContacts();
     } catch (error) {
-      console.error('Failed to fetch emergency contacts:', error);
+      logger.error('SOSApiService', 'Failed to fetch emergency contacts', error instanceof Error ? error : new Error(String(error)));
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getEmergencyContacts();
     }
@@ -185,7 +186,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.startSession(strategyId);
     } catch (error) {
-      console.error('Failed to start SOS session:', error);
+      logger.error('SOSApiService', 'Failed to start SOS session', error instanceof Error ? error : new Error(String(error)));
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.startSession(strategyId);
     }
@@ -206,7 +207,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.completeSession(sessionId, rating, notes);
     } catch (error) {
-      console.error('Failed to complete SOS session:', error);
+      logger.error('SOSApiService', 'Failed to complete SOS session', error instanceof Error ? error : new Error(String(error)));
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.completeSession(sessionId, rating, notes);
     }
@@ -223,7 +224,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getSOSStats();
     } catch (error) {
-      console.error('Failed to fetch SOS stats:', error);
+      logger.error('SOSApiService', 'Failed to fetch SOS stats', error instanceof Error ? error : new Error(String(error)));
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getSOSStats();
     }
@@ -240,7 +241,7 @@ class SOSApiService {
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getSessions();
     } catch (error) {
-      console.error('Failed to fetch SOS sessions:', error);
+      logger.error('SOSApiService', 'Failed to fetch SOS sessions', error instanceof Error ? error : new Error(String(error)));
       const SOSService = (await import('./SOSService')).default;
       return await SOSService.getSessions();
     }

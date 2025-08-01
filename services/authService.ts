@@ -409,7 +409,7 @@ class AuthService {
       
       return true;
     } catch (error) {
-      console.error('Check auth error:', error);
+      logger.error('AuthService', 'Check auth error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }
@@ -511,8 +511,7 @@ class AuthService {
       logger.debug("AuthService", 'Token retrieval attempt:', token ? `Token found (length: ${token.length})` : 'No token found');
       return token;
     } catch (error) {
-      console.error('Get token error:', error);
-      logger.error('AuthService', 'Failed to retrieve token', error as Error);
+      logger.error('AuthService', 'Failed to retrieve token', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -526,8 +525,7 @@ class AuthService {
       logger.debug("AuthService", 'Refresh token retrieval attempt:', refreshToken ? `Refresh token found (length: ${refreshToken.length})` : 'No refresh token found');
       return refreshToken;
     } catch (error) {
-      console.error('Get refresh token error:', error);
-      logger.error('AuthService', 'Failed to retrieve refresh token', error as Error);
+      logger.error('AuthService', 'Failed to retrieve refresh token', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -540,7 +538,7 @@ class AuthService {
       const userData = await secureStorage.getItem<string>(this.USER_KEY);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Get user error:', error);
+      logger.error('AuthService', 'Failed to retrieve user data', error instanceof Error ? error : new Error(String(error)));
       return null;
     }
   }
@@ -556,7 +554,7 @@ class AuthService {
       }
       await secureStorage.setItem(this.USER_KEY, JSON.stringify(user));
     } catch (error) {
-      console.error('Save auth data error:', error);
+      logger.error('AuthService', 'Failed to save auth data', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -570,7 +568,7 @@ class AuthService {
       await secureStorage.removeItem(this.USER_KEY);
       await secureStorage.removeItem('onboardingDone'); // Also clear onboarding status on logout
     } catch (error) {
-      console.error('Clear auth data error:', error);
+      logger.error('AuthService', 'Failed to clear auth data', error instanceof Error ? error : new Error(String(error)));
     }
   }
 
@@ -824,7 +822,7 @@ class AuthService {
       
       logger.debug("AuthService", 'Onboarding marked as complete successfully');
     } catch (error) {
-      console.error('Mark onboarding complete error:', error);
+      logger.error('AuthService', 'Mark onboarding complete error', error instanceof Error ? error : new Error(String(error)));
       
       // Fallback: try to save directly to AsyncStorage without encryption
       try {
@@ -833,7 +831,7 @@ class AuthService {
         await AsyncStorage.setItem('onboarding_done', 'true');
         logger.debug("AuthService", 'Fallback: Onboarding marked as complete in AsyncStorage');
       } catch (fallbackError) {
-        console.error('Fallback storage also failed:', fallbackError);
+        logger.error('AuthService', 'Fallback storage also failed', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
       }
     }
   }

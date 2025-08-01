@@ -13,6 +13,7 @@ import StatsBar from '@/components/StatsBar';
 import { ThemedText } from '@/components/ThemedText';
 import TipsSection from '@/components/TipsSection';
 import { colors } from '@/constants/theme';
+import { useAccessibilityProps, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { fontSize, spacing } from '@/utils/responsive';
 
 import { JournalEntriesList, JournalEntryView } from '../components';
@@ -27,15 +28,25 @@ export default function JournalScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [stats, setStats] = useState({ totalEntries: 0, uniqueDays: 0, percentPositive: 0 });
 
+  // Accessibility hooks
+  const { createButtonProps } = useAccessibilityProps();
+  const { announceNavigation, announceActionComplete } = useScreenReaderAnnouncement();
+
   // Carrega entradas e stats ao montar e ao retornar para a tela
   useEffect(() => {
     const loadEntries = async () => {
       const entries = await JournalService.getEntries();
       setJournalEntries(entries);
       setStats(JournalStatsService.calculateStats(entries));
+      
+      // Announce page content for screen readers
+      announceNavigation(
+        'Tela do Diário',
+        `Página do diário carregada. Você tem ${entries.length} entradas no seu diário. Use a barra de pesquisa para encontrar entradas específicas ou toque no botão adicionar para criar uma nova entrada.`
+      );
     };
     loadEntries();
-  }, []);
+  }, [announceNavigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,6 +64,11 @@ export default function JournalScreen() {
     if (entry) {
       setSelectedEntry(entry);
       setModalVisible(true);
+      announceActionComplete(
+        'Abrir entrada',
+        'success',
+        `Entrada do diário de ${new Date(entry.date).toLocaleDateString('pt-BR')} aberta.`
+      );
     }
   };
 

@@ -23,6 +23,9 @@ export class MusicService {
   private listeners = new Set<(state: any) => void>();
   private currentTrack: MusicTrack | null = null;
   private isInitialized = false;
+  private isDestroyed = false; // Track if service has been destroyed
+  private statusUpdateCallback: ((status: any) => void) | null = null;
+  private cleanupPromise: Promise<void> | null = null;
 
   constructor() {
     this.audioEngine = new AudioEngine();
@@ -32,17 +35,24 @@ export class MusicService {
   }
 
   private async initialize(): Promise<void> {
+    if (this.isDestroyed) return;
+    
     try {
       logger.info('MusicService', 'Initializing music service');
       this.isInitialized = true;
       logger.info('MusicService', 'Music service initialized successfully');
     } catch (error) {
-      logger.error('MusicService', 'Failed to initialize music service', error instanceof Error ? error : undefined);
+      if (!this.isDestroyed) {
+        logger.error('MusicService', 'Failed to initialize music service', error instanceof Error ? error : undefined);
+      }
     }
   }
 
   private setupAudioEngineCallbacks(): void {
-    this.audioEngine.setOnStatusUpdate((status) => {
+    // Store reference to callback for cleanup
+    this.statusUpdateCallback = (status) => {
+      if (this.isDestroyed) return; // Prevent callbacks after destruction
+      
       // Notify all listeners with the current state
       this.notifyListeners();
       
@@ -50,10 +60,14 @@ export class MusicService {
       if (status.state === AudioState.STOPPED && this.currentTrack) {
         this.handleTrackFinished();
       }
-    });
+    };
+
+    this.audioEngine.setOnStatusUpdate(this.statusUpdateCallback);
   }
 
   private async handleTrackFinished(): Promise<void> {
+    if (this.isDestroyed) return; // Prevent operations after destruction
+    
     logger.debug('MusicService', 'Track finished, handling repeat/next logic');
     
     const repeatMode = this.playlistManager.getRepeatMode();
@@ -61,19 +75,19 @@ export class MusicService {
     switch (repeatMode) {
       case 'one':
         // Repeat current track
-        if (this.currentTrack) {
+        if (this.currentTrack && !this.isDestroyed) {
           await this.playTrack(this.currentTrack);
         }
         break;
       
       case 'all':
         // Go to next track or loop to beginning
-        if (this.playlistManager.hasNext()) {
+        if (!this.isDestroyed && this.playlistManager.hasNext()) {
           await this.playNext();
-        } else if (this.playlistManager.getPlaylist().length > 1) {
+        } else if (!this.isDestroyed && this.playlistManager.getPlaylist().length > 1) {
           // Loop to beginning
           const firstTrack = this.playlistManager.jumpToIndex(0);
-          if (firstTrack) {
+          if (firstTrack && !this.isDestroyed) {
             await this.playTrack(firstTrack);
           }
         }
@@ -82,9 +96,9 @@ export class MusicService {
       case 'off':
       default:
         // Play next if available, otherwise stop
-        if (this.playlistManager.hasNext()) {
+        if (!this.isDestroyed && this.playlistManager.hasNext()) {
           await this.playNext();
-        } else {
+        } else if (!this.isDestroyed) {
           logger.info('MusicService', 'Reached end of playlist, stopping playback');
         }
         break;
@@ -99,6 +113,10 @@ export class MusicService {
     playlistName?: string, 
     playlistId?: string
   ): Promise<void> {
+    if (this.isDestroyed) {
+      throw new Error('MusicService has been destroyed');
+    }
+
     logger.info('MusicService', 'Playing track', { 
       trackId: track.id, 
       title: track.title,
@@ -115,8 +133,19 @@ export class MusicService {
         this.playlistManager.setPlaylist([track], 0);
       }
 
+      // Check if still active before proceeding
+      if (this.isDestroyed) {
+        throw new Error('MusicService was destroyed during operation');
+      }
+
       // Load and play the track
       await this.audioEngine.load(track);
+      
+      // Check again before playing
+      if (this.isDestroyed) {
+        throw new Error('MusicService was destroyed during operation');
+      }
+      
       await this.audioEngine.play();
       
       this.currentTrack = track;
@@ -132,10 +161,12 @@ export class MusicService {
       });
 
     } catch (error) {
-      logger.error('MusicService', 'Failed to play track', error instanceof Error ? error : undefined, {
-        trackId: track.id,
-        title: track.title,
-      });
+      if (!this.isDestroyed) {
+        logger.error('MusicService', 'Failed to play track', error instanceof Error ? error : undefined, {
+          trackId: track.id,
+          title: track.title,
+        });
+      }
       throw error;
     }
   }
@@ -308,6 +339,11 @@ export class MusicService {
 
   // Listener management
   addPlaybackListener(listener: (state: any) => void): () => void {
+    if (this.isDestroyed) {
+      // Return no-op cleanup function if service is destroyed
+      return () => {};
+    }
+    
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
@@ -315,12 +351,20 @@ export class MusicService {
   }
 
   private notifyListeners(): void {
+    if (this.isDestroyed) return; // Prevent notifications after destruction
+    
     const state = this.getPlaybackState();
-    this.listeners.forEach(listener => {
+    
+    // Create a copy of listeners set to avoid issues if listeners are modified during iteration
+    const listenersCopy = Array.from(this.listeners);
+    
+    listenersCopy.forEach(listener => {
       try {
         listener(state);
       } catch (error) {
         logger.error('MusicService', 'Error in playback listener', error instanceof Error ? error : undefined);
+        // Remove problematic listener to prevent future errors
+        this.listeners.delete(listener);
       }
     });
   }
@@ -417,19 +461,68 @@ export class MusicService {
   }
 
   async cleanup(): Promise<void> {
+    // Prevent multiple cleanup calls
+    if (this.cleanupPromise) {
+      return this.cleanupPromise;
+    }
+
+    this.cleanupPromise = this._performCleanup();
+    return this.cleanupPromise;
+  }
+
+  private async _performCleanup(): Promise<void> {
+    if (this.isDestroyed) {
+      return; // Already cleaned up
+    }
+
     try {
       logger.info('MusicService', 'Cleaning up music service');
       
-      await this.audioEngine.cleanup();
-      this.playlistManager.clear();
+      // Mark as destroyed to prevent further operations
+      this.isDestroyed = true;
+      
+      // Stop audio playback first
+      try {
+        await this.audioEngine.stop();
+      } catch (error) {
+        logger.error('MusicService', 'Error stopping audio during cleanup', error instanceof Error ? error : undefined);
+      }
+      
+      // Clean up audio engine
+      try {
+        await this.audioEngine.cleanup();
+      } catch (error) {
+        logger.error('MusicService', 'Error cleaning up audio engine', error instanceof Error ? error : undefined);
+      }
+      
+      // Clear playlist manager
+      try {
+        this.playlistManager.clear();
+      } catch (error) {
+        logger.error('MusicService', 'Error clearing playlist manager', error instanceof Error ? error : undefined);
+      }
+      
+      // Clear all listeners
       this.listeners.clear();
+      
+      // Clear callback reference
+      this.statusUpdateCallback = null;
+      
+      // Clear current track reference
       this.currentTrack = null;
+      
+      // Mark as not initialized
       this.isInitialized = false;
       
       logger.info('MusicService', 'Music service cleanup completed');
     } catch (error) {
       logger.error('MusicService', 'Error during cleanup', error instanceof Error ? error : undefined);
     }
+  }
+
+  // Check if service is still active
+  isActive(): boolean {
+    return this.isInitialized && !this.isDestroyed;
   }
 }
 

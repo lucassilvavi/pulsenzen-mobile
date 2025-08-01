@@ -6,6 +6,7 @@ import { colors } from '@/constants/theme';
 import MusicService from '@/modules/music/services/MusicService';
 import { MusicCategory, MusicTrack } from '@/modules/music/types';
 import { fontSize, spacing } from '@/utils/responsive';
+import { logger } from '@/utils/secureLogger';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -61,7 +62,7 @@ export default function CategoryScreen() {
       setCategory(foundCategory);
       setTracks(categoryTracks);
     } catch (error) {
-      console.error('Error loading category data:', error);
+      logger.error('CategoryScreen', 'Error loading category data', error instanceof Error ? error : new Error(String(error)));
       Alert.alert('Erro', 'Não foi possível carregar a categoria');
     } finally {
       setIsLoading(false);
@@ -248,7 +249,7 @@ export default function CategoryScreen() {
           </ThemedText>
           
           <TouchableOpacity
-            onPress={() => console.log('Search')}
+            onPress={() => logger.debug('CategoryScreen', 'Search button pressed')}
             style={styles.searchButton}
           >
             <Ionicons name="search" size={24} color={colors.neutral.white} />

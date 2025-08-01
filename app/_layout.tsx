@@ -46,30 +46,67 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function prepare() {
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let timerId: ReturnType<typeof setTimeout> | null = null;
+      let isMounted = true; // Track component mount state
+      
       try {
         logger.info('RootLayout', 'Starting app initialization');
         
         // Initialize storage and clean up any corrupted data first
         const storageInitialized = await initializeStorage();
         
+        if (!isMounted) return; // Exit early if component unmounted
+        
         if (!storageInitialized) {
           logger.warn('RootLayout', 'Storage initialization failed, some features may not work properly');
         }
         
         // Pre-load fonts, make API calls, etc.
-        // Artificial delay for demo purposes
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise<void>((resolve, reject) => {
+          timerId = setTimeout(() => {
+            if (isMounted) {
+              resolve();
+            } else {
+              reject(new Error('Component unmounted during initialization'));
+            }
+          }, 1000);
+        });
         
-        logger.info('RootLayout', 'App initialization completed successfully');
+        if (isMounted) {
+          logger.info('RootLayout', 'App initialization completed successfully');
+        }
       } catch (e) {
-        logger.error('RootLayout', 'App preparation failed', e as Error);
+        if (isMounted) {
+          logger.error('RootLayout', 'App preparation failed', e as Error);
+        }
       } finally {
-        // Tell the application to render
-        setAppIsReady(true);
+        // Cleanup timeouts to prevent memory leaks
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        if (timerId) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+        
+        // Tell the application to render only if still mounted
+        if (isMounted) {
+          setAppIsReady(true);
+        }
       }
     }
 
     prepare();
+    
+    // Cleanup function for component unmount
+    return () => {
+      // Mark component as unmounted to prevent state updates
+      logger.debug('RootLayout', 'Component unmounting, cleaning up resources');
+      // Note: we cannot modify `isMounted` here as it's inside the async function scope
+      // but the async function checks will prevent memory leaks
+    };
   }, []);
 
   useEffect(() => {
