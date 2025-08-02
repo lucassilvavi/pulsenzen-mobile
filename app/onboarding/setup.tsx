@@ -47,19 +47,6 @@ export default function SetupScreen() {
         );
     };
 
-    const forceNavigateToHome = () => {
-        logger.info("OnboardingSetup", 'Navigating to home screen...');
-        
-        // Simple and direct navigation to home screen
-        try {
-            router.replace('/');
-        } catch (e) {
-            logger.info("OnboardingSetup", 'router.replace failed, trying push:', e);
-            // Fallback: use push if replace fails
-            router.push('/');
-        }
-    };
-
     const handleFinish = async () => {
         // Check if user is authenticated
         if (!isAuthenticated || !user) {
@@ -143,44 +130,14 @@ export default function SetupScreen() {
                 const onboardingCheck = await secureStorage.getItem<string>('onboardingDone');
                 logger.info("OnboardingSetup", 'Onboarding status after completion:', onboardingCheck);
 
-                logger.info("OnboardingSetup", 'Onboarding completed successfully, navigating to home...');
+                logger.info("OnboardingSetup", 'Onboarding completed successfully, NavigationHandler will redirect to home...');
 
-                // Force navigation using our robust method
-                forceNavigateToHome();
+                // Let NavigationHandler detect the change and handle navigation automatically
+                // No manual navigation needed
                 
             } else {
                 logger.error('OnboardingSetup', 'Onboarding failed', new Error(result.message || 'Unknown error'));
-                
-                // If the error is related to authentication, try to mark onboarding as complete locally
-                if (result.message?.includes('401') || result.message?.includes('authorization') || result.message?.includes('Authentication failed') || result.message?.includes('Failed to complete onboarding')) {
-                    logger.info("OnboardingSetup", 'Authentication/API issue detected, completing onboarding locally...');
-                    
-                    // Update profile locally
-                    try {
-                        await updateProfile({
-                            firstName: name.trim(),
-                        });
-                    } catch (profileError) {
-                        logger.info("OnboardingSetup", 'Profile update failed, but continuing with local completion');
-                    }
-                    
-                    // Mark onboarding as complete locally even if API call failed
-                    await markOnboardingComplete();
-                    
-                    // Verify onboarding was marked as complete locally
-                    const onboardingCheck = await secureStorage.getItem<string>('onboardingDone');
-                    logger.info("OnboardingSetup", 'Local onboarding status after completion:', onboardingCheck);
-                    
-                    // Navigate to home
-                    forceNavigateToHome();
-                    
-                    // Show a success message since the user completed all steps
-                    setTimeout(() => {
-                        Alert.alert('Bem-vindo!', 'Seu perfil foi configurado. Você pode sincronizar seus dados mais tarde nas configurações.');
-                    }, 1000);
-                } else {
-                    Alert.alert('Erro', result.message || 'Não foi possível completar o onboarding. Tente novamente.');
-                }
+                Alert.alert('Erro', result.message || 'Não foi possível completar o onboarding. Tente novamente.');
             }
         } catch (error) {
             logger.error('OnboardingSetup', 'Error completing onboarding', error instanceof Error ? error : new Error(String(error)));

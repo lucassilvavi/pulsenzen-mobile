@@ -86,12 +86,32 @@ class SimpleNetworkManager {
           status
         );
 
+        // Capture error response data for better debugging
+        let errorData = null;
+        try {
+          errorData = error.response?.data;
+        } catch (e) {
+          // Ignore parsing errors
+        }
+
         logger.error('NetworkManager', 'Request failed', error, {
           method: error.config?.method?.toUpperCase(),
           url: this.sanitizeUrl(error.config?.url || ''),
           status,
           duration,
+          responseData: errorData, // Add response data for debugging
         });
+
+        // For client errors (4xx) with response data, return the response instead of rejecting
+        // This allows the calling code to handle the error response properly
+        if (error.response && status >= 400 && status < 500 && errorData) {
+          return Promise.resolve({
+            ...error.response,
+            success: false,
+            error: errorData.error || errorData.message || 'Request failed',
+            data: errorData
+          });
+        }
 
         return Promise.reject(error);
       }
@@ -218,13 +238,27 @@ class SimpleNetworkManager {
     } catch (error: any) {
       const duration = Date.now() - startTime;
       const status = error.response?.status || 0;
+      const errorData = error.response?.data;
+
+      // Try to extract error message from API response
+      let errorMessage = this.getErrorMessage(error);
+      
+      // If API returned error details, use them
+      if (errorData && typeof errorData === 'object') {
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+      }
 
       throw {
         success: false,
-        error: this.getErrorMessage(error),
+        error: errorMessage,
         status,
         duration,
         retryCount: error.config?.['axios-retry']?.retryCount || 0,
+        data: errorData, // Include error response data
       };
     }
   }

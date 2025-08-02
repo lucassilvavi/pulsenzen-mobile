@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
 import authService from '../../services/authService';
-import { networkManager } from '../../utils/networkManager';
+import { networkManager } from '../../utils/simpleNetworkManager';
 import { secureStorage } from '../../utils/secureStorage';
 
 // Mock dependencies
-jest.mock('../../utils/networkManager');
+jest.mock('../../utils/simpleNetworkManager');
 jest.mock('../../utils/secureStorage');
 jest.mock('../../utils/secureLogger');
 
@@ -174,7 +174,7 @@ describe('AuthService', () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Failed to register. Please try again.');
+      expect(result.message).toBe('Email already exists'); // Now returns specific API error message
     });
   });
 

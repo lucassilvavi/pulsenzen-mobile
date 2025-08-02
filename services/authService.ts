@@ -1,6 +1,6 @@
 import { appConfig } from '../config/appConfig';
 import { APP_CONSTANTS } from '../constants/appConstants';
-import { networkManager } from '../utils/networkManager';
+import { networkManager } from '../utils/simpleNetworkManager';
 import { logger } from '../utils/secureLogger';
 import { secureStorage } from '../utils/secureStorage';
 
@@ -136,14 +136,28 @@ class AuthService {
           };
         }
       } else {
-        logger.warn('AuthService', 'Registration failed - no data in response', { 
-          status: response.status 
+        // Handle error responses (400, 422, etc.) - now properly handled by simpleNetworkManager
+        let errorMessage = 'Registration failed';
+        
+        if (response.data) {
+          // Try to get the most specific error message
+          // Priority: error field first (more specific), then message field
+          errorMessage = response.data.error || response.data.message || errorMessage;
+        } else if (response.error) {
+          errorMessage = response.error;
+        }
+        
+        logger.warn('AuthService', 'Registration failed - API error', { 
+          status: response.status,
+          error: errorMessage,
+          errorData: response.data,
+          rawError: response.error
         });
 
         return {
           success: false,
-          error: 'Registration failed',
-          message: 'Failed to register. Please try again.',
+          error: errorMessage,
+          message: errorMessage,
         };
       }
     } catch (error) {
@@ -208,14 +222,19 @@ class AuthService {
           };
         }
       } else {
-        logger.warn('AuthService', 'Login failed - no data in response', { 
-          status: response.status 
+        // Handle error responses (400, 401, 422, etc.)
+        const errorMessage = response.error || response.data?.message || response.data?.error || 'Login failed';
+        
+        logger.warn('AuthService', 'Login failed - API error', { 
+          status: response.status,
+          error: errorMessage,
+          errorData: response.data
         });
 
         return {
           success: false,
-          error: 'Login failed',
-          message: 'Invalid credentials',
+          error: errorMessage,
+          message: errorMessage,
         };
       }
     } catch (error) {
@@ -553,6 +572,12 @@ class AuthService {
         await secureStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
       }
       await secureStorage.setItem(this.USER_KEY, JSON.stringify(user));
+      
+      // Save onboarding status if available in user data
+      if (user.onboardingComplete !== undefined) {
+        await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, user.onboardingComplete ? 'true' : 'false');
+        logger.info('AuthService', 'Onboarding status saved from user data', { onboardingComplete: user.onboardingComplete });
+      }
     } catch (error) {
       logger.error('AuthService', 'Failed to save auth data', error instanceof Error ? error : new Error(String(error)));
     }

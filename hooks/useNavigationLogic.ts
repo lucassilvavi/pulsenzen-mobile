@@ -12,7 +12,7 @@ interface NavigationState {
 }
 
 export function useNavigationLogic() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, setOnAuthStateChangeCallback } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
@@ -119,6 +119,18 @@ export function useNavigationLogic() {
   useEffect(() => {
     checkOnboardingStatus();
   }, [isAuthenticated]);
+
+  // Setup callback for auth state changes
+  useEffect(() => {
+    if (setOnAuthStateChangeCallback) {
+      setOnAuthStateChangeCallback(() => {
+        // Force navigation check after callback
+        setTimeout(() => {
+          checkOnboardingStatus();
+        }, 100);
+      });
+    }
+  }, [setOnAuthStateChangeCallback, checkOnboardingStatus]);
 
   // Main navigation logic
   useEffect(() => {

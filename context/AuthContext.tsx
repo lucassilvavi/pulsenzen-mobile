@@ -21,6 +21,7 @@ interface AuthContextType {
   completeOnboarding: (onboardingData: OnboardingData) => Promise<{ success: boolean; message: string }>;
   updateProfile: (profileData: any) => Promise<{ success: boolean; message: string }>;
   markOnboardingComplete: () => Promise<void>;
+  setOnAuthStateChangeCallback?: (callback: (() => void) | undefined) => void; // Function to set callback
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [onAuthStateChange, setOnAuthStateChange] = useState<(() => void) | undefined>();
 
   const isAuthenticated = useMemo(() => !!user, [user]);
 
@@ -68,6 +70,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (result.success && result.data) {
         setUser(result.data.user);
+        
+        // Notify navigation hook to refresh onboarding status
+        if (onAuthStateChange) {
+          onAuthStateChange();
+        }
+        
         return { success: true, message: 'Login realizado com sucesso!' };
       } else {
         return { success: false, message: result.message || 'Erro no login' };
@@ -176,6 +184,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (user) {
         await AuthService.markOnboardingComplete(user.id);
         setUser({ ...user, onboardingComplete: true });
+        
+        // Notify navigation hook to refresh onboarding status
+        if (onAuthStateChange) {
+          onAuthStateChange();
+        }
       }
     } catch (error) {
       console.error('Mark onboarding complete error:', error);
@@ -200,6 +213,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     completeOnboarding,
     updateProfile,
     markOnboardingComplete,
+    setOnAuthStateChangeCallback: setOnAuthStateChange,
   });
 
   return (

@@ -5,7 +5,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import { Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 
 const { height } = Dimensions.get('window');
@@ -48,10 +47,6 @@ export default function BenefitsScreen() {
 
     const handleNext = () => {
         router.push('/onboarding/features');
-    };
-
-    const handleBack = () => {
-        router.back();
     };
 
     return (
@@ -102,13 +97,6 @@ export default function BenefitsScreen() {
                 {/* Bottom Actions */}
                 <View style={styles.bottomContainer}>
                     <View style={styles.buttonRow}>
-                        <Button
-                            label="Voltar"
-                            variant="outline"
-                            size="large"
-                            onPress={handleBack}
-                            style={styles.backButton}
-                        />
                         <Button
                             label="Continuar"
                             variant="primary"

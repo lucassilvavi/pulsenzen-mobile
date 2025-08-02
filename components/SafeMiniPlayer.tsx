@@ -6,15 +6,15 @@ import React from 'react';
  * SafeMiniPlayer - Wrapper that only renders MiniPlayer when context is available
  */
 const SafeMiniPlayer: React.FC = () => {
-  try {
-    // Test if context is available
-    const { state } = useMusic();
-    return <MiniPlayer />;
-  } catch (error) {
-    // Context not available, don't render
-    console.warn('MusicProvider not available, MiniPlayer not rendered');
+  // Always call hooks at the top level - React rule
+  const musicContext = useMusic();
+  
+  // If context is not available, don't render
+  if (!musicContext) {
     return null;
   }
+
+  return <MiniPlayer />;
 };
 
 export default SafeMiniPlayer;
