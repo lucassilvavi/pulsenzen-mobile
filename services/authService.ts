@@ -1,8 +1,8 @@
 import { appConfig } from '../config/appConfig';
 import { APP_CONSTANTS } from '../constants/appConstants';
-import { networkManager } from '../utils/simpleNetworkManager';
 import { logger } from '../utils/secureLogger';
 import { secureStorage } from '../utils/secureStorage';
+import { networkManager } from '../utils/simpleNetworkManager';
 
 const API_BASE_URL = appConfig.getApiUrl();
 

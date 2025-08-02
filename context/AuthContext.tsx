@@ -1,6 +1,6 @@
-import AuthService, { OnboardingData, User, UserProfile } from '@/services/authService';
 import { useMemoizedContextValue, useStableCallback } from '@/hooks/usePerformanceOptimization';
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import AuthService, { OnboardingData, User, UserProfile } from '@/services/authService';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 interface AuthContextType {
   user: User | null;

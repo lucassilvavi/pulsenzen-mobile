@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import authService from '../../services/authService';
-import { networkManager } from '../../utils/simpleNetworkManager';
 import { secureStorage } from '../../utils/secureStorage';
+import { networkManager } from '../../utils/simpleNetworkManager';
 
 // Mock dependencies
 jest.mock('../../utils/simpleNetworkManager');
