@@ -37,6 +37,7 @@ export default function SetupScreen() {
     const [age, setAge] = useState('');
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedExperience, setSelectedExperience] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleGoalToggle = (goalId: string) => {
         setSelectedGoals(prev =>
@@ -87,6 +88,8 @@ export default function SetupScreen() {
             Alert.alert('Experiência obrigatória', 'Selecione seu nível de experiência.');
             return;
         }
+        
+        setIsLoading(true);
         
         try {
             logger.info("OnboardingSetup", 'Starting onboarding completion...');
@@ -182,6 +185,8 @@ export default function SetupScreen() {
         } catch (error) {
             logger.error('OnboardingSetup', 'Error completing onboarding', error instanceof Error ? error : new Error(String(error)));
             Alert.alert('Erro', 'Não foi possível salvar suas preferências. Tente novamente.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -350,6 +355,8 @@ export default function SetupScreen() {
                             size="large"
                             onPress={handleFinish}
                             style={styles.finishButton}
+                            loading={isLoading}
+                            disabled={isLoading}
                         />
                     </View>
 

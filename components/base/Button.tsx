@@ -1,7 +1,7 @@
 import { ThemedText } from '@/components/ThemedText';
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { StyleSheet, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 interface ButtonProps {
   label: string;
@@ -9,6 +9,7 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'outline' | 'text';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
+  loading?: boolean;
   style?: ViewStyle;
   labelStyle?: TextStyle;
   leftIcon?: React.ReactNode;
@@ -23,6 +24,7 @@ const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'medium',
   disabled = false,
+  loading = false,
   style,
   labelStyle,
   leftIcon,
@@ -31,7 +33,7 @@ const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
 }) => {
   const handlePress = () => {
-    if (disabled) return;
+    if (disabled || loading) return;
     
     // Provide haptic feedback on button press
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -78,7 +80,7 @@ const Button: React.FC<ButtonProps> = ({
     }
     
     // Add disabled styles
-    if (disabled) {
+    if (disabled || loading) {
       buttonStyles.push(styles.disabledButton);
     }
     
@@ -124,7 +126,7 @@ const Button: React.FC<ButtonProps> = ({
     }
     
     // Add disabled styles
-    if (disabled) {
+    if (disabled || loading) {
       textStyles.push(styles.disabledLabel);
     }
     
@@ -138,10 +140,17 @@ const Button: React.FC<ButtonProps> = ({
     <TouchableOpacity
       style={buttonStyles}
       onPress={handlePress}
-      disabled={disabled}
+      disabled={disabled || loading}
       activeOpacity={0.8}
     >
-      {leftIcon && !label && !rightIcon ? (
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator 
+            color={variant === 'primary' ? '#FFFFFF' : '#2196F3'} 
+            size="small" 
+          />
+        </View>
+      ) : leftIcon && !label && !rightIcon ? (
         // Centraliza o ícone se não houver label
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>{leftIcon}</View>
       ) : (
@@ -238,6 +247,10 @@ const styles = StyleSheet.create({
   },
   iconRight: {
     marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -220,6 +220,8 @@ export default function AuthScreen() {
               label={isLoginMode ? 'Entrar' : 'Criar Conta'}
               onPress={handleSubmit}
               style={styles.submitButton}
+              loading={isLoading}
+              disabled={isLoading}
             />
 
             <TouchableOpacity style={styles.toggleButton} onPress={toggleMode}>
