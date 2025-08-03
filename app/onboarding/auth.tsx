@@ -102,7 +102,14 @@ export default function AuthScreen() {
           router.replace('/onboarding/benefits');
         }
       } else {
-        Alert.alert('Erro', result.message);
+        // Use different alert types based on whether it's informational or an error
+        if (result.isInformational) {
+          // For informational messages (like "email already exists"), use a neutral alert
+          Alert.alert('Informação', result.message, [{ text: 'OK', style: 'default' }]);
+        } else {
+          // For real errors, use error alert
+          Alert.alert('Erro', result.message, [{ text: 'OK', style: 'cancel' }]);
+        }
       }
     } catch (error) {
       console.error('Auth error:', error);

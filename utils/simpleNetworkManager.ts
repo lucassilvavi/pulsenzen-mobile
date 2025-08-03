@@ -94,15 +94,28 @@ class SimpleNetworkManager {
           // Ignore parsing errors
         }
 
-        logger.error('NetworkManager', 'Request failed', error, {
-          method: error.config?.method?.toUpperCase(),
-          url: this.sanitizeUrl(error.config?.url || ''),
-          status,
-          duration,
-          responseData: errorData, // Add response data for debugging
-        });
-
-        // For client errors (4xx) with response data, return the response instead of rejecting
+        // Log differently based on error type
+        // 4xx client errors are expected behavior, 5xx server errors are critical
+        if (status >= 400 && status < 500) {
+          // Client errors (validation, authentication, etc.) - use debug level
+          logger.debug('NetworkManager', 'Client error response', {
+            method: error.config?.method?.toUpperCase(),
+            url: this.sanitizeUrl(error.config?.url || ''),
+            status,
+            duration,
+            responseData: errorData,
+            error: error.message,
+          });
+        } else {
+          // Server errors (5xx) or network errors - log as error
+          logger.error('NetworkManager', 'Request failed', error, {
+            method: error.config?.method?.toUpperCase(),
+            url: this.sanitizeUrl(error.config?.url || ''),
+            status,
+            duration,
+            responseData: errorData,
+          });
+        }        // For client errors (4xx) with response data, return the response instead of rejecting
         // This allows the calling code to handle the error response properly
         if (error.response && status >= 400 && status < 500 && errorData) {
           return Promise.resolve({

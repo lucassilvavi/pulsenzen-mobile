@@ -175,6 +175,7 @@ describe('AuthService', () => {
       // Assert
       expect(result.success).toBe(false);
       expect(result.message).toBe('Email already exists'); // Now returns specific API error message
+      expect(result.isInformational).toBe(true); // Should be marked as informational
     });
   });
 

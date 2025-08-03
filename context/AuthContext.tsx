@@ -7,14 +7,14 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message: string; isInformational?: boolean }>;
   register: (userData: {
     email: string;
     password: string;
     password_confirmation: string;
     firstName: string;
     lastName: string;
-  }) => Promise<{ success: boolean; message: string }>;
+  }) => Promise<{ success: boolean; message: string; isInformational?: boolean }>;
   logout: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -78,7 +78,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         return { success: true, message: 'Login realizado com sucesso!' };
       } else {
-        return { success: false, message: result.message || 'Erro no login' };
+        return { 
+          success: false, 
+          message: result.message || 'Erro no login',
+          isInformational: result.isInformational
+        };
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -103,7 +107,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(result.data.user);
         return { success: true, message: 'Conta criada com sucesso!' };
       } else {
-        return { success: false, message: result.message || 'Erro no registro' };
+        return { 
+          success: false, 
+          message: result.message || 'Erro no registro',
+          isInformational: result.isInformational
+        };
       }
     } catch (error) {
       console.error('Register error:', error);

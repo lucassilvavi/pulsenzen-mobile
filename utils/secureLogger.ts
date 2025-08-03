@@ -20,11 +20,11 @@ class Logger {
   private isDevelopment: boolean;
 
   constructor() {
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = process.env.NODE_ENV === 'development' || __DEV__;
     
     this.config = {
-      level: this.isDevelopment ? LogLevel.DEBUG : LogLevel.WARN,
-      enableConsole: this.isDevelopment,
+      level: this.isDevelopment ? LogLevel.DEBUG : LogLevel.ERROR, // Only errors in production
+      enableConsole: this.isDevelopment, // Only enable console in development
       enablePersistence: false,
       maxLogSize: 1000,
       sensitiveDataKeys: [

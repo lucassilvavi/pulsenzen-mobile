@@ -61,6 +61,13 @@ class LoggingManager {
     return LoggingManager.instance;
   }
 
+  // Helper to control console logging based on environment
+  private devConsoleError(message: string, error?: any): void {
+    if (__DEV__ || process.env.NODE_ENV === 'development') {
+      console.error(message, error);
+    }
+  }
+
   private async initialize(): Promise<void> {
     try {
       // Initialize third-party services
@@ -73,33 +80,44 @@ class LoggingManager {
       this.isInitialized = true;
       this.info('LoggingManager', 'Logging system initialized', { sessionId: this.sessionId });
     } catch (error) {
-      console.error('Failed to initialize logging:', error);
+      // Only log to console in development to avoid console pollution
+      this.devConsoleError('Failed to initialize logging:', error);
     }
   }
 
   private async initializeSentry(): Promise<void> {
-    const config = appConfig.getConfig();
-    if (config.features.crashReporting && config.thirdParty.sentryDsn) {
-      try {
-        // Note: Install @sentry/react-native for production
-        // await Sentry.init({ dsn: config.thirdParty.sentryDsn });
-        console.log('Sentry would be initialized here in production');
-      } catch (error) {
-        console.error('Failed to initialize Sentry:', error);
+    try {
+      const config = appConfig.getConfig();
+      if (config?.features?.crashReporting && config?.thirdParty?.sentryDsn) {
+        try {
+          // Note: Install @sentry/react-native for production
+          // await Sentry.init({ dsn: config.thirdParty.sentryDsn });
+          console.log('Sentry would be initialized here in production');
+        } catch (error) {
+          this.devConsoleError('Failed to initialize Sentry:', error);
+        }
       }
+    } catch (error) {
+      // Config not available, skip Sentry initialization
+      this.devConsoleError('Config not available for Sentry initialization:', error);
     }
   }
 
   private async initializeAmplitude(): Promise<void> {
-    const config = appConfig.getConfig();
-    if (config.features.analytics && config.thirdParty.amplitudeApiKey) {
-      try {
-        // Note: Install @amplitude/analytics-react-native for production
-        // await Amplitude.init(config.thirdParty.amplitudeApiKey);
-        console.log('Amplitude would be initialized here in production');
-      } catch (error) {
-        console.error('Failed to initialize Amplitude:', error);
+    try {
+      const config = appConfig.getConfig();
+      if (config?.features?.analytics && config?.thirdParty?.amplitudeApiKey) {
+        try {
+          // Note: Install @amplitude/analytics-react-native for production
+          // await Amplitude.init(config.thirdParty.amplitudeApiKey);
+          console.log('Amplitude would be initialized here in production');
+        } catch (error) {
+          this.devConsoleError('Failed to initialize Amplitude:', error);
+        }
       }
+    } catch (error) {
+      // Config not available, skip Amplitude initialization
+      this.devConsoleError('Config not available for Amplitude initialization:', error);
     }
   }
 

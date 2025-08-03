@@ -35,6 +35,7 @@ export interface AuthResponse {
   };
   error?: string;
   message: string;
+  isInformational?: boolean; // True for expected messages like "email already exists"
 }
 
 export interface UserProfile {
@@ -138,11 +139,22 @@ class AuthService {
       } else {
         // Handle error responses (400, 422, etc.) - now properly handled by simpleNetworkManager
         let errorMessage = 'Registration failed';
+        let isInformational = false;
         
         if (response.data) {
           // Try to get the most specific error message
           // Priority: error field first (more specific), then message field
           errorMessage = response.data.error || response.data.message || errorMessage;
+          
+          // Check if this is an informational message rather than a critical error
+          // Status 409 (Conflict) or 422 (Unprocessable Entity) with specific messages are informational
+          if ((response.status === 409 || response.status === 422) && 
+              (errorMessage.toLowerCase().includes('already exists') || 
+               errorMessage.toLowerCase().includes('já existe') ||
+               errorMessage.toLowerCase().includes('email') ||
+               errorMessage.toLowerCase().includes('validation'))) {
+            isInformational = true;
+          }
         } else if (response.error) {
           errorMessage = response.error;
         }
@@ -151,13 +163,15 @@ class AuthService {
           status: response.status,
           error: errorMessage,
           errorData: response.data,
-          rawError: response.error
+          rawError: response.error,
+          isInformational
         });
 
         return {
           success: false,
           error: errorMessage,
           message: errorMessage,
+          isInformational,
         };
       }
     } catch (error) {
