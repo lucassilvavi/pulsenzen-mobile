@@ -2,8 +2,8 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
+;
 
 interface HeaderSectionProps {
   userName?: string;

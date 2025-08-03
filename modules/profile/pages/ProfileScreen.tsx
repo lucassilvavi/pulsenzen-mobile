@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUserData } from '@/hooks/useUserData';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -14,30 +15,29 @@ import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACHIEVEMENTS } from '../constants';
 import { ProfileService } from '../services/ProfileService';
-import { Achievement, UserProfile, UserStats } from '../types';
+import { Achievement, UserStats } from '../types';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { logout } = useAuth();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const { displayName, email } = useUserData();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
 
   useEffect(() => {
-    loadProfileData();
+    loadLocalData();
   }, []);
 
-  const loadProfileData = async () => {
+  const loadLocalData = async () => {
     try {
-      const profile = await ProfileService.getUserProfile();
+      // Only load local data (stats and achievements)
       const stats = await ProfileService.getUserStats();
       const userAchievements = await ProfileService.getUserAchievements();
 
-      setUserProfile(profile);
       setUserStats(stats);
       setAchievements(Array.isArray(userAchievements) ? userAchievements : []); // Ensure achievements is always an array
     } catch (error) {
-      console.error('Erro ao carregar dados do perfil:', error);
+      console.error('Erro ao carregar dados locais:', error);
       // Set default values in case of error
       setAchievements([]);
     }
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear local profile data
+              // Clear local profile data (stats, achievements, settings)
               await ProfileService.clearUserData();
               
               // Logout using AuthContext (clears token and user data)
@@ -119,10 +119,10 @@ export default function ProfileScreen() {
             />
           </View>
           <ThemedText style={styles.userName}>
-            {userProfile?.name || 'Usuário'}
+            {displayName}
           </ThemedText>
           <ThemedText style={styles.userEmail}>
-            {userProfile?.email || 'usuario@pulsezen.com'}
+            {email || 'usuario@pulsezen.com'}
           </ThemedText>
         </View>
 

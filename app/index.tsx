@@ -5,38 +5,31 @@ import RecommendedSection from '@/components/RecommendedSection';
 import StreakSection from '@/components/StreakSection';
 import { ThemedView } from '@/components/ThemedView';
 import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
+import { useUserData } from '@/hooks/useUserData';
 import { MoodSelector } from '@/modules/mood';
-import { ProfileService } from '@/modules/profile';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [userName, setUserName] = useState('');
+  const { displayName } = useUserData();
   
   // Accessibility hooks
   const accessibilityState = useAccessibilityState();
   const { announceNavigation } = useScreenReaderAnnouncement();
 
-  useEffect(() => {
-    (async () => {
-      const profile = await ProfileService.getUserProfile();
-      setUserName(profile?.name || '');
-    })();
-  }, []);
-
   // Announce screen content when loading
-  useEffect(() => {
-    if (userName && accessibilityState?.screenReaderEnabled) {
-      announceNavigation(
-        'Tela Principal',
-        `Bem-vindo, ${userName}. Tela principal do PulseZen carregada. Aqui você pode selecionar seu humor, ver citações diárias e acessar exercícios de respiração.`
-      );
-    }
-  }, [userName, accessibilityState?.screenReaderEnabled, announceNavigation]);
+  // TODO: Re-enable when needed
+  // useEffect(() => {
+  //   if (displayName && displayName !== 'Visitante' && accessibilityState?.screenReaderEnabled) {
+  //     announceNavigation(
+  //       'Tela Principal',
+  //       `Bem-vindo, ${displayName}. Tela principal do PulseZen carregada. Aqui você pode selecionar seu humor, ver citações diárias e acessar exercícios de respiração.`
+  //     );
+  //   }
+  // }, [displayName, accessibilityState?.screenReaderEnabled, announceNavigation]);
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
@@ -54,7 +47,7 @@ export default function HomeScreen() {
         accessibilityLabel="Conteúdo principal da tela"
         accessibilityHint="Role para navegar pelas seções da tela principal"
       >
-        <HeaderSection userName={userName} />
+        <HeaderSection userName={displayName} />
         <MoodSelector />
         <DailyQuote />
         <QuickAccess />
