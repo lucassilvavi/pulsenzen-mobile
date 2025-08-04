@@ -15,6 +15,7 @@ export interface MoodEntry {
   notes?: string;
   activities?: string[];
   emotions?: string[];
+  serverSynced?: boolean; // Indica se foi sincronizado com o servidor
 }
 
 export interface MoodResponse {
@@ -68,7 +69,34 @@ export interface MoodSummaryProps {
   style?: any;
 }
 
+export interface LoadingStates {
+  initializing: boolean;
+  submittingMood: boolean;
+  loadingEntries: boolean;
+  loadingStats: boolean;
+  syncing: boolean;
+  refreshing: boolean;
+  bulkDeleting: boolean;
+  exporting: boolean;
+  filtering: boolean;
+}
+
+export interface ErrorStates {
+  network: string | null;
+  validation: string | null;
+  server: string | null;
+  general: string | null;
+}
+
+export interface SyncStatusUI {
+  isOnline: boolean;
+  lastSync: number | null;
+  hasPendingOperations: boolean;
+  isSyncing: boolean;
+}
+
 export interface UseMoodReturn {
+  // Estados principais (compatibilidade)
   currentPeriod: MoodPeriod;
   hasAnsweredToday: boolean;
   isLoading: boolean;
@@ -79,11 +107,56 @@ export interface UseMoodReturn {
     totalEntries: number;
     moodDistribution: Record<MoodLevel, number>;
   } | null;
-  submitMood: (mood: MoodLevel) => Promise<MoodResponse>;
+  
+  // Estados avançados
+  loadingStates: LoadingStates;
+  errorStates: ErrorStates;
+  syncStatus: SyncStatusUI;
+  
+  // Métodos principais
+  submitMood: (mood: MoodLevel, additionalData?: Partial<MoodEntry>) => Promise<MoodResponse>;
   getMoodEntries: () => Promise<MoodEntry[]>;
   getMoodStats: (days?: number) => Promise<MoodStats>;
   resetTodayResponse: () => Promise<void>;
   refreshStatus: () => Promise<void>;
+  
+  // Métodos avançados
+  clearErrors: () => void;
+  initializeAutoSync: () => Promise<void>;
+  checkTodayResponse: () => Promise<boolean>;
+  
+  // Novos métodos - Item 11.2 Features Avançadas
+  bulkDeleteEntries: (entryIds: string[]) => Promise<{
+    success: number;
+    failed: number;
+    errors: string[];
+  }>;
+  exportMoodData: (options: {
+    format: 'csv' | 'json';
+    dateRange?: {
+      startDate: string;
+      endDate: string;
+    };
+    includeStats?: boolean;
+  }) => Promise<{
+    success: boolean;
+    data?: string;
+    filename?: string;
+    message?: string;
+  }>;
+  getFilteredEntries: (filters: {
+    moodLevels?: MoodLevel[];
+    periods?: ('manha' | 'tarde' | 'noite')[];
+    dateRange?: {
+      startDate: string;
+      endDate: string;
+    };
+    hasNotes?: boolean;
+    hasActivities?: boolean;
+    activities?: string[];
+  }) => Promise<MoodEntry[]>;
+  invalidateCache: (cacheKeys: string[]) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 export interface WellnessTip {

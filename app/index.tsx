@@ -1,4 +1,6 @@
+import Button from '@/components/base/Button';
 import DailyQuote from '@/components/DailyQuote';
+import { MoodDebugScreen } from '@/components/debug/MoodDebugScreen';
 import HeaderSection from '@/components/HeaderSection';
 import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
@@ -8,6 +10,7 @@ import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useA
 import { useUserData } from '@/hooks/useUserData';
 import { MoodSelector } from '@/modules/mood';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { displayName } = useUserData();
+  const [showDebug, setShowDebug] = useState(false);
   
   // Accessibility hooks
   const accessibilityState = useAccessibilityState();
@@ -30,6 +34,10 @@ export default function HomeScreen() {
   //     );
   //   }
   // }, [displayName, accessibilityState?.screenReaderEnabled, announceNavigation]);
+
+  if (showDebug) {
+    return <MoodDebugScreen />;
+  }
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
@@ -48,7 +56,15 @@ export default function HomeScreen() {
         accessibilityHint="Role para navegar pelas seções da tela principal"
       >
         <HeaderSection userName={displayName} />
-        <MoodSelector />
+                  <Button 
+            label="🔍 Debug Mood"
+            onPress={() => setShowDebug(true)}
+            variant="secondary"
+            size="small"
+            style={{ marginBottom: 20 }}
+          />
+          
+          <MoodSelector />
         <DailyQuote />
         <QuickAccess />
         <StreakSection />

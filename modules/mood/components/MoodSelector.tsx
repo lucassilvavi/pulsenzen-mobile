@@ -21,7 +21,11 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
     currentPeriod, 
     hasAnsweredToday, 
     isLoading, 
-    submitMood 
+    loadingStates,
+    errorStates,
+    syncStatus,
+    submitMood,
+    clearErrors 
   } = useMood();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,8 +98,10 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
   }, [isLoading, hasAnsweredToday, pulseAnim]);
 
   const handleMoodSelect = async (mood: MoodLevel, index: number) => {
-    if (isSubmitting || disabled) return;
+    if (isSubmitting || disabled || loadingStates.submittingMood) return;
 
+    // Limpa erros anteriores
+    clearErrors();
     setSelectedMood(mood);
     setIsSubmitting(true);
     
@@ -128,7 +134,11 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
-      const response = await submitMood(mood);
+      const response = await submitMood(mood, {
+        timestamp: Date.now(),
+        activities: [], // Pode ser expandido no futuro
+        emotions: []
+      });
       
       if (response.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -155,18 +165,22 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
           })
         ]).start();
         
-        // Mostra feedback positivo mais carinhoso
+        // Feedback personalizado baseado no sync status
+        const feedbackMessage = syncStatus.isOnline 
+          ? `Registramos como você está se sentindo na ${formatPeriodLabel(currentPeriod)}. ${THERAPEUTIC_MESSAGES.ENCOURAGEMENT}`
+          : `Registramos localmente como você está se sentindo. Será sincronizado quando possível. ${THERAPEUTIC_MESSAGES.ENCOURAGEMENT}`;
+        
         setTimeout(() => {
           Alert.alert(
             THERAPEUTIC_MESSAGES.GRATITUDE, 
-            `Registramos como você está se sentindo na ${formatPeriodLabel(currentPeriod)}. ${THERAPEUTIC_MESSAGES.ENCOURAGEMENT}`,
+            feedbackMessage,
             [{ text: 'Continuar', style: 'default' }]
           );
         }, 1200);
       } else {
         throw new Error(response.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
       // Volta as animações ao normal
@@ -179,11 +193,20 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
         }).start();
       });
       
-      Alert.alert(
-        THERAPEUTIC_MESSAGES.ERROR_GENTLE, 
-        THERAPEUTIC_MESSAGES.ERROR_RETRY,
-        [{ text: 'OK', style: 'default' }]
-      );
+      // Error handling específico baseado no tipo
+      let errorTitle: string = THERAPEUTIC_MESSAGES.ERROR_GENTLE;
+      let errorMessage: string = THERAPEUTIC_MESSAGES.ERROR_RETRY;
+      
+      if (errorStates.network) {
+        errorMessage = 'Sem conexão, mas salvamos localmente. Será sincronizado depois.';
+        errorTitle = '💙 Salvo offline';
+      } else if (errorStates.validation) {
+        errorMessage = errorStates.validation;
+      } else if (errorStates.server) {
+        errorMessage = 'Problema no servidor. Tente novamente em alguns minutos.';
+      }
+      
+      Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
       setSelectedMood(null);
     } finally {
       setIsSubmitting(false);
@@ -224,6 +247,23 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
                 </ThemedText>
               )}
             </View>
+
+            {/* Status de sincronização */}
+            {!syncStatus.isOnline && (
+              <View style={styles.offlineIndicator}>
+                <ThemedText style={styles.offlineText}>
+                  📱 Modo offline - dados serão sincronizados depois
+                </ThemedText>
+              </View>
+            )}
+            
+            {syncStatus.hasPendingOperations && (
+              <View style={styles.pendingIndicator}>
+                <ThemedText style={styles.pendingText}>
+                  🔄 {syncStatus.isSyncing ? 'Sincronizando...' : 'Dados pendentes para sincronização'}
+                </ThemedText>
+              </View>
+            )}
 
             <View style={[styles.moodsContainer, compact && styles.compactMoodsContainer]}>
               {MOOD_OPTIONS.map((mood, index) => (
@@ -455,6 +495,34 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.primary.main,
     fontFamily: 'Inter-SemiBold',
+    textAlign: 'center',
+  },
+  offlineIndicator: {
+    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+    borderRadius: 8,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FFC107',
+  },
+  offlineText: {
+    fontSize: fontSize.xs,
+    color: '#F57C00',
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+  },
+  pendingIndicator: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+    borderRadius: 8,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary.main,
+  },
+  pendingText: {
+    fontSize: fontSize.xs,
+    color: colors.primary.main,
+    fontFamily: 'Inter-Medium',
     textAlign: 'center',
   },
 });

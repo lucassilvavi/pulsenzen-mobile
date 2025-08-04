@@ -1,15 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../../../utils/secureLogger';
 import { PERIOD_HOURS, PERIOD_LABELS, STORAGE_KEYS } from '../constants';
 import { MoodEntry, MoodLevel, MoodPeriod, MoodResponse, MoodStats } from '../types';
-import { logger } from '../../../utils/secureLogger';
+import { CreateMoodEntryRequest, moodApiClient } from './MoodApiClient';
 
 /**
- * Mood Service - Modular implementation
- * Handles all mood-related business logic and data persistence
+ * Error types for mood operations
+ */
+export interface MoodError {
+  type: 'network' | 'validation' | 'rate_limit' | 'server' | 'storage';
+  message: string;
+  code?: string;
+  details?: any;
+}
+
+/**
+ * Mood Service - Enhanced with dedicated API client
+ * Handles business logic, offline support, and caching with clean separation of concerns
  */
 class MoodService {
   private readonly STORAGE_KEY = STORAGE_KEYS.MOOD_ENTRIES;
   private readonly LAST_RESPONSE_KEY = STORAGE_KEYS.LAST_RESPONSE;
+  private readonly OFFLINE_QUEUE_KEY = 'mood_offline_queue';
 
   /**
    * Determina o período atual do dia baseado nas constantes
@@ -27,15 +39,25 @@ class MoodService {
   }
 
   /**
-   * Verifica se o usuário já respondeu no período atual
+   * Verifica se o usuário já respondeu no período atual - INTEGRAÇÃO API
    */
   async hasAnsweredToday(): Promise<boolean> {
     try {
       const today = new Date().toISOString().split('T')[0];
       const currentPeriod = this.getCurrentPeriod();
       
-      const entries = await this.getMoodEntries();
+      // Tenta verificar via API primeiro
+      try {
+        const response = await moodApiClient.validatePeriod(currentPeriod, today);
+        if (response.success && response.data) {
+          return !response.data.canCreate; // Se não pode criar, já respondeu
+        }
+      } catch (apiError) {
+        logger.debug('MoodService', 'API validation failed, falling back to local check', apiError);
+      }
       
+      // Fallback para verificação local
+      const entries = await this.getMoodEntries();
       return entries.some(entry => 
         entry.date === today && entry.period === currentPeriod
       );
@@ -46,43 +68,70 @@ class MoodService {
   }
 
   /**
-   * Salva a resposta de humor
+   * Salva a resposta de humor - INTEGRAÇÃO API REAL
    */
   async saveMoodResponse(mood: MoodLevel, additionalData?: Partial<MoodEntry>): Promise<MoodResponse> {
     try {
       const today = new Date().toISOString().split('T')[0];
       const currentPeriod = this.getCurrentPeriod();
       
-      const entry: MoodEntry = {
-        id: `${today}-${currentPeriod}`,
+      const entryData: CreateMoodEntryRequest = {
+        mood_level: mood,
+        period: currentPeriod,
+        date: today,
+        notes: additionalData?.notes || '',
+        activities: additionalData?.activities || [],
+        emotions: additionalData?.emotions || []
+      };
+
+      // Tenta salvar na API primeiro
+      let apiSuccess = false;
+      let serverEntry: any = null;
+      
+      try {
+        const response = await moodApiClient.createMoodEntry(entryData);
+        
+        if (response.success && response.data) {
+          apiSuccess = true;
+          serverEntry = response.data;
+          logger.info('MoodService', 'Mood salvo na API com sucesso', { entryId: serverEntry.id });
+        }
+      } catch (apiError: any) {
+        logger.warn('MoodService', 'Falha ao salvar na API, salvando offline', { 
+          error: apiError.message,
+          willRetryLater: true 
+        });
+        
+        // Adiciona à fila offline para retry posterior
+        await this.addToOfflineQueue(entryData);
+      }
+
+      // Cria entrada local (sincronizada com servidor ou offline)
+      const localEntry: MoodEntry = {
+        id: serverEntry?.id || `${today}-${currentPeriod}-${Date.now()}`,
         mood,
         period: currentPeriod,
         date: today,
         timestamp: Date.now(),
+        serverSynced: apiSuccess,
         ...additionalData
       };
 
-      // Simula requisição para o backend
-      await this.simulateBackendRequest(entry);
-
-      // Salva localmente
-      const entries = await this.getMoodEntries();
-      const updatedEntries = entries.filter(e => e.id !== entry.id);
-      updatedEntries.push(entry);
-
-      await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedEntries));
+      // Salva localmente (cache + offline support)
+      await this.saveLocalEntry(localEntry);
 
       // Marca que respondeu hoje
       await AsyncStorage.setItem(this.LAST_RESPONSE_KEY, JSON.stringify({
         date: today,
         period: currentPeriod,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        synced: apiSuccess
       }));
 
       return { 
         success: true, 
-        message: 'Humor registrado com sucesso!',
-        data: entry
+        message: apiSuccess ? 'Humor registrado com sucesso!' : 'Humor salvo localmente. Será sincronizado quando possível.',
+        data: localEntry
       };
     } catch (error) {
       logger.error('MoodService', 'Erro ao salvar humor', error instanceof Error ? error : new Error(String(error)));
@@ -94,25 +143,116 @@ class MoodService {
   }
 
   /**
-   * Simula requisição para o backend
+   * Salva entrada localmente
    */
-  private async simulateBackendRequest(entry: MoodEntry): Promise<void> {
-    // Simula delay de rede
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
-    
-    // Simula chance de erro (2%)
-    if (Math.random() < 0.02) {
-      throw new Error('Erro de conexão com o servidor');
-    }
-    
-    logger.debug('MoodService', 'Mood enviado para o backend', { entryId: entry.id, timestamp: entry.timestamp });
+  private async saveLocalEntry(entry: MoodEntry): Promise<void> {
+    const entries = await this.getMoodEntries();
+    const updatedEntries = entries.filter(e => e.id !== entry.id);
+    updatedEntries.push(entry);
+    await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(updatedEntries));
   }
 
   /**
-   * Recupera todas as entradas de humor
+   * Adiciona à fila offline para sincronização posterior
+   */
+  private async addToOfflineQueue(entryData: any): Promise<void> {
+    try {
+      const queue = await this.getOfflineQueue();
+      queue.push({
+        ...entryData,
+        timestamp: Date.now(),
+        retryCount: 0
+      });
+      await AsyncStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    } catch (error) {
+      logger.error('MoodService', 'Erro ao adicionar à fila offline', error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  /**
+   * Recupera fila offline
+   */
+  private async getOfflineQueue(): Promise<any[]> {
+    try {
+      const data = await AsyncStorage.getItem(this.OFFLINE_QUEUE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      logger.error('MoodService', 'Erro ao recuperar fila offline', error instanceof Error ? error : new Error(String(error)));
+      return [];
+    }
+  }
+
+  /**
+   * Tenta sincronizar entradas offline com a API
+   */
+  async syncOfflineEntries(): Promise<{ success: number; failed: number }> {
+    const queue = await this.getOfflineQueue();
+    let success = 0;
+    let failed = 0;
+    const remainingQueue: any[] = [];
+
+    for (const entry of queue) {
+      try {
+        const response = await moodApiClient.createMoodEntry(entry);
+        if (response.success) {
+          success++;
+          logger.info('MoodService', 'Entrada offline sincronizada', { timestamp: entry.timestamp });
+        } else {
+          throw new Error('API response not successful');
+        }
+      } catch (error) {
+        failed++;
+        entry.retryCount = (entry.retryCount || 0) + 1;
+        
+        // Manter na fila se menos de 3 tentativas
+        if (entry.retryCount < 3) {
+          remainingQueue.push(entry);
+        } else {
+          logger.warn('MoodService', 'Entrada offline descartada após 3 tentativas', { timestamp: entry.timestamp });
+        }
+      }
+    }
+
+    // Atualiza fila com entradas que ainda precisam ser sincronizadas
+    await AsyncStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
+    
+    if (success > 0) {
+      logger.info('MoodService', 'Sincronização offline concluída', { success, failed });
+    }
+
+    return { success, failed };
+  }
+
+  /**
+   * Recupera todas as entradas de humor - INTEGRAÇÃO API
    */
   async getMoodEntries(): Promise<MoodEntry[]> {
     try {
+      // Tenta buscar da API primeiro
+      try {
+        const response = await moodApiClient.getMoodEntries();
+        if (response.success && response.data?.entries) {
+          const serverEntries = response.data.entries.map((entry: any) => ({
+            id: entry.id,
+            mood: entry.mood_level,
+            period: entry.period,
+            date: entry.date,
+            timestamp: new Date(entry.created_at).getTime(),
+            notes: entry.notes,
+            activities: entry.activities || [],
+            emotions: entry.emotions || [],
+            serverSynced: true
+          }));
+          
+          // Atualiza cache local
+          await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(serverEntries));
+          return serverEntries;
+        }
+      } catch (apiError) {
+        logger.debug('MoodService', 'API fetch failed, using local cache', apiError);
+      }
+      
+      // Fallback para dados locais
       const data = await AsyncStorage.getItem(this.STORAGE_KEY);
       return data ? JSON.parse(data) : [];
     } catch (error) {
@@ -143,9 +283,49 @@ class MoodService {
   }
 
   /**
-   * Recupera estatísticas de humor
+   * Recupera estatísticas de humor - INTEGRAÇÃO API
    */
   async getMoodStats(days: number = 7): Promise<MoodStats> {
+    try {
+      // Tenta buscar estatísticas da API primeiro
+      try {
+        const response = await moodApiClient.getMoodStats(days);
+        if (response.success && response.data) {
+          const serverStats = response.data;
+          
+          // Converte formato do servidor para formato local
+          const distribution: Record<MoodLevel, number> = {
+            'excelente': serverStats.mood_counts?.excelente || 0,
+            'bem': serverStats.mood_counts?.bem || 0,
+            'neutro': serverStats.mood_counts?.neutro || 0,
+            'mal': serverStats.mood_counts?.mal || 0,
+            'pessimo': serverStats.mood_counts?.pessimo || 0
+          };
+
+          return {
+            averageMood: serverStats.average_mood || 0,
+            totalEntries: serverStats.total_entries || 0,
+            moodDistribution: distribution,
+            streak: await this.calculateMoodStreak(), // Calcula localmente por enquanto
+            lastEntry: undefined // TODO: implementar no backend
+          };
+        }
+      } catch (apiError) {
+        logger.debug('MoodService', 'API stats failed, calculating locally', apiError);
+      }
+      
+      // Fallback para cálculo local
+      return this.calculateLocalStats(days);
+    } catch (error) {
+      logger.error('MoodService', 'Erro ao recuperar estatísticas', error instanceof Error ? error : new Error(String(error)));
+      return this.calculateLocalStats(days);
+    }
+  }
+
+  /**
+   * Calcula estatísticas localmente (fallback)
+   */
+  private async calculateLocalStats(days: number): Promise<MoodStats> {
     const entries = await this.getMoodEntries();
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -177,7 +357,7 @@ class MoodService {
     });
 
     // Calcula streak (dias consecutivos com respostas)
-    const streak = this.calculateMoodStreak(entries);
+    const streak = await this.calculateMoodStreak();
 
     // Última entrada
     const lastEntry = entries.length > 0 
@@ -196,7 +376,8 @@ class MoodService {
   /**
    * Calcula streak de dias consecutivos com registros
    */
-  private calculateMoodStreak(entries: MoodEntry[]): number {
+  private async calculateMoodStreak(): Promise<number> {
+    const entries = await this.getMoodEntries();
     if (entries.length === 0) return 0;
 
     const sortedEntries = entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -228,9 +409,35 @@ class MoodService {
   }
 
   /**
-   * Obtém dados de tendência de humor
+   * Obtém dados de tendência de humor - INTEGRAÇÃO API
    */
   async getMoodTrend(days: number = 30): Promise<{ date: string; mood: number }[]> {
+    try {
+      // Tenta buscar tendências da API primeiro
+      try {
+        const response = await moodApiClient.getMoodTrend(days);
+        if (response.success && response.data) {
+          return response.data.map((item: any) => ({
+            date: item.date,
+            mood: item.mood
+          }));
+        }
+      } catch (apiError) {
+        logger.debug('MoodService', 'API trend failed, calculating locally', apiError);
+      }
+      
+      // Fallback para cálculo local
+      return this.calculateLocalTrend(days);
+    } catch (error) {
+      logger.error('MoodService', 'Erro ao obter tendência', error instanceof Error ? error : new Error(String(error)));
+      return [];
+    }
+  }
+
+  /**
+   * Calcula tendência localmente (fallback)
+   */
+  private async calculateLocalTrend(days: number): Promise<{ date: string; mood: number }[]> {
     const entries = await this.getMoodEntries();
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
@@ -274,7 +481,150 @@ class MoodService {
    * Limpa todos os dados de humor (cuidado!)
    */
   async clearAllData(): Promise<void> {
-    await AsyncStorage.multiRemove([this.STORAGE_KEY, this.LAST_RESPONSE_KEY]);
+    await AsyncStorage.multiRemove([this.STORAGE_KEY, this.LAST_RESPONSE_KEY, this.OFFLINE_QUEUE_KEY]);
+  }
+
+  // ============ NOVOS MÉTODOS ANALYTICS ============
+
+  /**
+   * Obtém sequência de humor positivo
+   */
+  async getPositiveMoodStreak(): Promise<any> {
+    try {
+      const response = await moodApiClient.getPositiveMoodStreak();
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('API response not successful');
+    } catch (error) {
+      logger.warn('MoodService', 'Falha ao obter streak positivo da API, calculando localmente', error);
+      
+      // Fallback local
+      const entries = await this.getMoodEntries();
+      const positiveEntries = entries.filter(entry => 
+        entry.mood === 'bem' || entry.mood === 'excelente'
+      );
+      
+      // Cálculo simples local
+      let currentStreak = 0;
+      let longestStreak = 0;
+      // ... implementar lógica local se necessário
+      
+      return {
+        currentStreak,
+        longestStreak,
+        isActive: false
+      };
+    }
+  }
+
+  /**
+   * Obtém padrões por período do dia
+   */
+  async getPeriodPatterns(days: number = 30): Promise<any> {
+    try {
+      const response = await moodApiClient.getPeriodPatterns(days);
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('API response not successful');
+    } catch (error) {
+      logger.warn('MoodService', 'Falha ao obter padrões de período da API', error);
+      return {
+        bestPeriod: 'manha',
+        worstPeriod: 'noite',
+        periodAverages: { manha: 0, tarde: 0, noite: 0 },
+        consistency: 0
+      };
+    }
+  }
+
+  /**
+   * Obtém tendências semanais
+   */
+  async getWeeklyTrends(weeks: number = 8): Promise<any> {
+    try {
+      const response = await moodApiClient.getWeeklyTrends(weeks);
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('API response not successful');
+    } catch (error) {
+      logger.warn('MoodService', 'Falha ao obter tendências semanais da API', error);
+      return {
+        weeklyAverages: [],
+        trendDirection: 'stable',
+        volatility: 0
+      };
+    }
+  }
+
+  /**
+   * Obtém insights personalizados
+   */
+  async getPersonalizedInsights(): Promise<any> {
+    try {
+      const response = await moodApiClient.getInsights();
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('API response not successful');
+    } catch (error) {
+      logger.warn('MoodService', 'Falha ao obter insights da API', error);
+      return [];
+    }
+  }
+
+  /**
+   * Obtém dashboard completo de analytics
+   */
+  async getAnalyticsDashboard(days: number = 30, weeks: number = 8): Promise<any> {
+    try {
+      const response = await moodApiClient.getAnalyticsDashboard(days, weeks);
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('API response not successful');
+    } catch (error) {
+      logger.warn('MoodService', 'Falha ao obter dashboard da API, retornando dados básicos', error);
+      
+      // Fallback com dados básicos
+      return {
+        positiveStreak: await this.getPositiveMoodStreak(),
+        periodPatterns: await this.getPeriodPatterns(days),
+        weeklyTrends: await this.getWeeklyTrends(weeks),
+        insights: [],
+        correlations: []
+      };
+    }
+  }
+
+  /**
+   * Inicializa sincronização automática
+   * Deve ser chamado no início da aplicação
+   */
+  async initializeAutoSync(): Promise<void> {
+    // Tenta sincronizar entradas offline
+    const result = await this.syncOfflineEntries();
+    
+    if (result.success > 0) {
+      logger.info('MoodService', `Sincronizadas ${result.success} entradas offline`);
+    }
+    
+    if (result.failed > 0) {
+      logger.warn('MoodService', `Falha ao sincronizar ${result.failed} entradas`);
+    }
+  }
+
+  /**
+   * Obtém status de sincronização
+   */
+  async getSyncStatus(): Promise<{ offlineCount: number; pendingSync: boolean }> {
+    const queue = await this.getOfflineQueue();
+    return {
+      offlineCount: queue.length,
+      pendingSync: queue.length > 0
+    };
   }
 }
 

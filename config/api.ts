@@ -27,7 +27,7 @@ const env = validateEnvironment();
 
 export const API_CONFIG = {
   // Secure environment-based configuration with validation
-  BASE_URL: `${env.baseUrl}/api/${env.version}`,
+  BASE_URL: `${env.baseUrl}/${env.version}`,
   
   // Development fallback (commented for security)
   // BASE_URL: 'http://192.168.3.75:3333/api/v1',
