@@ -1,4 +1,3 @@
-import Button from '@/components/base/Button';
 import DailyQuote from '@/components/DailyQuote';
 import { MoodDebugScreen } from '@/components/debug/MoodDebugScreen';
 import HeaderSection from '@/components/HeaderSection';
@@ -8,9 +7,9 @@ import StreakSection from '@/components/StreakSection';
 import { ThemedView } from '@/components/ThemedView';
 import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { useUserData } from '@/hooks/useUserData';
-import { MoodSelector } from '@/modules/mood';
+import { MoodSelector, useMood } from '@/modules/mood';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +18,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { displayName } = useUserData();
   const [showDebug, setShowDebug] = useState(false);
+  
+  // Mood hook para debug
+  const { hasAnsweredToday, isLoading, currentPeriod, refreshData, checkTodayResponse } = useMood();
   
   // Accessibility hooks
   const accessibilityState = useAccessibilityState();
@@ -39,6 +41,10 @@ export default function HomeScreen() {
     return <MoodDebugScreen />;
   }
 
+  useEffect(() => {
+    console.log('hasAnsweredToday', hasAnsweredToday);
+  }, [hasAnsweredToday]);
+
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <LinearGradient
@@ -56,15 +62,7 @@ export default function HomeScreen() {
         accessibilityHint="Role para navegar pelas seções da tela principal"
       >
         <HeaderSection userName={displayName} />
-                  <Button 
-            label="🔍 Debug Mood"
-            onPress={() => setShowDebug(true)}
-            variant="secondary"
-            size="small"
-            style={{ marginBottom: 20 }}
-          />
-          
-          <MoodSelector />
+        <MoodSelector />
         <DailyQuote />
         <QuickAccess />
         <StreakSection />

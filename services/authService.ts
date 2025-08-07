@@ -201,54 +201,35 @@ class AuthService {
           tags: ['auth'],
         }
       );
+     
 
-      if (response.success && response.data) {
-        // The API response is nested: response.data contains the actual API response
-        const apiResponse = response.data;
-        
-        if (apiResponse.success && apiResponse.data && apiResponse.data.user && apiResponse.data.token) {
-          // Save token, refresh token, and user data for persistent login
-          await this.saveAuthData(
-            apiResponse.data.token, 
-            apiResponse.data.refreshToken, 
-            apiResponse.data.user
-          );
+      if (response.success && response.data && response.data.user && response.data.token) {
+        // Save token, refresh token, and user data for persistent login
+        await this.saveAuthData(
+          response.data.token, 
+          response.data.refreshToken, 
+          response.data.user
+        );
 
-          logger.info('AuthService', 'User login successful', { 
-            userId: apiResponse.data.user.id 
-          });
+        logger.info('AuthService', 'User login successful', { 
+          userId: response.data.user.id 
+        });
 
-          return {
-            success: true,
-            data: apiResponse.data,
-            message: apiResponse.message || 'Login successful',
-          };
-        } else {
-          logger.warn('AuthService', 'Login failed', { 
-            error: apiResponse.message || 'Invalid response structure',
-            status: response.status 
-          });
-
-          return {
-            success: false,
-            error: apiResponse.message || 'Login failed',
-            message: apiResponse.message || 'Invalid credentials',
-          };
-        }
+        return {
+          success: true,
+          data: response.data,
+          message: response.message || 'Login successful',
+        };
       } else {
-        // Handle error responses (400, 401, 422, etc.)
-        const errorMessage = response.error || response.data?.message || response.data?.error || 'Login failed';
-        
-        logger.warn('AuthService', 'Login failed - API error', { 
-          status: response.status,
-          error: errorMessage,
-          errorData: response.data
+        logger.warn('AuthService', 'Login failed', { 
+          error: response.message || 'Invalid response structure',
+          status: response.status 
         });
 
         return {
           success: false,
-          error: errorMessage,
-          message: errorMessage,
+          error: response.message || 'Login failed',
+          message: response.message || 'Invalid credentials',
         };
       }
     } catch (error) {
@@ -412,36 +393,24 @@ class AuthService {
    */
   static async isAuthenticated(): Promise<boolean> {
     try {
+      console.log('AuthService.isAuthenticated: início');
       const token = await this.getToken();
       const user = await this.getCurrentUser();
-      
-      // Basic check: both token and user data exist
       if (!token || !user) {
+        console.log('AuthService.isAuthenticated: missing credentials', { token, user });
         logger.debug('AuthService', 'Authentication check failed: missing credentials');
         return false;
       }
-
-      // Basic token format validation
       if (token.split('.').length !== 3) {
+        console.log('AuthService.isAuthenticated: invalid token format', token);
         logger.warn('AuthService', 'Invalid token format detected');
         return false;
       }
-      
-      // Optional: Validate token with server (commented out to avoid extra API calls)
-      // try {
-      //   const authHeader = await this.getAuthHeader();
-      //   const response = await networkManager.get(
-      //     appConfig.getApiUrl('/auth/validate'),
-      //     { headers: authHeader, timeout: 5000, retries: 1 }
-      //   );
-      //   return response.success;
-      // } catch (error) {
-      //   logger.debug("AuthService", 'Token validation failed:', error);
-      //   return false;
-      // }
-      
+      // (Token validation com API está comentado)
+      console.log('AuthService.isAuthenticated: sucesso, token e user válidos');
       return true;
     } catch (error) {
+      console.error('AuthService.isAuthenticated: erro', error);
       logger.error('AuthService', 'Check auth error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
@@ -602,10 +571,34 @@ class AuthService {
    */
   private static async clearAuthData(): Promise<void> {
     try {
+      const tokenBefore = await secureStorage.getItem(this.TOKEN_KEY);
+      const refreshTokenBefore = await secureStorage.getItem(this.REFRESH_TOKEN_KEY);
+      const userBefore = await secureStorage.getItem(this.USER_KEY);
+      const onboardingBefore = await secureStorage.getItem('onboardingDone');
+      logger.info('AuthService', 'Clearing auth data', {
+        tokenBefore,
+        refreshTokenBefore,
+        userBefore,
+        onboardingBefore,
+      });
       await secureStorage.removeItem(this.TOKEN_KEY);
+      logger.info('AuthService', 'Removed access token');
       await secureStorage.removeItem(this.REFRESH_TOKEN_KEY);
+      logger.info('AuthService', 'Removed refresh token');
       await secureStorage.removeItem(this.USER_KEY);
-      await secureStorage.removeItem('onboardingDone'); // Also clear onboarding status on logout
+      logger.info('AuthService', 'Removed user data');
+      await secureStorage.removeItem('onboardingDone');
+      logger.info('AuthService', 'Removed onboarding status');
+      const tokenAfter = await secureStorage.getItem(this.TOKEN_KEY);
+      const refreshTokenAfter = await secureStorage.getItem(this.REFRESH_TOKEN_KEY);
+      const userAfter = await secureStorage.getItem(this.USER_KEY);
+      const onboardingAfter = await secureStorage.getItem('onboardingDone');
+      logger.info('AuthService', 'Auth data after clear', {
+        tokenAfter,
+        refreshTokenAfter,
+        userAfter,
+        onboardingAfter,
+      });
     } catch (error) {
       logger.error('AuthService', 'Failed to clear auth data', error instanceof Error ? error : new Error(String(error)));
     }

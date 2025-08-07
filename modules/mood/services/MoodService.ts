@@ -42,27 +42,13 @@ class MoodService {
    * Verifica se o usuário já respondeu no período atual - INTEGRAÇÃO API
    */
   async hasAnsweredToday(): Promise<boolean> {
+    const today = new Date().toISOString().split('T')[0];
+    const currentPeriod = this.getCurrentPeriod();
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const currentPeriod = this.getCurrentPeriod();
-      
-      // Tenta verificar via API primeiro
-      try {
-        const response = await moodApiClient.validatePeriod(currentPeriod, today);
-        if (response.success && response.data) {
-          return !response.data.canCreate; // Se não pode criar, já respondeu
-        }
-      } catch (apiError) {
-        logger.debug('MoodService', 'API validation failed, falling back to local check', apiError);
-      }
-      
-      // Fallback para verificação local
-      const entries = await this.getMoodEntries();
-      return entries.some(entry => 
-        entry.date === today && entry.period === currentPeriod
-      );
+      const response = await moodApiClient.validatePeriod(currentPeriod, today, { cache: false });
+      console.log('response.data.lucas', response);
+      return response.success && response.data ? !response.data.can_create : false;
     } catch (error) {
-      logger.error('MoodService', 'Erro ao verificar resposta do dia', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }

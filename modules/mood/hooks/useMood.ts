@@ -343,6 +343,8 @@ export function useMood(): UseMoodReturn {
   const checkTodayResponse = useCallback(async (): Promise<boolean> => {
     try {
       const answered = await moodService.hasAnsweredToday();
+      console.log('answered', answered);
+      console.log('[useMood] Verificação de resposta de hoje:', answered);
       setHasAnsweredToday(answered);
       return answered;
     } catch (err) {

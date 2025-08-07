@@ -141,6 +141,7 @@ export interface NetworkResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+  message?: string;
   status: number;
   cached?: boolean;
   retryCount?: number;

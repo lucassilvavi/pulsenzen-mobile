@@ -1,5 +1,4 @@
 import { API_CONFIG } from '../../../config/api';
-import AuthService from '../../../services/authService';
 import { logger } from '../../../utils/secureLogger';
 import { networkManager } from '../../../utils/simpleNetworkManager';
 import { MoodLevel, MoodPeriod } from '../types';
@@ -60,18 +59,6 @@ export class MoodApiClient {
   }
 
   /**
-   * Get authentication headers for API requests
-   */
-  private async getAuthHeaders(): Promise<{ Authorization: string } | {}> {
-    try {
-      return await AuthService.getAuthHeader();
-    } catch (error) {
-      logger.warn('MoodApiClient', 'Failed to get auth header', error);
-      return {};
-    }
-  }
-
-  /**
    * Creates a new mood entry
    * POST /mood/entries
    */
@@ -83,16 +70,14 @@ export class MoodApiClient {
         date: data.date 
       });
 
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.post(`${this.baseUrl}/entries`, data, { headers });
-      
+      console.log('dadosMoodApiClient', data);
+      const response = await networkManager.post(`${this.baseUrl}/entries`, data);
       if (response.success) {
         logger.info('MoodApiClient', 'Mood entry created successfully', { 
           entryId: response.data?.id 
         });
       }
-
-      return this.normalizeResponse(response);
+      return response;
     } catch (error) {
       return this.handleError('createMoodEntry', error);
     }
@@ -111,7 +96,6 @@ export class MoodApiClient {
   }): Promise<BaseApiResponse<{ entries: MoodEntryResponse[]; total: number; pages: number }>> {
     try {
       const queryParams = new URLSearchParams();
-      
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
           if (value !== undefined) {
@@ -119,21 +103,15 @@ export class MoodApiClient {
           }
         });
       }
-
       const url = `${this.baseUrl}/entries${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-      
       logger.debug('MoodApiClient', 'Fetching mood entries', { params });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(url, { headers });
-      
+      const response = await networkManager.get(url);
       if (response.success) {
         logger.debug('MoodApiClient', 'Mood entries retrieved', { 
           count: response.data?.entries?.length || 0 
         });
       }
-
-      return this.normalizeResponse(response);
+      return response;
     } catch (error) {
       return this.handleError('getMoodEntries', error);
     }
@@ -146,17 +124,13 @@ export class MoodApiClient {
   async getMoodStats(days: number = 7): Promise<BaseApiResponse<MoodStatsResponse>> {
     try {
       logger.debug('MoodApiClient', 'Fetching mood stats', { days });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/stats?days=${days}`, { headers });
-      
+      const response = await networkManager.get(`${this.baseUrl}/stats?days=${days}`);
       if (response.success) {
         logger.debug('MoodApiClient', 'Mood stats retrieved', { 
           totalEntries: response.data?.total_entries 
         });
       }
-
-      return this.normalizeResponse(response);
+      return response;
     } catch (error) {
       return this.handleError('getMoodStats', error);
     }
@@ -169,17 +143,13 @@ export class MoodApiClient {
   async getMoodTrend(days: number = 30): Promise<BaseApiResponse<MoodTrendResponse[]>> {
     try {
       logger.debug('MoodApiClient', 'Fetching mood trend', { days });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/trend?days=${days}`, { headers });
-      
+      const response = await networkManager.get(`${this.baseUrl}/trend?days=${days}`);
       if (response.success) {
         logger.debug('MoodApiClient', 'Mood trend retrieved', { 
           dataPoints: response.data?.length || 0 
         });
       }
-
-      return this.normalizeResponse(response);
+      return response;
     } catch (error) {
       return this.handleError('getMoodTrend', error);
     }
@@ -189,16 +159,12 @@ export class MoodApiClient {
    * Validates if user can create entry for specific period
    * GET /mood/validate/:period
    */
-  async validatePeriod(period: MoodPeriod, date?: string): Promise<BaseApiResponse<{ canCreate: boolean; reason?: string }>> {
+  async validatePeriod(period: MoodPeriod, date?: string): Promise<BaseApiResponse<{ can_create: boolean; canCreate?: boolean; reason?: string }>> {
     try {
       const queryParams = date ? `?date=${date}` : '';
-      
       logger.debug('MoodApiClient', 'Validating period', { period, date });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/validate/${period}${queryParams}`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/validate/${period}${queryParams}`);
+      return response;
     } catch (error) {
       return this.handleError('validatePeriod', error);
     }
@@ -218,11 +184,8 @@ export class MoodApiClient {
   }>> {
     try {
       logger.debug('MoodApiClient', 'Fetching positive mood streak');
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/analytics/positive-streak`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/analytics/positive-streak`);
+      return response;
     } catch (error) {
       return this.handleError('getPositiveMoodStreak', error);
     }
@@ -240,11 +203,8 @@ export class MoodApiClient {
   }>> {
     try {
       logger.debug('MoodApiClient', 'Fetching period patterns', { days });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/analytics/period-patterns?days=${days}`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/analytics/period-patterns?days=${days}`);
+      return response;
     } catch (error) {
       return this.handleError('getPeriodPatterns', error);
     }
@@ -261,11 +221,8 @@ export class MoodApiClient {
   }>> {
     try {
       logger.debug('MoodApiClient', 'Fetching weekly trends', { weeks });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/analytics/weekly-trends?weeks=${weeks}`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/analytics/weekly-trends?weeks=${weeks}`);
+      return response;
     } catch (error) {
       return this.handleError('getWeeklyTrends', error);
     }
@@ -290,11 +247,8 @@ export class MoodApiClient {
   }>>> {
     try {
       logger.debug('MoodApiClient', 'Fetching personalized insights');
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/analytics/insights`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/analytics/insights`);
+      return response;
     } catch (error) {
       return this.handleError('getInsights', error);
     }
@@ -312,11 +266,8 @@ export class MoodApiClient {
   }>>> {
     try {
       logger.debug('MoodApiClient', 'Fetching mood correlations');
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/analytics/correlations`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/analytics/correlations`);
+      return response;
     } catch (error) {
       return this.handleError('getCorrelations', error);
     }
@@ -339,29 +290,14 @@ export class MoodApiClient {
   }>> {
     try {
       logger.debug('MoodApiClient', 'Fetching analytics dashboard', { days, weeks });
-
-      const headers = await this.getAuthHeaders();
-      const response = await networkManager.get(`${this.baseUrl}/analytics/dashboard?days=${days}&weeks=${weeks}`, { headers });
-
-      return this.normalizeResponse(response);
+      const response = await networkManager.get(`${this.baseUrl}/analytics/dashboard?days=${days}&weeks=${weeks}`);
+      return response;
     } catch (error) {
       return this.handleError('getAnalyticsDashboard', error);
     }
   }
 
   // ============ PRIVATE METHODS ============
-
-  /**
-   * Normalizes API response to consistent format
-   */
-  private normalizeResponse<T>(response: any): BaseApiResponse<T> {
-    return {
-      success: response.success || false,
-      data: response.data,
-      message: response.message,
-      error: response.error
-    };
-  }
 
   /**
    * Handles API errors with proper logging and response format

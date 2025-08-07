@@ -433,8 +433,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   moodCircle: {
-    width: 64,
-    height: 64,
+    width: 50,
+    height: 50,
     borderRadius: 32,
     borderWidth: 3,
     justifyContent: 'center',
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   moodEmoji: {
-    fontSize: 32,
+    fontSize: 30,
     lineHeight: 32,
   },
   compactMoodEmoji: {

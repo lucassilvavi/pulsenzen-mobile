@@ -7,7 +7,7 @@
 export * from './components';
 
 // Hooks
-export { default as useMood } from './hooks/useMood';
+export { useMood } from './hooks/useMood';
 
 // Services
 export { default as MoodService } from './services/MoodService';

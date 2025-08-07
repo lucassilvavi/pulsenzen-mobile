@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import axiosRetry from 'axios-retry';
+import { router } from 'expo-router';
 import { APP_CONSTANTS, ERROR_CODES } from '../constants/appConstants';
+import AuthService from '../services/authService';
 import { NetworkRequestConfig, NetworkResponse } from '../types/api';
 import { cacheManager } from './cacheManager';
 import { performanceMonitor } from './performanceMonitor';
@@ -37,15 +39,31 @@ class SimpleNetworkManager {
 
     // Request interceptor
     this.client.interceptors.request.use(
-      (config) => {
+      async (config) => {
         const startTime = Date.now();
         (config as any).startTime = startTime;
-        
+        // Adiciona o token globalmente
+        try {
+          const token = await AuthService.getToken();
+          if (token) {
+            if (config.headers && typeof config.headers.set === 'function') {
+              // AxiosHeaders instance
+              config.headers.set('Authorization', `Bearer ${token}`);
+            } else if (!config.headers) {
+              // undefined
+              config.headers = { Authorization: `Bearer ${token}` } as any;
+            } else {
+              // plain object
+              (config.headers as any)['Authorization'] = `Bearer ${token}`;
+            }
+          }
+        } catch (e) {
+          // Se falhar ao buscar token, segue sem header
+        }
         logger.debug('NetworkManager', 'Request started', {
           method: config.method?.toUpperCase(),
           url: this.sanitizeUrl(config.url || ''),
         });
-        
         return config;
       },
       (error) => {
@@ -57,25 +75,10 @@ class SimpleNetworkManager {
     // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
-        const duration = Date.now() - ((response.config as any).startTime || 0);
-        
-        performanceMonitor.trackApiCall(
-          this.getEndpointKey(response.config.url || ''),
-          response.config.method?.toUpperCase() || 'GET',
-          duration,
-          response.status
-        );
-
-        logger.debug('NetworkManager', 'Request completed', {
-          method: response.config.method?.toUpperCase(),
-          url: this.sanitizeUrl(response.config.url || ''),
-          status: response.status,
-          duration,
-        });
-
+        // Apenas retorna a resposta original do Axios
         return response;
       },
-      (error) => {
+      async (error) => {
         const duration = Date.now() - ((error.config as any)?.startTime || 0);
         const status = error.response?.status || 0;
         
@@ -115,7 +118,37 @@ class SimpleNetworkManager {
             duration,
             responseData: errorData,
           });
-        }        // For client errors (4xx) with response data, return the response instead of rejecting
+        }        // --- REFRESH TOKEN LOGIC START ---
+        if (status === 401 && !error.config?._retry) {
+          error.config._retry = true;
+          try {
+            const refreshResult = await AuthService.refreshAuthToken();
+            if (refreshResult.success) {
+              // Pega novo token e atualiza header Authorization
+              const newAuthHeader = await AuthService.getAuthHeader();
+              error.config.headers = {
+                ...error.config.headers,
+                ...newAuthHeader,
+              };
+              // Refaz a requisição original com novo token
+              return this.client.request(error.config);
+            } else {
+              logger.info('NetworkManager', 'Refresh token failed, logging out and redirecting to login');
+              await AuthService.logout();
+              logger.info('NetworkManager', 'Logout completed, redirecting to /onboarding/auth');
+              router.replace('/onboarding/auth');
+              return Promise.reject(error);
+            }
+          } catch (refreshError) {
+            logger.info('NetworkManager', 'Exception during refresh, logging out and redirecting to login', refreshError);
+            await AuthService.logout();
+            logger.info('NetworkManager', 'Logout completed, redirecting to /onboarding/auth');
+            router.replace('/onboarding/auth');
+            return Promise.reject(error);
+          }
+        }
+        // --- REFRESH TOKEN LOGIC END ---
+        // For client errors (4xx) with response data, return the response instead of rejecting
         // This allows the calling code to handle the error response properly
         if (error.response && status >= 400 && status < 500 && errorData) {
           return Promise.resolve({
@@ -169,13 +202,7 @@ class SimpleNetworkManager {
         const cachedResponse = await cacheManager.get<T>(cacheKey);
         if (cachedResponse) {
           logger.debug('NetworkManager', 'Cache hit', { url: this.sanitizeUrl(url) });
-          return {
-            success: true,
-            data: cachedResponse,
-            status: 200,
-            cached: true,
-            duration: Date.now() - startTime,
-          };
+          return cachedResponse; // já normalizado
         }
       }
 
@@ -203,7 +230,41 @@ class SimpleNetworkManager {
       try {
         const response = await requestPromise;
         this.pendingRequests.delete(cacheKey);
-        return response;
+        // --- NORMALIZAÇÃO GLOBAL ---
+        let normalized;
+        if (response && response.data && typeof response.data === 'object') {
+          const api: any = response.data;
+          if (api.data && typeof api.data === 'object' && ('can_create' in api.data || 'user' in api.data || 'token' in api.data)) {
+            normalized = {
+              success: typeof api.success === 'boolean' ? api.success : true,
+              data: api.data,
+              message: api.message,
+              error: api.error,
+              status: response.status,
+              headers: response.headers,
+            };
+          } else {
+            normalized = {
+              success: typeof api.success === 'boolean' ? api.success : true,
+              data: api.data,
+              message: api.message,
+              error: api.error,
+              status: response.status,
+              headers: response.headers,
+            };
+          }
+        } else {
+          normalized = response;
+        }
+        // Salva resposta normalizada no cache
+        if (method === 'GET' && config.cache !== false && normalized.data) {
+          await cacheManager.set(cacheKey, normalized, {
+            ttl: config.cacheTtl || APP_CONSTANTS.API.CACHE_TTL_DEFAULT,
+            priority: config.priority || 'medium',
+            tags: config.tags || ['api_response'],
+          });
+        }
+        return normalized;
       } catch (error) {
         this.pendingRequests.delete(cacheKey);
         throw error;
@@ -211,7 +272,6 @@ class SimpleNetworkManager {
 
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      
       return {
         success: false,
         error: this.getErrorMessage(error),

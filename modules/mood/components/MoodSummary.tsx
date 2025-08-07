@@ -2,7 +2,6 @@ import Card from '@/components/base/Card';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
-import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useMood } from '../hooks/useMood';
 

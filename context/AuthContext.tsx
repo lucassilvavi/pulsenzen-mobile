@@ -1,6 +1,6 @@
 import { useMemoizedContextValue, useStableCallback } from '@/hooks/usePerformanceOptimization';
 import AuthService, { OnboardingData, User, UserProfile } from '@/services/authService';
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +33,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [onAuthStateChange, setOnAuthStateChange] = useState<(() => void) | undefined>();
 
   const isAuthenticated = useMemo(() => !!user, [user]);
@@ -41,6 +41,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuthStatus = useStableCallback(async () => {
     try {
       setIsLoading(true);
+      console.log('AuthContext: checkAuthStatus iniciado');
       const isAuth = await AuthService.isAuthenticated();
       
       if (isAuth) {
@@ -50,9 +51,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Also load user profile
         const profile = await AuthService.getProfile();
         setUserProfile(profile);
+    
       } else {
         setUser(null);
         setUserProfile(null);
+        console.log('AuthContext: user set to null, should trigger navigation');
       }
     } catch (error) {
       console.error('Check auth status error:', error);
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUserProfile(null);
     } finally {
       setIsLoading(false);
+      console.log('AuthContext: checkAuthStatus finalizado, isLoading false');
     }
   });
 
@@ -203,9 +207,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   });
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
+  // useEffect(() => {
+  //   checkAuthStatus();
+  // }, [checkAuthStatus]);
 
   // Optimize context value with memoization
   const contextValue = useMemoizedContextValue({

@@ -65,6 +65,10 @@ export function useNavigationLogic() {
     onboardingDone: boolean, 
     currentPath: string
   ): string | null => {
+    if (!isAuth) {
+      // Sempre redireciona para welcome se não autenticado
+      return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME;
+    }
     // Don't redirect if already on the correct path
     if (isAuth && onboardingDone && !currentPath.includes('/onboarding')) {
       return null; // User is authenticated and onboarded, stay where they are
@@ -76,10 +80,6 @@ export function useNavigationLogic() {
     
     if (isAuth && onboardingDone && currentPath.includes('/onboarding')) {
       return APP_CONSTANTS.NAVIGATION.ROUTES.HOME;
-    }
-    
-    if (!isAuth && !currentPath.includes('/onboarding')) {
-      return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME;
     }
     
     return null;
@@ -96,6 +96,7 @@ export function useNavigationLogic() {
       lastRoute.current = route;
       
       logger.navigation('NavigationHook', pathname, route, reason);
+      console.log('NavigationLogic: Chamando router.replace para', route, 'por motivo:', reason);
       
       await router.replace(route as any);
       
@@ -132,8 +133,18 @@ export function useNavigationLogic() {
     }
   }, [setOnAuthStateChangeCallback, checkOnboardingStatus]);
 
+  // Forçar redirecionamento após logout
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('NavigationLogic: Forçando router.replace para', APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME, 'após logout');
+      router.replace(APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME);
+    }
+  }, [isAuthenticated]);
+
   // Main navigation logic
   useEffect(() => {
+    console.log('NavigationLogic: isAuthenticated', isAuthenticated, 'onboardingComplete', onboardingComplete, 'pathname', pathname);
+
     if (isLoading || onboardingComplete === null || navigationInProgress.current) {
       return;
     }

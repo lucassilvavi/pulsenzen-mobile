@@ -76,8 +76,7 @@ export default function ProfileScreen() {
               // Logout using AuthContext (clears token and user data)
               await logout();
               
-              // Navigate to welcome screen
-              router.replace('/onboarding/welcome');
+              // Removido: router.replace('/onboarding/welcome');
             } catch (error) {
               console.error('Erro ao fazer logout:', error);
               Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
