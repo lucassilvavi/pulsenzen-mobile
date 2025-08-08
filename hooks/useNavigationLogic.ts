@@ -5,62 +5,26 @@ import { useAuth } from '../context/AuthContext';
 import { logger } from '../utils/secureLogger';
 import { secureStorage } from '../utils/secureStorage';
 
-interface NavigationState {
-  isReady: boolean;
-  shouldRedirect: boolean;
-  targetRoute: string | null;
-}
-
 export function useNavigationLogic() {
-  const { isAuthenticated, isLoading, user, setOnAuthStateChangeCallback } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
-  const [navigationState, setNavigationState] = useState<NavigationState>({
-    isReady: false,
-    shouldRedirect: false,
-    targetRoute: null,
-  });
-  
-  // Use ref to prevent multiple navigation calls
   const navigationInProgress = useRef(false);
-  const lastRoute = useRef<string>('');
-  const cleanupTimeouts = useRef<Array<ReturnType<typeof setTimeout>>>([]);
-
-  // Cleanup function for all timeouts
-  const cleanupAllTimeouts = () => {
-    cleanupTimeouts.current.forEach(timeout => clearTimeout(timeout));
-    cleanupTimeouts.current = [];
-  };
-
-  // Add timeout to cleanup list
-  const addTimeout = (timeout: ReturnType<typeof setTimeout>) => {
-    cleanupTimeouts.current.push(timeout);
-  };
 
   // Check onboarding status
   const checkOnboardingStatus = async (): Promise<boolean> => {
     try {
-      // First check user state if available
       let isComplete = false;
       
       if (user?.onboardingComplete) {
         isComplete = true;
       } else {
-        // Fallback to storage
         const status = await secureStorage.getItem<string>(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE);
         isComplete = status === 'true';
       }
       
       setOnboardingComplete(isComplete);
-      
-      logger.debug('NavigationHook', 'Onboarding status checked', {
-        isComplete,
-        userOnboardingComplete: user?.onboardingComplete,
-        isAuthenticated,
-        currentPath: pathname
-      });
-      
       return isComplete;
     } catch (error) {
       logger.error('NavigationHook', 'Failed to check onboarding status', error as Error);
@@ -69,158 +33,63 @@ export function useNavigationLogic() {
     }
   };
 
-  // Determine target route based on auth and onboarding state
-  const getTargetRoute = (
-    isAuth: boolean, 
-    onboardingDone: boolean, 
-    currentPath: string
-  ): string | null => {
-    if (!isAuth) {
-      // Sempre redireciona para welcome se não autenticado
-      return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME;
-    }
+  // Simplified navigation logic
+  useEffect(() => {
+    console.log('NavigationLogic: Effect triggered - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'pathname:', pathname, 'navigationInProgress:', navigationInProgress.current);
     
-    // Se usuário está autenticado e já completou onboarding
-    if (isAuth && onboardingDone) {
-      if (currentPath.includes('/onboarding')) {
-        return APP_CONSTANTS.NAVIGATION.ROUTES.HOME;
-      }
-      return null; // Já está na página correta
-    }
-    
-    // Se usuário está autenticado mas não completou onboarding
-    if (isAuth && !onboardingDone) {
-      // Se está na tela de auth, move para benefits (próximo passo)
-      if (currentPath === '/onboarding/auth') {
-        return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_BENEFITS;
-      }
-      // Se não está em onboarding, vai para benefits
-      if (!currentPath.includes('/onboarding')) {
-        return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_BENEFITS;
-      }
-      return null; // Já está no onboarding correto
-    }
-    
-    return null;
-  };
-
-  // Perform navigation with safety checks
-  const navigateToRoute = async (route: string, reason: string) => {
-    if (navigationInProgress.current || lastRoute.current === route) {
+    if (isLoading || navigationInProgress.current) {
       return;
     }
 
-    try {
+    const handleNavigation = async () => {
       navigationInProgress.current = true;
-      lastRoute.current = route;
-      
-      logger.navigation('NavigationHook', pathname, route, reason);
-      console.log('NavigationLogic: Chamando router.replace para', route, 'por motivo:', reason);
-      
-      await router.replace(route as any);
-      
-      // Reset navigation lock after a delay with cleanup tracking
-      const timeoutId = setTimeout(() => {
-        navigationInProgress.current = false;
-      }, 1000);
-      addTimeout(timeoutId);
-      
-    } catch (error) {
-      logger.error('NavigationHook', 'Navigation failed', error as Error, {
-        from: pathname,
-        to: route,
-        reason
-      });
-      navigationInProgress.current = false;
-    }
-  };
 
-  // Initial onboarding check
-  useEffect(() => {
-    checkOnboardingStatus();
-  }, [isAuthenticated]);
-
-  // Setup callback for auth state changes
-  useEffect(() => {
-    if (setOnAuthStateChangeCallback) {
-      setOnAuthStateChangeCallback(() => {
-        // Force navigation check after callback
-        setTimeout(() => {
-          checkOnboardingStatus();
-        }, 100);
-      });
-    }
-  }, [setOnAuthStateChangeCallback, checkOnboardingStatus]);
-
-  // Forçar redirecionamento após logout
-  useEffect(() => {
-    if (!isAuthenticated) {
-      console.log('NavigationLogic: Forçando router.replace para', APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME, 'após logout');
-      router.replace(APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME);
-    }
-  }, [isAuthenticated]);
-
-  // Main navigation logic
-  useEffect(() => {
-    console.log('NavigationLogic: isAuthenticated', isAuthenticated, 'onboardingComplete', onboardingComplete, 'pathname', pathname);
-
-    if (isLoading || onboardingComplete === null || navigationInProgress.current) {
-      return;
-    }
-
-    const targetRoute = getTargetRoute(isAuthenticated, onboardingComplete, pathname);
-    
-    if (targetRoute) {
-      setNavigationState({
-        isReady: true,
-        shouldRedirect: true,
-        targetRoute,
-      });
-    } else {
-      setNavigationState({
-        isReady: true,
-        shouldRedirect: false,
-        targetRoute: null,
-      });
-    }
-  }, [isLoading, isAuthenticated, onboardingComplete, pathname]);
-
-  // Execute navigation when state changes
-  useEffect(() => {
-    if (navigationState.shouldRedirect && navigationState.targetRoute) {
-      const reason = !isAuthenticated 
-        ? 'User not authenticated'
-        : !onboardingComplete 
-        ? 'Onboarding not complete'
-        : 'Onboarding complete, redirecting home';
+      // Se não está autenticado e não está em uma rota pública, redireciona
+      if (!isAuthenticated) {
+        const publicRoutes = ['/onboarding/welcome', '/onboarding/auth'];
+        const isOnPublicRoute = publicRoutes.some(route => pathname.includes(route));
         
-      navigateToRoute(navigationState.targetRoute, reason);
-    }
-  }, [navigationState, isAuthenticated, onboardingComplete]);
+        console.log('NavigationLogic: Usuário não autenticado - pathname:', pathname, 'isOnPublicRoute:', isOnPublicRoute);
+        
+        if (!isOnPublicRoute) {
+          console.log('NavigationLogic: Usuário não autenticado tentando acessar rota privada, redirecionando para welcome');
+          await router.replace('/onboarding/welcome');
+        }
+      } else {
+        // Se está autenticado, verifica onboarding
+        const onboardingDone = await checkOnboardingStatus();
+        
+        if (onboardingDone) {
+          // Onboarding completo - pode acessar rotas privadas
+          if (pathname.includes('/onboarding')) {
+            console.log('NavigationLogic: Onboarding completo, redirecionando para home');
+            await router.replace('/');
+          }
+        } else {
+          // Onboarding não completo - vai para setup
+          if (pathname === '/onboarding/auth') {
+            console.log('NavigationLogic: Login feito, indo para benefits');
+            await router.replace('/onboarding/benefits');
+          } else if (!pathname.includes('/onboarding') || pathname === '/onboarding/welcome') {
+            console.log('NavigationLogic: Onboarding não completo, indo para benefits');
+            await router.replace('/onboarding/benefits');
+          }
+        }
+      }
 
-  // Public methods for external use
-  const refreshOnboardingStatus = () => {
-    checkOnboardingStatus();
-  };
-
-  const forceNavigation = (route: string, reason: string = 'Force navigation') => {
-    navigateToRoute(route, reason);
-  };
-
-  // Cleanup effect for component unmount
-  useEffect(() => {
-    return () => {
-      cleanupAllTimeouts();
-      navigationInProgress.current = false;
-      logger.debug('NavigationHook', 'Cleaning up navigation hook resources');
+      // Reset navigation lock
+      setTimeout(() => {
+        navigationInProgress.current = false;
+      }, 500);
     };
-  }, []);
+
+    handleNavigation();
+  }, [isAuthenticated, isLoading, pathname]);
 
   return {
-    isNavigationReady: navigationState.isReady,
+    isNavigationReady: !isLoading,
     onboardingComplete,
-    refreshOnboardingStatus,
-    forceNavigation,
+    refreshOnboardingStatus: checkOnboardingStatus,
     currentRoute: pathname,
   };
 }
