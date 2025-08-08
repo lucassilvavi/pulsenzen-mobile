@@ -2,12 +2,14 @@ import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
 import CustomTextInput from '@/components/base/CustomTextInput';
 import ScreenContainer from '@/components/base/ScreenContainer';
+import { BiometricLoginButton, BiometricSetup, useBiometricAuth } from '@/components/biometric';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -21,9 +23,11 @@ const { height } = Dimensions.get('window');
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { register, login, isLoading } = useAuth();
+  const { register, login, isLoading, checkAuthStatus } = useAuth();
   
   const [isLoginMode, setIsLoginMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -33,6 +37,20 @@ export default function AuthScreen() {
   });
   
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Biometric authentication hook
+  const {
+    isAvailable: isBiometricAvailable,
+    isEnabled: isBiometricEnabled,
+    refreshState,
+  } = useBiometricAuth();
+
+  // Refresh biometric state when component mounts or when switching to login mode
+  useEffect(() => {
+    if (isLoginMode) {
+      refreshState();
+    }
+  }, [isLoginMode, refreshState]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -95,6 +113,22 @@ export default function AuthScreen() {
 
       if (result.success) {
         if (isLoginMode) {
+          // Check if user should be prompted for biometric setup
+          if (isBiometricAvailable && !isBiometricEnabled) {
+            setTimeout(() => {
+              Alert.alert(
+                '🔐 Segurança Aprimorada',
+                'Quer habilitar autenticação biométrica para um acesso mais rápido e seguro?',
+                [
+                  { text: 'Agora não', style: 'cancel' },
+                  { 
+                    text: 'Configurar', 
+                    onPress: () => setShowBiometricSetup(true)
+                  }
+                ]
+              );
+            }, 1000);
+          }
           // For login, let NavigationHandler decide where to go based on onboarding status
           // Don't navigate manually - let the NavigationHandler in _layout handle it
         } else {
@@ -115,6 +149,45 @@ export default function AuthScreen() {
       console.error('Auth error:', error);
       Alert.alert('Erro', 'Ocorreu um erro inesperado. Tente novamente.');
     }
+  };
+
+  /**
+   * Handle biometric login success
+   */
+  const handleBiometricSuccess = async () => {
+    console.log('Biometric login successful');
+    // Force auth context to refresh and recognize the new authentication state
+    try {
+      // Refresh the auth context to pick up the newly saved auth data
+      await checkAuthStatus();
+      // Navigation will be handled by NavigationHandler in _layout after context updates
+    } catch (error) {
+      console.error('Error refreshing auth state after biometric login:', error);
+      // Fallback to direct navigation
+      router.replace('/');
+    }
+  };
+
+  /**
+   * Handle biometric login error
+   */
+  const handleBiometricError = (error: string) => {
+    console.error('Biometric login error:', error);
+    // Don't show alert for user cancellation
+    if (!error.toLowerCase().includes('cancel')) {
+      Alert.alert('❌ Autenticação Biométrica Falhou', error);
+    }
+  };
+
+  /**
+   * Handle biometric setup completion
+   */
+  const handleBiometricSetupComplete = () => {
+    Alert.alert(
+      '🎉 Sucesso!',
+      'Autenticação biométrica configurada com sucesso! Agora você pode fazer login de forma rápida e segura.',
+      [{ text: 'Ótimo!' }]
+    );
   };
 
   const toggleMode = () => {
@@ -202,7 +275,19 @@ export default function AuthScreen() {
               onChangeText={(text) => setFormData({ ...formData, password: text })}
               placeholder="Senha"
               containerStyle={styles.input}
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              rightIcon={
+                <TouchableOpacity 
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.passwordToggle}
+                >
+                  <Ionicons 
+                    name={showPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color={colors.neutral.text.disabled} 
+                  />
+                </TouchableOpacity>
+              }
             />
             {errors.password && (
               <ThemedText style={styles.errorText}>{errors.password}</ThemedText>
@@ -231,6 +316,24 @@ export default function AuthScreen() {
               disabled={isLoading}
             />
 
+            {/* Biometric Login Button - Only show on login mode */}
+            {isLoginMode && isBiometricAvailable && isBiometricEnabled && (
+              <>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <ThemedText style={styles.dividerText}>ou</ThemedText>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <BiometricLoginButton
+                  onSuccess={handleBiometricSuccess}
+                  onError={handleBiometricError}
+                  disabled={isLoading}
+                  style={styles.biometricButton}
+                />
+              </>
+            )}
+
             <TouchableOpacity style={styles.toggleButton} onPress={toggleMode}>
               <ThemedText style={styles.toggleText}>
                 {isLoginMode 
@@ -248,6 +351,13 @@ export default function AuthScreen() {
             Termos de Uso e Política de Privacidade
           </ThemedText>
         </View>
+
+        {/* Biometric Setup Modal */}
+        <BiometricSetup
+          visible={showBiometricSetup}
+          onClose={() => setShowBiometricSetup(false)}
+          onSetupComplete={handleBiometricSetupComplete}
+        />
       </ScrollView>
     </ScreenContainer>
   );
@@ -293,6 +403,9 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: spacing.sm,
   },
+  passwordToggle: {
+    padding: spacing.xs,
+  },
   errorText: {
     color: colors.error.main,
     fontSize: fontSize.sm,
@@ -301,6 +414,24 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.neutral.divider,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    fontSize: fontSize.sm,
+    color: colors.neutral.text.disabled,
+  },
+  biometricButton: {
     marginBottom: spacing.lg,
   },
   toggleButton: {

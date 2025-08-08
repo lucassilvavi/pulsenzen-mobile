@@ -112,9 +112,9 @@ async function testRegister() {
   console.log('\n👤 TESTE 2: Registro de Usuário');
   const result = await makeRequest('/auth/register', 'POST', testUser);
   
-  if (result.success && result.data.data) {
-    authToken = result.data.data.token;
-    userId = result.data.data.user.id;
+  if (result.success && result.data) {
+    authToken = result.data.token;
+    userId = result.data.user.id;
     console.log(`📋 User ID: ${userId}`);
     console.log(`🔑 Token: ${authToken.substring(0, 20)}...`);
     return true;
@@ -132,8 +132,8 @@ async function testLogin() {
   
   const result = await makeRequest('/auth/login', 'POST', loginData);
   
-  if (result.success && result.data.data) {
-    authToken = result.data.data.token;
+  if (result.success && result.data) {
+    authToken = result.data.token;
     console.log(`🔑 New Token: ${authToken.substring(0, 20)}...`);
     return true;
   }
@@ -146,8 +146,8 @@ async function testGetProfile() {
   const result = await makeRequest('/auth/profile', 'GET', null, true);
   
   if (result.success) {
-    console.log(`📧 Email: ${result.data.data.email}`);
-    console.log(`✅ Onboarding Completed: ${result.data.data.profile?.onboardingCompleted || false}`);
+    console.log(`📧 Email: ${result.data.email}`);
+    console.log(`✅ Onboarding Completed: ${result.data.profile?.onboardingCompleted || false}`);
     return true;
   }
   
@@ -165,8 +165,8 @@ async function testCompleteOnboarding() {
   };
   
   const loginResult = await makeRequest('/auth/login', 'POST', loginData);
-  if (loginResult.success && loginResult.data.data) {
-    authToken = loginResult.data.data.token;
+  if (loginResult.success && loginResult.data) {
+    authToken = loginResult.data.token;
     console.log(`🔑 Fresh Token obtained for onboarding`);
   } else {
     console.log('❌ Failed to get fresh token');
@@ -179,8 +179,8 @@ async function testCompleteOnboarding() {
   
   if (result.success) {
     console.log(`✅ Onboarding completed successfully`);
-    console.log(`📊 Goals: ${result.data.data.profile?.goals?.join(', ') || 'N/A'}`);
-    console.log(`🏃 Exercise Frequency: ${result.data.data.profile?.exerciseFrequency || 'N/A'}`);
+    console.log(`📊 Goals: ${result.data.profile?.goals?.join(', ') || 'N/A'}`);
+    console.log(`🏃 Exercise Frequency: ${result.data.profile?.exerciseFrequency || 'N/A'}`);
     return true;
   } else {
     console.log(`❌ Onboarding failed with error: ${result.data?.error || 'Unknown error'}`);
@@ -204,8 +204,8 @@ async function testUpdateProfile() {
   
   if (result.success) {
     console.log(`✅ Profile updated successfully`);
-    console.log(`👤 Name: ${result.data.data.profile?.firstName} ${result.data.data.profile?.lastName}`);
-    console.log(`😴 Sleep Hours: ${result.data.data.profile?.sleepHours}`);
+    console.log(`👤 Name: ${result.data.profile?.firstName} ${result.data.profile?.lastName}`);
+    console.log(`😴 Sleep Hours: ${result.data.profile?.sleepHours}`);
     return true;
   }
   
@@ -217,8 +217,8 @@ async function testGetProfileAfterOnboarding() {
   const result = await makeRequest('/auth/profile', 'GET', null, true);
   
   if (result.success) {
-    const profile = result.data.data.profile;
-    console.log(`📧 Email: ${result.data.data.email}`);
+    const profile = result.data.profile;
+    console.log(`📧 Email: ${result.data.email}`);
     console.log(`✅ Onboarding Completed: ${profile?.onboardingCompleted || false}`);
     console.log(`🎯 Goals: ${profile?.goals?.join(', ') || 'N/A'}`);
     console.log(`📅 Date of Birth: ${profile?.dateOfBirth || 'N/A'}`);
@@ -256,7 +256,7 @@ async function testJournalEndpoints() {
   const result = await makeRequest('/journal', 'GET', null, true);
   
   if (result.success) {
-    console.log(`✅ Journal entries retrieved: ${result.data.data?.length || 0} entries`);
+    console.log(`✅ Journal entries retrieved: ${result.data?.length || 0} entries`);
     return true;
   }
   
@@ -269,13 +269,13 @@ async function testMusicEndpoints() {
   // Test public music categories
   const categoriesResult = await makeRequest('/music/categories', 'GET');
   if (categoriesResult.success) {
-    console.log(`✅ Music categories retrieved: ${categoriesResult.data.data?.length || 0} categories`);
+    console.log(`✅ Music categories retrieved: ${categoriesResult.data?.length || 0} categories`);
   }
   
   // Test protected playlists (requires auth)
   const playlistsResult = await makeRequest('/music/playlists', 'GET', null, true);
   if (playlistsResult.success) {
-    console.log(`✅ Playlists retrieved: ${playlistsResult.data.data?.length || 0} playlists`);
+    console.log(`✅ Playlists retrieved: ${playlistsResult.data?.length || 0} playlists`);
     return true;
   }
   

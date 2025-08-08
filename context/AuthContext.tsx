@@ -160,6 +160,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (user) {
           setUser({ ...user, onboardingComplete: true });
         }
+        
+        // Trigger navigation re-evaluation
+        if (onAuthStateChange) {
+          onAuthStateChange();
+        }
+        
         return { success: true, message: 'Onboarding concluído com sucesso!' };
       } else {
         return { success: false, message: result.message || 'Erro ao concluir onboarding' };

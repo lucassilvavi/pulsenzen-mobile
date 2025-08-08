@@ -34,7 +34,7 @@ export default function SetupScreen() {
     const { user, isAuthenticated, markOnboardingComplete, completeOnboarding, updateProfile } = useAuth();
     const [name, setName] = useState('');
     const [sex, setSex] = useState('');
-    const [age, setAge] = useState('');
+    const [dateOfBirth, setDateOfBirth] = useState('');
     const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
     const [selectedExperience, setSelectedExperience] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
@@ -63,8 +63,30 @@ export default function SetupScreen() {
             Alert.alert('Sexo obrigatório', 'Por favor, selecione se você é MENINO ou MENINA.');
             return;
         }
-        if (!age.trim() || isNaN(Number(age)) || Number(age) <= 0) {
-            Alert.alert('Idade obrigatória', 'Por favor, informe uma idade válida.');
+        if (!dateOfBirth.trim()) {
+            Alert.alert('Data de nascimento obrigatória', 'Por favor, informe sua data de nascimento.');
+            return;
+        }
+        
+        // Validate date format (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(dateOfBirth)) {
+            Alert.alert('Data inválida', 'Por favor, use o formato AAAA-MM-DD (ex: 1990-01-15).');
+            return;
+        }
+        
+        // Validate date range
+        const birthDate = new Date(dateOfBirth);
+        const currentDate = new Date();
+        const minDate = new Date('1900-01-01');
+        
+        if (birthDate > currentDate) {
+            Alert.alert('Data inválida', 'A data de nascimento não pode ser no futuro.');
+            return;
+        }
+        
+        if (birthDate < minDate) {
+            Alert.alert('Data inválida', 'Por favor, insira uma data de nascimento válida.');
             return;
         }
         if (selectedGoals.length === 0) {
@@ -83,10 +105,8 @@ export default function SetupScreen() {
             logger.info("OnboardingSetup", 'User authenticated:', isAuthenticated);
             logger.info("OnboardingSetup", 'User data:', user);
 
-            // Calculate date of birth from age
-            const currentYear = new Date().getFullYear();
-            const birthYear = currentYear - parseInt(age);
-            const dateOfBirth = `${birthYear}-01-01`; // Default to January 1st
+            // Use the dateOfBirth directly - no need to calculate
+            logger.info("OnboardingSetup", 'Using date of birth:', dateOfBirth);
 
             // Create onboarding data object
             const onboardingData = {
@@ -209,18 +229,21 @@ export default function SetupScreen() {
                         </View>
                     </View>
 
-                    {/* Age Input */}
+                    {/* Date of Birth Input */}
                     <View style={styles.section}>
                         <ThemedText style={styles.sectionTitle}>
-                            Qual a sua idade?
+                            Qual a sua data de nascimento?
                         </ThemedText>
                         <CustomTextInput
-                            placeholder="Digite sua idade"
-                            value={age}
-                            onChangeText={setAge}
+                            placeholder="AAAA-MM-DD (ex: 1990-01-15)"
+                            value={dateOfBirth}
+                            onChangeText={setDateOfBirth}
                             keyboardType="numeric"
                             inputStyle={styles.nameInput}
                         />
+                        <ThemedText style={styles.helperText}>
+                            Use o formato AAAA-MM-DD
+                        </ThemedText>
                     </View>
 
                     {/* Goals Selection */}
@@ -489,6 +512,12 @@ const styles = StyleSheet.create({
     },
     activeDot: {
         backgroundColor: colors.profile.accent,
+    },
+    helperText: {
+        fontSize: fontSize.sm,
+        color: colors.neutral.text.secondary,
+        marginTop: spacing.xs,
+        textAlign: 'center',
     },
 });
 

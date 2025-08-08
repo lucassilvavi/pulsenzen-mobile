@@ -1,5 +1,6 @@
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
+import { BiometricSettings } from '@/components/biometric';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
@@ -202,6 +203,12 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </Card>
 
+        {/* Biometric Settings */}
+        <Card style={styles.sectionCard}>
+          <ThemedText style={styles.sectionTitle}>Segurança</ThemedText>
+          <BiometricSettings style={styles.biometricSettings} />
+        </Card>
+
         {/* Logout Button */}
         <Button
           label="Sair"
@@ -374,5 +381,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     borderColor: colors.error.main,
     borderWidth: 1,
+  },
+  biometricSettings: {
+    borderRadius: 0,
+    backgroundColor: 'transparent',
   },
 });

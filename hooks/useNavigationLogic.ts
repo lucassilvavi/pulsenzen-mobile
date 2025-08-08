@@ -12,7 +12,7 @@ interface NavigationState {
 }
 
 export function useNavigationLogic() {
-  const { isAuthenticated, isLoading, setOnAuthStateChangeCallback } = useAuth();
+  const { isAuthenticated, isLoading, user, setOnAuthStateChangeCallback } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
@@ -41,12 +41,22 @@ export function useNavigationLogic() {
   // Check onboarding status
   const checkOnboardingStatus = async (): Promise<boolean> => {
     try {
-      const status = await secureStorage.getItem<string>(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE);
-      const isComplete = status === 'true';
+      // First check user state if available
+      let isComplete = false;
+      
+      if (user?.onboardingComplete) {
+        isComplete = true;
+      } else {
+        // Fallback to storage
+        const status = await secureStorage.getItem<string>(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE);
+        isComplete = status === 'true';
+      }
+      
       setOnboardingComplete(isComplete);
       
       logger.debug('NavigationHook', 'Onboarding status checked', {
         isComplete,
+        userOnboardingComplete: user?.onboardingComplete,
         isAuthenticated,
         currentPath: pathname
       });
@@ -69,17 +79,26 @@ export function useNavigationLogic() {
       // Sempre redireciona para welcome se não autenticado
       return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_WELCOME;
     }
-    // Don't redirect if already on the correct path
-    if (isAuth && onboardingDone && !currentPath.includes('/onboarding')) {
-      return null; // User is authenticated and onboarded, stay where they are
+    
+    // Se usuário está autenticado e já completou onboarding
+    if (isAuth && onboardingDone) {
+      if (currentPath.includes('/onboarding')) {
+        return APP_CONSTANTS.NAVIGATION.ROUTES.HOME;
+      }
+      return null; // Já está na página correta
     }
     
-    if (isAuth && !onboardingDone && !currentPath.includes('/onboarding')) {
-      return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_BENEFITS;
-    }
-    
-    if (isAuth && onboardingDone && currentPath.includes('/onboarding')) {
-      return APP_CONSTANTS.NAVIGATION.ROUTES.HOME;
+    // Se usuário está autenticado mas não completou onboarding
+    if (isAuth && !onboardingDone) {
+      // Se está na tela de auth, move para benefits (próximo passo)
+      if (currentPath === '/onboarding/auth') {
+        return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_BENEFITS;
+      }
+      // Se não está em onboarding, vai para benefits
+      if (!currentPath.includes('/onboarding')) {
+        return APP_CONSTANTS.NAVIGATION.ROUTES.ONBOARDING_BENEFITS;
+      }
+      return null; // Já está no onboarding correto
     }
     
     return null;

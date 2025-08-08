@@ -556,11 +556,23 @@ class AuthService {
       }
       await secureStorage.setItem(this.USER_KEY, JSON.stringify(user));
       
-      // Save onboarding status if available in user data
+      // Save onboarding status - check multiple possible sources
+      let onboardingComplete = false;
+      
       if (user.onboardingComplete !== undefined) {
-        await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, user.onboardingComplete ? 'true' : 'false');
-        logger.info('AuthService', 'Onboarding status saved from user data', { onboardingComplete: user.onboardingComplete });
+        onboardingComplete = user.onboardingComplete;
+      } else if ((user as any).profile?.onboardingCompleted !== undefined) {
+        onboardingComplete = (user as any).profile.onboardingCompleted;
+        // Update user object to include onboardingComplete for consistency
+        user.onboardingComplete = onboardingComplete;
+        await secureStorage.setItem(this.USER_KEY, JSON.stringify(user));
       }
+      
+      await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, onboardingComplete ? 'true' : 'false');
+      logger.info('AuthService', 'Onboarding status saved', { 
+        onboardingComplete,
+        source: user.onboardingComplete !== undefined ? 'user.onboardingComplete' : 'user.profile.onboardingCompleted'
+      });
     } catch (error) {
       logger.error('AuthService', 'Failed to save auth data', error instanceof Error ? error : new Error(String(error)));
     }
@@ -589,6 +601,10 @@ class AuthService {
       logger.info('AuthService', 'Removed user data');
       await secureStorage.removeItem('onboardingDone');
       logger.info('AuthService', 'Removed onboarding status');
+      
+      // Note: We don't clear biometric data on logout - users should keep their biometric setup
+      // Biometric data is only cleared when explicitly disabled or on account deletion
+      
       const tokenAfter = await secureStorage.getItem(this.TOKEN_KEY);
       const refreshTokenAfter = await secureStorage.getItem(this.REFRESH_TOKEN_KEY);
       const userAfter = await secureStorage.getItem(this.USER_KEY);
@@ -649,14 +665,28 @@ class AuthService {
       if (response.success && response.data) {
         const apiResponse = response.data;
         
+        // Debug: Log the complete response structure
+        logger.debug('AuthService', 'Complete API response structure', {
+          responseSuccess: response.success,
+          responseData: typeof response.data,
+          apiResponseKeys: Object.keys(apiResponse || {}),
+          apiResponseSuccess: apiResponse?.success,
+          apiResponseData: apiResponse?.data ? Object.keys(apiResponse.data) : null,
+          apiResponseProfile: !!apiResponse?.profile
+        });
+        
         // Secure logging - only log success/failure, not sensitive data
         logger.info('AuthService', 'Onboarding API response received', {
           success: apiResponse.success,
           hasData: !!apiResponse.data,
-          hasProfile: !!apiResponse.profile
+          hasProfile: !!(apiResponse.data?.profile || apiResponse.profile)
         });
         
-        if (apiResponse.success) {
+        // Check if the API returned a successful response
+        // The API might return just { profile: {...} } or { success: true, data/profile: {...} }
+        const isSuccessful = apiResponse.success !== false && (apiResponse.profile || apiResponse.data?.profile);
+        
+        if (isSuccessful) {
           // Update local user data with onboarding completion
           const currentUser = await this.getCurrentUser();
           if (currentUser) {
@@ -672,7 +702,7 @@ class AuthService {
           return {
             success: true,
             message: apiResponse.message || 'Onboarding completed successfully',
-            data: apiResponse.profile || apiResponse.data,
+            data: apiResponse.data?.profile || apiResponse.profile || apiResponse.data,
           };
         } else {
           logger.warn('AuthService', 'Onboarding completion failed', { 
@@ -731,7 +761,7 @@ class AuthService {
                 return {
                   success: true,
                   message: retryApiResponse.message || 'Onboarding completed successfully',
-                  data: retryApiResponse.profile || retryApiResponse.data,
+                  data: retryApiResponse.data?.profile || retryApiResponse.profile || retryApiResponse.data,
                 };
               }
             }
@@ -848,9 +878,9 @@ class AuthService {
         logger.debug("AuthService", 'Updated user data with onboarding complete');
       }
       
-      // Save onboarding completion in AsyncStorage - use both keys for compatibility
-      await secureStorage.setItem('onboardingDone', 'true');
-      await secureStorage.setItem('onboarding_done', 'true');
+      // Save onboarding completion in AsyncStorage - use the constant key
+      await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, 'true');
+      await secureStorage.setItem('onboarding_done', 'true'); // Keep for backward compatibility
       
       logger.debug("AuthService", 'Onboarding marked as complete successfully');
     } catch (error) {
@@ -865,6 +895,316 @@ class AuthService {
       } catch (fallbackError) {
         logger.error('AuthService', 'Fallback storage also failed', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
       }
+    }
+  }
+
+  // ============================================================================
+  // BIOMETRIC AUTHENTICATION METHODS
+  // ============================================================================
+
+  /**
+   * Check if biometric authentication is available and enabled
+   */
+  static async isBiometricAvailable(): Promise<boolean> {
+    try {
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+      const capabilities = await BiometricAuthService.checkBiometricCapabilities();
+      return capabilities.hasBiometrics;
+    } catch (error) {
+      logger.error('AuthService', 'Error checking biometric availability', error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if biometric authentication is enabled for current user
+   */
+  static async isBiometricEnabled(): Promise<boolean> {
+    try {
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+      return await BiometricAuthService.isBiometricEnabled();
+    } catch (error) {
+      logger.error('AuthService', 'Error checking biometric enabled status', error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Setup biometric authentication for current user
+   */
+  static async setupBiometricAuth(): Promise<{ success: boolean; error?: string }> {
+    try {
+      logger.info('AuthService', 'Setting up biometric authentication');
+
+      // Check if user is authenticated
+      if (!(await this.isAuthenticated())) {
+        return {
+          success: false,
+          error: 'User must be authenticated to setup biometric auth',
+        };
+      }
+
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+
+      // Verify device capabilities
+      const capabilitiesResult = await BiometricAuthService.verifyDeviceCapabilities();
+      if (!capabilitiesResult.success) {
+        return {
+          success: false,
+          error: capabilitiesResult.error || 'Device does not support biometric authentication',
+        };
+      }
+
+      // Register device
+      const registerResult = await BiometricAuthService.registerDevice();
+      if (!registerResult.success) {
+        return {
+          success: false,
+          error: registerResult.error || 'Failed to register device',
+        };
+      }
+
+      // Enable biometric authentication
+      const enableResult = await BiometricAuthService.enableBiometricAuth();
+      if (!enableResult.success) {
+        return {
+          success: false,
+          error: enableResult.error || 'Failed to enable biometric authentication',
+        };
+      }
+
+      logger.info('AuthService', 'Biometric authentication setup completed successfully');
+      return { success: true };
+
+    } catch (error) {
+      logger.error('AuthService', 'Error setting up biometric authentication', error as Error);
+      return {
+        success: false,
+        error: 'Failed to setup biometric authentication',
+      };
+    }
+  }
+
+  /**
+   * Login with biometric authentication
+   */
+  static async loginWithBiometric(): Promise<AuthResponse> {
+    try {
+      logger.info('AuthService', 'Attempting biometric login');
+
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+
+      // Check if biometric is enabled
+      const isEnabled = await BiometricAuthService.isBiometricEnabled();
+      if (!isEnabled) {
+        return {
+          success: false,
+          error: 'Biometric authentication not enabled',
+          message: 'Please setup biometric authentication first',
+        };
+      }
+
+      // Authenticate with biometrics
+      const biometricResult = await BiometricAuthService.authenticateWithBiometrics();
+      
+      if (biometricResult.success && biometricResult.data) {
+        const token = biometricResult.data.token;
+        
+        if (token) {
+          // Log the new token for debugging
+          logger.info('AuthService', 'Received new token from biometric auth', { 
+            tokenLength: token.length,
+            tokenStart: token.substring(0, 50) + '...',
+            tokenEnd: '...' + token.substring(token.length - 20)
+          });
+          
+          // Save the new token immediately
+          await secureStorage.setItem(this.TOKEN_KEY, token);
+          
+          // Fetch user data using direct axios call to bypass interceptors
+          try {
+            logger.info('AuthService', 'Making profile request with new token');
+            const axios = require('axios').default;
+            const response = await axios.get(
+              appConfig.getApiUrl('/auth/profile'),
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                timeout: 15000,
+              }
+            );
+            
+            logger.info('AuthService', 'Profile request successful', { status: response.status });
+            
+            if (response.data && response.data.success && response.data.data) {
+              const userData = response.data.data;
+              
+              // Save complete auth data
+              await this.saveAuthData(
+                token,
+                undefined, // No refresh token in biometric response
+                userData
+              );
+
+              logger.info('AuthService', 'Biometric login successful');
+              return {
+                success: true,
+                data: {
+                  user: userData,
+                  token: token,
+                },
+                message: 'Biometric login successful',
+              };
+            } else {
+              logger.warn('AuthService', 'Failed to fetch user profile after biometric login');
+              return {
+                success: false,
+                error: 'Failed to retrieve user profile',
+                message: 'User profile fetch failed',
+              };
+            }
+          } catch (profileError: any) {
+            logger.error('AuthService', 'Error fetching user profile after biometric login', profileError);
+            logger.info('AuthService', 'Profile error details', {
+              status: profileError.response?.status,
+              data: profileError.response?.data,
+              tokenUsed: token.substring(0, 50) + '...'
+            });
+            return {
+              success: false,
+              error: 'Failed to retrieve user data',
+              message: profileError?.response?.data?.message || 'Profile fetch error',
+            };
+          }
+        } else {
+          logger.warn('AuthService', 'Biometric login missing token');
+          return {
+            success: false,
+            error: 'Invalid biometric response',
+            message: 'Authentication token missing',
+          };
+        }
+      } else {
+        logger.warn('AuthService', 'Biometric login failed', { 
+          error: biometricResult.error,
+          fallbackMethods: biometricResult.fallbackMethods 
+        });
+
+        return {
+          success: false,
+          error: biometricResult.error || 'Biometric authentication failed',
+          message: biometricResult.error || 'Biometric authentication failed',
+        };
+      }
+    } catch (error) {
+      logger.error('AuthService', 'Biometric login error', error as Error);
+      return {
+        success: false,
+        error: 'Biometric login failed',
+        message: 'Failed to authenticate with biometrics',
+      };
+    }
+  }
+
+  /**
+   * Generate backup codes for biometric authentication
+   */
+  static async generateBiometricBackupCodes(): Promise<{ success: boolean; codes?: string[]; error?: string }> {
+    try {
+      logger.info('AuthService', 'Generating biometric backup codes');
+
+      if (!(await this.isAuthenticated())) {
+        return {
+          success: false,
+          error: 'Authentication required',
+        };
+      }
+
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+      const result = await BiometricAuthService.generateBackupCodes();
+
+      if (result.success && result.data) {
+        logger.info('AuthService', 'Backup codes generated successfully');
+        return {
+          success: true,
+          codes: result.data.rawCodes || [],
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Failed to generate backup codes',
+        };
+      }
+    } catch (error) {
+      logger.error('AuthService', 'Error generating backup codes', error as Error);
+      return {
+        success: false,
+        error: 'Failed to generate backup codes',
+      };
+    }
+  }
+
+  /**
+   * Get existing backup codes
+   */
+  static async getBiometricBackupCodes(): Promise<{ success: boolean; codes?: any[]; error?: string }> {
+    try {
+      logger.info('AuthService', 'Getting biometric backup codes');
+
+      if (!(await this.isAuthenticated())) {
+        return {
+          success: false,
+          error: 'Authentication required',
+        };
+      }
+
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+      const result = await BiometricAuthService.getBackupCodes();
+
+      if (result.success && result.data) {
+        logger.info('AuthService', 'Backup codes retrieved successfully');
+        return {
+          success: true,
+          codes: result.data.codes || [],
+        };
+      } else {
+        return {
+          success: false,
+          error: result.error || 'Failed to get backup codes',
+        };
+      }
+    } catch (error) {
+      logger.error('AuthService', 'Error getting backup codes', error as Error);
+      return {
+        success: false,
+        error: 'Failed to get backup codes',
+      };
+    }
+  }
+
+  /**
+   * Disable biometric authentication
+   */
+  static async disableBiometricAuth(): Promise<{ success: boolean; error?: string }> {
+    try {
+      logger.info('AuthService', 'Disabling biometric authentication');
+
+      const BiometricAuthService = (await import('./biometricAuthService')).default;
+      const result = await BiometricAuthService.disableBiometricAuth();
+
+      if (result.success) {
+        logger.info('AuthService', 'Biometric authentication disabled successfully');
+      }
+
+      return result;
+    } catch (error) {
+      logger.error('AuthService', 'Error disabling biometric authentication', error as Error);
+      return {
+        success: false,
+        error: 'Failed to disable biometric authentication',
+      };
     }
   }
 }

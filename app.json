@@ -28,7 +28,9 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.USE_BIOMETRIC"
       ]
     },
     "web": {
@@ -50,7 +52,13 @@
       "expo-web-browser",
       "expo-font",
       "expo-audio",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow PulseZen to use Face ID for secure and convenient authentication."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

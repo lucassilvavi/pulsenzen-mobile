@@ -60,7 +60,7 @@ async function login() {
   
   if (result.success && result.data?.data?.token) {
     console.log('🎉 Login successful!');
-    return result.data.data.token;
+    return result.data.token;
   } else {
     console.log('❌ Login failed');
     return null;
