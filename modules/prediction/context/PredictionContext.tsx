@@ -1,10 +1,10 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { PredictionState, PredictionSummary } from '../types';
-import { PredictionMockService } from '../services/PredictionMock';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { track } from '../services/Telemetry';
-import { PredictionDataSource } from '../services/PredictionDataSource';
 import { useToast } from '@/modules/ui/toast/ToastContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { PredictionDataSource } from '../services/PredictionDataSource';
+import { PredictionMockService } from '../services/PredictionMock';
+import { track } from '../services/Telemetry';
+import { PredictionState, PredictionSummary } from '../types';
 
 interface PredictionContextValue extends PredictionState {
   refresh: () => Promise<void>;

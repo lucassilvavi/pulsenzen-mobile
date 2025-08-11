@@ -1,4 +1,4 @@
-import { InterventionSuggestion, PredictionDetail, PredictionSummary, RiskFactor } from '../types';
+import { InterventionSuggestion, PredictionDetail, RiskFactor } from '../types';
 import { PredictionDataSource } from './PredictionDataSource';
 
 function randomBetween(min: number, max: number) {

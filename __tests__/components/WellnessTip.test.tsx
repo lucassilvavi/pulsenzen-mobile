@@ -1,5 +1,4 @@
 // Adjusted import to reflect actual module path
-import WellnessTip from '../../modules/mood/components/WellnessTip';
 
 // Mock useMood hook
 const mockUseMood = {

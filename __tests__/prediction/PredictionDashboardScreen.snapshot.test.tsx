@@ -1,8 +1,7 @@
-import React from 'react';
 import renderer from 'react-test-renderer';
 import { PredictionDashboardScreen } from '../../modules/prediction';
-import { PredictionState } from '../../modules/prediction/types';
 import { usePrediction } from '../../modules/prediction/context/PredictionContext';
+import { PredictionState } from '../../modules/prediction/types';
 
 // We mock the hook to supply stable data
 jest.mock('../../modules/prediction/context/PredictionContext', () => {

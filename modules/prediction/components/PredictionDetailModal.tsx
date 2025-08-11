@@ -1,10 +1,10 @@
-import React from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { fontSize, spacing } from '@/utils/responsive';
 import { colors, getRiskPalette } from '@/constants/theme';
-import { usePrediction } from '../context/PredictionContext';
+import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { usePrediction } from '../context/PredictionContext';
 
 interface Props { visible: boolean; onClose: () => void; }
 

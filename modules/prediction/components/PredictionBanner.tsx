@@ -1,13 +1,13 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/ThemedText';
-import { fontSize, spacing } from '@/utils/responsive';
 import { colors, getRiskPalette } from '@/constants/theme';
-import { usePrediction } from '../context/PredictionContext';
+import { fontSize, spacing } from '@/utils/responsive';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { PredictionDetailModal } from './PredictionDetailModal';
+import React, { useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { usePrediction } from '../context/PredictionContext';
 import { track } from '../services/Telemetry';
+import { PredictionDetailModal } from './PredictionDetailModal';
 
 function levelColors(level: string) {
   const palette = getRiskPalette((['low','medium','high'].includes(level) ? level : 'low') as 'low'|'medium'|'high');

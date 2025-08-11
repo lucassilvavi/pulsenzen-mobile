@@ -1,15 +1,15 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { usePrediction } from '../context/PredictionContext';
 import { ThemedText } from '@/components/ThemedText';
+import { colors, getFactorCategoryMeta, getRiskPalette } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
-import { colors, getRiskPalette, getFactorCategoryMeta } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Skeleton } from './Skeleton';
+import React from 'react';
+import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePrediction } from '../context/PredictionContext';
 import { track } from '../services/Telemetry';
 import { InterventionsCarousel } from './InterventionsCarousel';
+import { Skeleton } from './Skeleton';
 
 export const PredictionDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets();

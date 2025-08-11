@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { Animated, Easing, StyleSheet, View, Text, AccessibilityInfo } from 'react-native';
 import { colors } from '@/constants/theme';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 interface ToastOptions { type?: 'info' | 'success' | 'warning' | 'error'; duration?: number; }
 interface ToastItem { id: number; message: string; type: ToastOptions['type']; }

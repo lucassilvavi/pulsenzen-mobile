@@ -1,13 +1,13 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, FlatList, Dimensions, TouchableOpacity, Animated } from 'react-native';
-import { InterventionSuggestion } from '../types';
-import { usePrediction } from '../context/PredictionContext';
 import { ThemedText } from '@/components/ThemedText';
-import { fontSize, spacing } from '@/utils/responsive';
 import { colors } from '@/constants/theme';
-import * as Haptics from 'expo-haptics';
-import { track } from '../services/Telemetry';
 import { useReducedMotion } from '@/hooks/useAccessibility';
+import { fontSize, spacing } from '@/utils/responsive';
+import * as Haptics from 'expo-haptics';
+import React, { useRef } from 'react';
+import { Animated, Dimensions, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { usePrediction } from '../context/PredictionContext';
+import { track } from '../services/Telemetry';
+import { InterventionSuggestion } from '../types';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.74;

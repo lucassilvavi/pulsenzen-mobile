@@ -1,10 +1,10 @@
-import React from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
-import { fontSize, spacing } from '@/utils/responsive';
 import { colors } from '@/constants/theme';
-import { useCBTAnalysis } from '../hooks/useCBTAnalysis';
+import { fontSize, spacing } from '@/utils/responsive';
 import * as Haptics from 'expo-haptics';
+import React from 'react';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useCBTAnalysis } from '../hooks/useCBTAnalysis';
 
 interface Props { visible: boolean; onClose: () => void; text: string; }
 

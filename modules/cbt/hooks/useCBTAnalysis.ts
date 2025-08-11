@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
-import { CBTAnalysisResult } from '../types';
-import { CBTMockService } from '../services/CBTMockService';
 import { track } from '@/modules/prediction/services/Telemetry';
+import { useCallback, useState } from 'react';
+import { CBTMockService } from '../services/CBTMockService';
+import { CBTAnalysisResult } from '../types';
 
 export function useCBTAnalysis(initial?: CBTAnalysisResult | null){
   const [result, setResult] = useState<CBTAnalysisResult | null>(initial || null);
