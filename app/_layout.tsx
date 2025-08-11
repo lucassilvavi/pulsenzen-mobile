@@ -1,6 +1,8 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { useNavigationLogic } from '@/hooks/useNavigationLogic';
 import { MusicProvider } from '@/modules/music/context/MusicContext';
+import { PredictionProvider } from '@/modules/prediction';
+import { ToastProvider } from '@/modules/ui/toast/ToastContext';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -74,31 +76,36 @@ export default function RootLayoutHybrid() {
       <SafeAreaProvider>
         <AuthProvider>
           <MusicProvider>
-            <NavigationHandler>
-              <View style={styles.container}>
-                <StatusBar style="auto" />
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: 'white' },
-                  }}
-                >
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
-                  <Stack.Screen name="onboarding/auth" options={{ headerShown: false, gestureEnabled: false }} />
-                  <Stack.Screen name="onboarding/setup" options={{ headerShown: false }} />
-                  <Stack.Screen name="onboarding/benefits" options={{ headerShown: false }} />
-                  <Stack.Screen name="breathing" options={{ headerShown: false }} />
-                  <Stack.Screen name="breathing-session" options={{ headerShown: false }} />
-                  <Stack.Screen name="journal" options={{ headerShown: false }} />
-                  <Stack.Screen name="journal-entry" options={{ headerShown: false }} />
-                  <Stack.Screen name="music-player" options={{ headerShown: false }} />
-                  <Stack.Screen name="playlists" options={{ headerShown: false }} />
-                  <Stack.Screen name="profile" options={{ headerShown: false }} />
-                  <Stack.Screen name="sos" options={{ headerShown: false }} />
-                </Stack>
-              </View>
-            </NavigationHandler>
+            <ToastProvider>
+              <PredictionProvider>
+              <NavigationHandler>
+                <View style={styles.container}>
+                  <StatusBar style="auto" />
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: 'white' },
+                    }}
+                  >
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="onboarding/auth" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="onboarding/setup" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding/benefits" options={{ headerShown: false }} />
+                    <Stack.Screen name="breathing" options={{ headerShown: false }} />
+                    <Stack.Screen name="breathing-session" options={{ headerShown: false }} />
+                    <Stack.Screen name="journal" options={{ headerShown: false }} />
+                    <Stack.Screen name="journal-entry" options={{ headerShown: false }} />
+                    <Stack.Screen name="music-player" options={{ headerShown: false }} />
+                    <Stack.Screen name="playlists" options={{ headerShown: false }} />
+                    <Stack.Screen name="profile" options={{ headerShown: false }} />
+                    <Stack.Screen name="sos" options={{ headerShown: false }} />
+                    <Stack.Screen name="prediction-dashboard" options={{ headerShown: false }} />
+                  </Stack>
+                </View>
+              </NavigationHandler>
+              </PredictionProvider>
+            </ToastProvider>
           </MusicProvider>
         </AuthProvider>
       </SafeAreaProvider>

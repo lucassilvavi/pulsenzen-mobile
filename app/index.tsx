@@ -1,4 +1,3 @@
-import DailyQuote from '@/components/DailyQuote';
 import { MoodDebugScreen } from '@/components/debug/MoodDebugScreen';
 import HeaderSection from '@/components/HeaderSection';
 import QuickAccess from '@/components/QuickAccess';
@@ -8,6 +7,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { useUserData } from '@/hooks/useUserData';
 import { MoodSelector, useMood } from '@/modules/mood';
+import { PredictionBanner } from '@/modules/prediction';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
@@ -63,7 +63,7 @@ export default function HomeScreen() {
       >
         <HeaderSection userName={displayName} />
         <MoodSelector />
-        <DailyQuote />
+        <PredictionBanner />
         <QuickAccess />
         <StreakSection />
         <RecommendedSection />

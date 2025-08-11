@@ -27,18 +27,15 @@ describe('AuthService', () => {
       const mockResponse = {
         success: true,
         data: {
-          success: true,
-          data: {
-            user: {
-              id: '1',
-              email: 'test@example.com',
-              emailVerified: true
-            },
-            token: 'mock-jwt-token',
-            refreshToken: 'mock-refresh-token'
+          user: {
+            id: '1',
+            email: 'test@example.com',
+            emailVerified: true
           },
-          message: 'Login successful'
+          token: 'mock-jwt-token',
+          refreshToken: 'mock-refresh-token'
         },
+        message: 'Login successful',
         status: 200
       };
 

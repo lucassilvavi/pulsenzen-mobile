@@ -4,10 +4,11 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { ProfileService } from '@/modules/profile';
+import { CBTAnalysisModal } from '@/modules/cbt';
+import { useCBTAnalysis } from '@/modules/cbt/hooks/useCBTAnalysis';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -39,6 +40,8 @@ export default function JournalEntryScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [customPromptModal, setCustomPromptModal] = useState(false);
     const [customPromptDraft, setCustomPromptDraft] = useState('');
+    const [analysisVisible, setAnalysisVisible] = useState(false);
+    const { result: cbtResult, runAnalysis, loading: cbtLoading, reset: resetCBT, setExternal: setCBTResult } = useCBTAnalysis();
 
     useEffect(() => {
         // Load prompts from service
@@ -78,6 +81,11 @@ export default function JournalEntryScreen() {
                     setCustomPrompt(draftData.customPrompt);
                     setIsCustomPrompt(true);
                 }
+                if (draftData.cbtAnalysis) {
+                    setCBTResult(draftData.cbtAnalysis);
+                } else {
+                    resetCBT();
+                }
             }
         } catch (error) {
             console.error('Error loading draft:', error);
@@ -91,6 +99,7 @@ export default function JournalEntryScreen() {
                 moodTags: selectedMoodTags,
                 customPrompt: isCustomPrompt ? customPrompt : null,
                 timestamp: new Date().toISOString(),
+                cbtAnalysis: cbtResult,
             };
             await AsyncStorage.setItem('journalDraft', JSON.stringify(draftData));
         } catch (error) {
@@ -105,7 +114,7 @@ export default function JournalEntryScreen() {
         }
 
         setIsSaving(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
             const entry = {
@@ -127,7 +136,7 @@ export default function JournalEntryScreen() {
             // Update user stats
             await updateUserStats();
 
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            // Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
             Alert.alert(
                 'Entrada salva!',
@@ -169,14 +178,14 @@ export default function JournalEntryScreen() {
                 ? prev.filter(t => t !== tag)
                 : [...prev, tag]
         );
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
 
     const selectPrompt = (prompt: JournalPrompt) => {
         setSelectedPrompt(prompt);
         setIsCustomPrompt(false);
         setCustomPrompt('');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
 
     const useCustomPrompt = () => {
@@ -355,6 +364,32 @@ export default function JournalEntryScreen() {
                             </View>
                         )}
 
+                        {/* Analisar Pensamento Button */}
+                        {(selectedPrompt || (isCustomPrompt && customPrompt.trim())) && entryText.trim().length >= 30 && (
+                            <View style={{ marginTop: spacing.md }}>
+                                <Button
+                                    label={cbtResult ? "Ver Análise Cognitiva" : cbtLoading ? "Analisando..." : "Analisar Pensamento (Beta)"}
+                                    variant="outline"
+                                    size="large"
+                                    fullWidth
+                                    onPress={() => { if (!cbtResult && !cbtLoading) { runAnalysis(entryText); } setAnalysisVisible(true); }}
+                                    disabled={cbtLoading}
+                                    style={{ borderColor: colors.primary.main }}
+                                    labelStyle={{ color: colors.primary.main }}
+                                />
+                            </View>
+                        )}
+
+                        {cbtResult && cbtResult.distortions.length > 0 && (
+                            <View style={{ flexDirection:'row', flexWrap:'wrap', marginTop: spacing.sm }}>
+                                {cbtResult.distortions.map(d => (
+                                    <View key={d.id} style={{ backgroundColor:'#F1F5F9', borderRadius:16, paddingHorizontal:12, paddingVertical:6, marginRight:8, marginBottom:8 }}>
+                                        <ThemedText style={{ fontSize: fontSize.xs, fontFamily:'Inter-SemiBold', color: colors.primary.main }}>{d.label}</ThemedText>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+
                         {/* Mood Tags */}
                         {entryText.trim() && (
                             <View style={styles.moodSection}>
@@ -398,6 +433,7 @@ export default function JournalEntryScreen() {
                 </View>
             </ScreenContainer>
         </KeyboardAvoidingView>
+            <CBTAnalysisModal visible={analysisVisible} onClose={() => setAnalysisVisible(false)} text={entryText} />
         </>
     );
 }

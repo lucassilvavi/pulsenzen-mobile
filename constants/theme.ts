@@ -111,7 +111,58 @@ export const colors = {
     journal: ['#FFE0B2', '#FFF8E1'],
     profile: ['#E1F5FE', '#F5F5F5'],
   },
+  
+  // RISK semantic tokens
+  risk: {
+    low: {
+      bg: '#E3F9F0',
+      bgAlt: '#F7FCFA',
+      text: '#1B7F52',
+      border: '#A8E5D2',
+    },
+    medium: {
+      bg: '#FFF4E0',
+      bgAlt: '#FFF9EE',
+      text: '#B25E00',
+      border: '#FFD399',
+    },
+    high: {
+      bg: '#FDE8EA',
+      bgAlt: '#FEF3F4',
+      text: '#B4232C',
+      border: '#F5B6BC',
+    }
+  },
+  // Prediction factor categories (tokens para UI)
+  factorCategories: {
+    humor: { bg: '#E0F7F4', color: '#0F766E', icon: 'happy-outline' },
+    escrita: { bg: '#F1F5F9', color: '#334155', icon: 'create-outline' },
+    comportamento: { bg: '#F5F3FF', color: '#6D28D9', icon: 'trending-up-outline' },
+    rotina: { bg: '#FFF7ED', color: '#C2410C', icon: 'time-outline' },
+  },
+  riskIntensity: {
+    high: { bg: '#B4232C', fg: '#FFFFFF' },
+    medium: { bg: '#B25E00', fg: '#FFFFFF' },
+    low: { bg: '#1B7F52', fg: '#FFFFFF' },
+  },
+  // Toast semantic tokens (accessible contrast, aligned with risk palette)
+  toast: {
+    info: { bg: '#0D47A1', fg: '#E3F2FD' },      // deep info blue + light fg
+    success: { bg: '#1B5E20', fg: '#E8F5E9' },   // deep success green
+    warning: { bg: '#B25E00', fg: '#FFF4E0' },   // uses medium risk text tone
+    error: { bg: '#B4232C', fg: '#FDE8EA' },     // high risk red tone
+  }
 };
+
+export function getFactorCategoryMeta(category: string){
+  const key = category.toLowerCase();
+  // tenta mapear por chave direta; fallback heurístico
+  if (key.includes('humor')) return colors.factorCategories.humor;
+  if (key.includes('escrita') || key.includes('linguagem')) return colors.factorCategories.escrita;
+  if (key.includes('comport')) return colors.factorCategories.comportamento;
+  if (key.includes('rotina') || key.includes('noite') || key.includes('uso')) return colors.factorCategories.rotina;
+  return { bg:'#E2E8F0', color:'#334155', icon:'information-circle-outline' } as const;
+}
 
 // Define common styles
 export const commonStyles = StyleSheet.create({
@@ -275,6 +326,8 @@ export const commonStyles = StyleSheet.create({
   roundedXl: { borderRadius: borderRadius.xl },
   roundedFull: { borderRadius: borderRadius.round },
 });
+
+export function getRiskPalette(level: 'low' | 'medium' | 'high'){ return colors.risk[level]; }
 
 export default {
   colors,
