@@ -45,7 +45,7 @@ class MoodService {
     const today = new Date().toISOString().split('T')[0];
     const currentPeriod = this.getCurrentPeriod();
     try {
-      const response = await moodApiClient.validatePeriod(currentPeriod, today, { cache: false });
+      const response = await moodApiClient.validatePeriod(currentPeriod, today);
       console.log('response.data.lucas', response);
       return response.success && response.data ? !response.data.can_create : false;
     } catch (error) {

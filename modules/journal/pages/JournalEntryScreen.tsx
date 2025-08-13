@@ -414,7 +414,7 @@ export default function JournalEntryScreen() {
                                 </View>
                             </View>
                         )}
-
+            <CBTAnalysisModal visible={analysisVisible} onClose={() => setAnalysisVisible(false)} text={entryText} />
                         {/* Save Button */}
                         {entryText.trim() && (
                             <View style={styles.saveSection}>

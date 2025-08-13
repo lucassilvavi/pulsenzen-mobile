@@ -25,10 +25,7 @@ export const LazyComponents = {
   Profile: lazyLoad(() => import('../app/profile')),
   Journal: lazyLoad(() => import('../app/journal')),
   JournalEntry: lazyLoad(() => import('../app/journal-entry')),
-  MusicPlayer: lazyLoad(() => import('../app/music-player')),
-  Playlists: lazyLoad(() => import('../app/playlists')),
   BreathingSession: lazyLoad(() => import('../app/breathing-session')),
-  Category: lazyLoad(() => import('../app/category')),
 
   // Heavy components (lazy loaded for performance)
   SOS: lazyLoad(() => import('../app/sos')),

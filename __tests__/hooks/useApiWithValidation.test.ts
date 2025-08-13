@@ -338,28 +338,6 @@ describe('API Schema Validation Tests', () => {
   });
 
   describe('Application-specific Schemas', () => {
-    it('should validate music track data', () => {
-      const trackSchema = z.object({
-        id: z.string().uuid(),
-        title: z.string().min(1),
-        artist: z.string().min(1),
-        duration: z.number().min(1),
-        url: z.string().url(),
-        genre: z.string().optional(),
-      });
-      
-      const validTrack = {
-        id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-        title: 'Great Song',
-        artist: 'Amazing Artist',
-        duration: 240,
-        url: 'https://example.com/track.mp3',
-        genre: 'Pop',
-      };
-      
-      expect(trackSchema.safeParse(validTrack).success).toBe(true);
-    });
-
     it('should validate journal entry data', () => {
       const journalSchema = z.object({
         title: z.string().min(1).max(200),

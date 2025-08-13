@@ -202,7 +202,7 @@ class SimpleNetworkManager {
         const cachedResponse = await cacheManager.get<T>(cacheKey);
         if (cachedResponse) {
           logger.debug('NetworkManager', 'Cache hit', { url: this.sanitizeUrl(url) });
-          return cachedResponse; // já normalizado
+          return cachedResponse as unknown as NetworkResponse<T>; // já normalizado
         }
       }
 

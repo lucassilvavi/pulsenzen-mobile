@@ -1,75 +1,93 @@
+import React from 'react';
 import renderer, { act } from 'react-test-renderer';
-import { usePrediction } from '../../modules/prediction/context/PredictionContext';
-import { PredictionState } from '../../modules/prediction/types';
+import { PredictionDashboardScreen } from '../../modules/prediction/components/PredictionDashboardScreen';
 
-// Mocks antes de importar o componente alvo
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top:0, bottom:0, left:0, right:0 }) }));
-jest.mock('../../modules/prediction/components/InterventionsCarousel', () => ({ InterventionsCarousel: () => null }));
-jest.mock('../../modules/prediction/context/PredictionContext', () => {
-  return {
-    usePrediction: jest.fn(() => ({
-      current: { id:'mock', score:0.42, level:'medium', label:'Atenção leve', confidence:0.77, generatedAt: 1700000000000 },
-      history: [],
-      factors: [
-        { id:'f1', label:'Sono', weight:0.2, category:'sleep', description:'Desc', suggestion:'Dica', },
-        { id:'f2', label:'Stress', weight:0.3, category:'stress', description:'Desc', suggestion:'Dica', },
-      ],
-      interventions: [],
-      loading:false,
-      lastUpdated: 1700000005000,
-      onboardingSeen:true,
-      refresh: jest.fn(),
-      markInterventionCompleted: jest.fn(),
-      markOnboardingSeen: jest.fn(),
-    })),
-  };
-});
+// Mocks específicos antes de qualquer importação
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 })
+}));
+
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: () => 'Ionicons'
+}));
+
+jest.mock('../../modules/prediction/components/InterventionsCarousel', () => ({
+  InterventionsCarousel: () => 'InterventionsCarousel'
+}));
+
+jest.mock('../../modules/prediction/services/Telemetry', () => ({
+  track: jest.fn()
+}));
+
+jest.mock('expo-router', () => ({
+  router: {
+    back: jest.fn()
+  }
+}));
+
 jest.mock('react-native/Libraries/Components/Touchable/TouchableOpacity', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return (props: any) => <View accessibilityRole={props.accessibilityRole} accessibilityLabel={props.accessibilityLabel} style={props.style}>{props.children}</View>;
+  return 'TouchableOpacity';
 });
 
-// We mock the hook to supply stable data
-jest.mock('../../modules/prediction/context/PredictionContext', () => {
-  const actual = jest.requireActual('../../modules/prediction/context/PredictionContext');
-  return {
-    ...actual,
-    usePrediction: jest.fn(),
-  };
-});
-
-const mockState: PredictionState = {
-  current: { id:'1', score:0.55, level:'medium', label:'Atenção leve', confidence:0.8, generatedAt: Date.now() },
-  history: [],
-  factors: [
-    { id:'mood_volatility', category:'Humor', label:'Variação de humor recente', weight:0.25, description:'Oscilações nos últimos dias', suggestion:'Registrar gatilhos' },
-    { id:'negative_language', category:'Escrita', label:'Linguagem negativa', weight:0.18, description:'Termos autocríticos', suggestion:'Reestruturação cognitiva' },
-  ],
-  interventions: [],
-  loading: false,
-  lastUpdated: Date.now(),
-  onboardingSeen: true,
-};
-
-// Import após mocks (import direto do componente)
-const { PredictionDashboardScreen } = require('../../modules/prediction/components/PredictionDashboardScreen');
+// Mock do contexto com dados determinísticos
+jest.mock('../../modules/prediction/context/PredictionContext', () => ({
+  usePrediction: () => ({
+    current: { 
+      id: '1', 
+      score: 0.55, 
+      level: 'medium', 
+      label: 'Atenção leve', 
+      confidence: 0.8, 
+      generatedAt: 1700000000000 
+    },
+    history: [],
+    factors: [
+      { 
+        id: 'mood_volatility', 
+        category: 'Humor', 
+        label: 'Variação de humor recente', 
+        weight: 0.25, 
+        description: 'Oscilações nos últimos dias', 
+        suggestion: 'Registrar gatilhos' 
+      },
+      { 
+        id: 'negative_language', 
+        category: 'Escrita', 
+        label: 'Linguagem negativa', 
+        weight: 0.18, 
+        description: 'Termos autocríticos', 
+        suggestion: 'Reestruturação cognitiva' 
+      },
+    ],
+    interventions: [
+      { id: 'i1', title: 'Respiração', emoji: '🫁' },
+      { id: 'i2', title: 'Diário', emoji: '📝' }
+    ],
+    loading: false,
+    lastUpdated: 1700000000000,
+    onboardingSeen: true,
+    refresh: jest.fn(),
+    markInterventionCompleted: jest.fn(),
+    markOnboardingSeen: jest.fn(),
+  }),
+}));
 
 describe('PredictionDashboardScreen snapshot', () => {
-  const FIXED_NOW = 1700000000000; // deterministic timestamp
+  const FIXED_NOW = 1700000000000;
+  
   beforeAll(() => {
     jest.spyOn(Date, 'now').mockImplementation(() => FIXED_NOW);
   });
+  
   afterAll(() => {
     (Date.now as jest.Mock).mockRestore();
-  });
-  beforeEach(() => {
-    (usePrediction as jest.Mock).mockReturnValue({ ...mockState, refresh: jest.fn(), markInterventionCompleted: jest.fn(), markOnboardingSeen: jest.fn() });
   });
 
   it('matches snapshot (structure non-null)', () => {
     let root: any;
-    act(() => { root = renderer.create(<PredictionDashboardScreen />); });
+    act(() => { 
+      root = renderer.create(<PredictionDashboardScreen />); 
+    });
     const json = root.toJSON();
     expect(json).not.toBeNull();
     expect(json).toMatchSnapshot();

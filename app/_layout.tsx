@@ -1,6 +1,5 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { useNavigationLogic } from '@/hooks/useNavigationLogic';
-import { MusicProvider } from '@/modules/music/context/MusicContext';
 import { PredictionProvider } from '@/modules/prediction';
 import { ToastProvider } from '@/modules/ui/toast/ToastContext';
 import { Stack } from 'expo-router';
@@ -75,10 +74,9 @@ export default function RootLayoutHybrid() {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <AuthProvider>
-          <MusicProvider>
-            <ToastProvider>
-              <PredictionProvider>
-              <NavigationHandler>
+          <ToastProvider>
+            <PredictionProvider>
+            <NavigationHandler>
                 <View style={styles.container}>
                   <StatusBar style="auto" />
                   <Stack
@@ -96,8 +94,6 @@ export default function RootLayoutHybrid() {
                     <Stack.Screen name="breathing-session" options={{ headerShown: false }} />
                     <Stack.Screen name="journal" options={{ headerShown: false }} />
                     <Stack.Screen name="journal-entry" options={{ headerShown: false }} />
-                    <Stack.Screen name="music-player" options={{ headerShown: false }} />
-                    <Stack.Screen name="playlists" options={{ headerShown: false }} />
                     <Stack.Screen name="profile" options={{ headerShown: false }} />
                     <Stack.Screen name="sos" options={{ headerShown: false }} />
                     <Stack.Screen name="prediction-dashboard" options={{ headerShown: false }} />
@@ -106,7 +102,6 @@ export default function RootLayoutHybrid() {
               </NavigationHandler>
               </PredictionProvider>
             </ToastProvider>
-          </MusicProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

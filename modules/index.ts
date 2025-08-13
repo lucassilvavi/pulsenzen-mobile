@@ -2,7 +2,6 @@
 export * from './breathing';
 export * from './journal';
 export * from './mood';
-export * from './music';
 export * from './shared';
 export * from './sos';
 

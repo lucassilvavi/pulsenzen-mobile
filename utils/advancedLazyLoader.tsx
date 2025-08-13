@@ -221,14 +221,6 @@ export const LazyScreens = {
     }
   ),
   
-  MusicPlayer: createLazyComponent(
-    () => import('../app/music-player'),
-    {
-      preloadDelay: 2000,
-      onLoad: () => logger.info('LazyLoader', 'Music Player screen loaded')
-    }
-  ),
-  
   // Componentes pesados
   BreathingSession: createLazyComponent(
     () => import('../app/breathing-session'),

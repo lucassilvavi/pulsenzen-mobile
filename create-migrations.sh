@@ -55,14 +55,7 @@ print_status "Criando migrações do módulo Breathing..."
 node ace make:migration breathing_techniques
 node ace make:migration breathing_sessions
 
-# 6. Music Module
-print_status "Criando migrações do módulo Music..."
-node ace make:migration music_categories
-node ace make:migration music_tracks
-node ace make:migration playlists
-node ace make:migration playlist_tracks
-
-# 7. Analytics e Tracking
+# 6. Analytics e Tracking
 print_status "Criando migrações de analytics..."
 node ace make:migration user_sessions
 node ace make:migration user_analytics
@@ -86,10 +79,6 @@ echo "   ├── journal_entries"
 echo "   ├── journal_entry_mood_tags"
 echo "   ├── breathing_techniques"
 echo "   ├── breathing_sessions"
-echo "   ├── music_categories"
-echo "   ├── music_tracks"
-echo "   ├── playlists"
-echo "   ├── playlist_tracks"
 echo "   ├── user_sessions"
 echo "   └── user_analytics"
 echo ""
