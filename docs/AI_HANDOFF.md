@@ -159,10 +159,3 @@ E. Real prediction fetch behind env flag (fallback to mock)
 ## 13. Handoff Summary
 You can safely proceed with adding tests and integrating real prediction data. UI baseline is stable; focus on strengthening correctness (tests), accessibility, and preparing for backend integration of the prediction endpoint.
 
----
-Questions or ambiguities to resolve early:
-1. Exact backend contract for prediction endpoint (fields, naming) – currently inferred.
-2. Are intervention actions (navigation/deep links) planned? If yes, define schema now.
-3. Decide on persistence strategy for journal & CBT results (local vs server sync).
-
-End of document.

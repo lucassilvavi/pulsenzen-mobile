@@ -31,5 +31,6 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|expo)'
   ],
+  modulePathIgnorePatterns: ["<rootDir>/__mocks__/@expo/vector-icons.tsx"],
   testEnvironment: 'jsdom'
 };

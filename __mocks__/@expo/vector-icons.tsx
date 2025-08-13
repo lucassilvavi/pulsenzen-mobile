@@ -1,5 +1,6 @@
-// Jest manual mock for @expo/vector-icons to avoid ESM transform issues in tests
-// Provide simple function components returning null; name prop used in tests if needed
-export const Ionicons = (props: any) => null;
-export const MaterialIcons = (props: any) => null;
-export default { Ionicons, MaterialIcons };
+// Unified Jest manual mock for @expo/vector-icons
+// Renders a Text element with icon name for easier querying in tests.
+// Re-export to avoid duplicate manual mock warning (single source of truth in .ts file)
+export * from './vector-icons';
+import impl from './vector-icons';
+export default impl;

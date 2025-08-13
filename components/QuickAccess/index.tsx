@@ -3,7 +3,6 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { colors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
 const quickAccessItems = [
@@ -16,12 +15,12 @@ const quickAccessItems = [
     route: '/breathing',
   },
   {
-    title: 'Sons',
-    subtitle: '10 min',
+    title: 'Emoções',
+    subtitle: 'Equilíbrio Emocional',
     icon: 'moon.stars.fill',
     iconColor: colors.gradients.sleep[0],
     bgColor: colors.gradients.sleep[1],
-    route: '/souns',
+    route: '/prediction-dashboard',
   },
   {
     title: 'Diário',

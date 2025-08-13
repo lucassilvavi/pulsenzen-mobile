@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler/jestSetup';
+import '@testing-library/jest-native/extend-expect';
 
 // Mock AsyncStorage (must be before any imports that use it)
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -51,11 +52,15 @@ jest.setTimeout(10000);
 const originalError = console.error;
 beforeAll(() => {
   console.error = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning: ReactDOM.render is no longer supported')
-    ) {
-      return;
+    if (typeof args[0] === 'string') {
+      const msg = args[0];
+      if (
+        msg.includes('Warning: ReactDOM.render is no longer supported') ||
+        msg.includes('not wrapped in act') ||
+        msg.includes('useInsertionEffect must not schedule updates')
+      ) {
+        return; // suppress noisy expected warnings
+      }
     }
     originalError.call(console, ...args);
   };
@@ -63,4 +68,21 @@ beforeAll(() => {
 
 afterAll(() => {
   console.error = originalError;
+});
+
+// Mock leve: apenas força animações timing a completarem imediatamente mantendo API original
+jest.mock('react-native/Libraries/Animated/Animated', () => {
+  const Real = jest.requireActual('react-native/Libraries/Animated/Animated');
+  return {
+    ...Real,
+    timing: (value, config) => ({
+      start: (cb) => {
+        if (config && Object.prototype.hasOwnProperty.call(config, 'toValue')) {
+          value.setValue(config.toValue);
+        }
+        cb && cb({ finished: true });
+      },
+      stop: () => {},
+    }),
+  };
 });

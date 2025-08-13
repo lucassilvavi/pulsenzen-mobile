@@ -3,7 +3,7 @@ import React from 'react';
 
 function createIcon(family: string){
   return ({ name, size = 16, color = '#000', ...rest }: any) => (
-    <span data-icon-family={family} data-icon={name} style={{ fontSize: size, color }} {...rest}>{name}</span>
+    React.createElement('Text', { 'data-icon-family': family, 'data-icon': name, style: { fontSize: size, color }, ...rest }, name)
   );
 }
 

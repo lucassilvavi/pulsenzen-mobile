@@ -26,7 +26,7 @@ export const InterventionsCarousel: React.FC = () => {
     <View style={styles.container}>
       <AnimatedFlatList
         data={interventions}
-  keyExtractor={(i: InterventionSuggestion) => i.id}
+        keyExtractor={(i: InterventionSuggestion) => i.id}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={CARD_WIDTH + spacing.md}
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   cardWrapper:{ width: CARD_WIDTH, marginRight: spacing.md },
   card:{ backgroundColor:'#F3F6F9', borderRadius:20, padding: spacing.lg, alignItems:'center', justifyContent:'center', minHeight:180 },
   cardDone:{ opacity:0.55, backgroundColor:'#E1E8EE' },
-  emoji:{ fontSize:42, marginBottom: spacing.sm },
+  emoji:{ fontSize: 26, marginBottom: spacing.sm },
   title:{ fontFamily:'Inter-SemiBold', fontSize: fontSize.md, textAlign:'center', color: colors.neutral.text.primary, marginBottom: spacing.xs },
   benefit:{ fontFamily:'Inter-Regular', fontSize: fontSize.sm, textAlign:'center', color: colors.neutral.text.secondary },
   completed:{ marginTop: spacing.sm, fontFamily:'Inter-SemiBold', fontSize: fontSize.xs, color: colors.primary.main },

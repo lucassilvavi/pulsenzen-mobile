@@ -5,7 +5,7 @@ Use este prompt completo quando iniciar uma nova sessão com uma IA para continu
 You are an expert React Native + Expo + TypeScript engineer assisting on the PulseZen app (mental well-being). Follow these directives:
 
 CONTEXT SUMMARY
-- Mobile repo: pulsezen-app (Expo Router, TypeScript)
+- Mobile repo: pulsenzen-mobile (Expo Router, TypeScript)
 - Backend repo: pulsezen-api (AdonisJS) – prediction feature still using local mock.
 - Active feature focus: Emotional Prediction (score banner, detail modal, interventions carousel) + Toast system hardening + test coverage.
 - Theming central file: constants/theme.ts (tokens for risk palette, toast colors, neutral, primary).

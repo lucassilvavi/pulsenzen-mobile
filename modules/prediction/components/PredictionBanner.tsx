@@ -2,7 +2,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { colors, getRiskPalette } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { usePrediction } from '../context/PredictionContext';
@@ -47,8 +46,8 @@ export const PredictionBanner: React.FC = () => {
           )}
         </View>
         <View style={styles.right}>
-          <TouchableOpacity onPress={() => router.push({ pathname: '/prediction-dashboard' as any })} accessibilityLabel="Abrir painel completo" style={styles.dashboardBtn}>
-            <ThemedText style={[styles.cta, { color: palette.text }]}>Painel</ThemedText>
+          <TouchableOpacity onPress={() => { setModalVisible(true); track('prediction_banner_modal_open'); }} accessibilityLabel="Abrir detalhamento completo" style={styles.dashboardBtn}>
+            <ThemedText style={[styles.cta, { color: palette.text }]}>Detalhes</ThemedText>
           </TouchableOpacity>
         </View>
       </LinearGradient>
