@@ -51,12 +51,11 @@ export const API_CONFIG = {
       SEARCH: '/journal/search',
       STATS: '/journal/stats'
     },
-    MUSIC: {
-      BASE: '/music',
-      CATEGORIES: '/music/categories',
-      TRACKS: '/music/tracks',
-      PLAYLISTS: '/music/playlists',
-      FAVORITES: '/music/favorites'
+    CRISIS_PREDICTION: {
+      BASE: '/crisis',
+      LATEST: '/crisis/prediction/latest',
+      HISTORY: '/crisis/prediction/history',
+      ANALYTICS: '/crisis/analytics'
     },
     HEALTH: '/health'
   },

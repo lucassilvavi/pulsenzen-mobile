@@ -1,5 +1,5 @@
 import React, { ComponentType, Suspense, lazy, useEffect, useState } from 'react';
-import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { logger } from '../utils/logger';
 
 interface LazyLoadOptions {

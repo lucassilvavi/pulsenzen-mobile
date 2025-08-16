@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { autoSyncService } from '../services/AutoSyncService';
 import { moodService } from '../services/MoodService';
 import { MoodEntry, MoodLevel, MoodPeriod, MoodResponse, MoodStats, UseMoodReturn } from '../types';
 
@@ -702,6 +703,25 @@ export function useMood(): UseMoodReturn {
       if (response.success) {
         setHasAnsweredToday(true);
         
+        // ✅ NOVO: Adiciona entrada à fila de sync automático
+        if (response.data) {
+          try {
+            await autoSyncService.addToSyncQueue(response.data, 'create');
+            console.log('[useMood] Entrada adicionada à fila de sync automático');
+            
+            // Atualiza status de sync
+            const syncStats = await autoSyncService.getSyncStats();
+            setSyncStatus(prev => ({
+              ...prev,
+              pendingOperations: syncStats.pendingItems,
+              isOnline: autoSyncService.isConnected
+            }));
+          } catch (syncError) {
+            console.warn('[useMood] Erro ao adicionar à fila de sync:', syncError);
+            // Não falha o submit principal se sync falhar
+          }
+        }
+        
         // Invalida caches para forçar refresh
         await AsyncStorage.multiRemove([CACHE_KEYS.ENTRIES, CACHE_KEYS.STATS]);
         
@@ -799,6 +819,7 @@ export function useMood(): UseMoodReturn {
   const initializeAutoSync = useCallback(async (): Promise<void> => {
     try {
       setLoadingState('syncing', true);
+      console.log('[useMood] Inicializando auto sync avançado...');
       
       // Recupera status do cache
       const lastSyncStr = await AsyncStorage.getItem(CACHE_KEYS.LAST_SYNC);
@@ -810,16 +831,25 @@ export function useMood(): UseMoodReturn {
         syncInProgress: true
       }));
       
-      // Inicializa sync do MoodService
-      await moodService.initializeAutoSync();
+      // Inicializa o AutoSyncService (novo)
+      await autoSyncService.initialize();
       
-      // Verifica operações pendentes
-      const syncStatus = await moodService.getSyncStatus();
+      // Verifica operações pendentes do novo serviço
+      const autoSyncStats = await autoSyncService.getSyncStats();
+      
+      // Também inicializa sync do MoodService (compatibilidade)
+      await moodService.initializeAutoSync();
+      const legacySyncStatus = await moodService.getSyncStatus();
+      
+      // Atualiza status consolidado
       setSyncStatus(prev => ({
         ...prev,
-        pendingOperations: syncStatus.offlineCount,
-        syncInProgress: false
+        isOnline: autoSyncService.isConnected,
+        pendingOperations: autoSyncStats.pendingItems + legacySyncStatus.offlineCount,
+        syncInProgress: autoSyncService.syncInProgress
       }));
+      
+      console.log(`[useMood] Auto sync inicializado: ${autoSyncStats.pendingItems} itens pendentes`);
       
     } catch (err) {
       console.error('Erro ao inicializar auto sync:', err);
@@ -918,6 +948,9 @@ export function useMood(): UseMoodReturn {
       if (backgroundSyncInterval.current) {
         clearInterval(backgroundSyncInterval.current);
       }
+      
+      // ✅ NOVO: Cleanup do AutoSyncService
+      autoSyncService.shutdown().catch(console.warn);
     };
   }, []);
 

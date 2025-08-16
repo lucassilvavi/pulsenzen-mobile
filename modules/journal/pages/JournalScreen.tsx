@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Dimensions, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,10 +27,25 @@ export default function JournalScreen() {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [stats, setStats] = useState({ totalEntries: 0, uniqueDays: 0, percentPositive: 0 });
+  const [isSearching, setIsSearching] = useState(false);
 
   // Accessibility hooks
   const { createButtonProps } = useAccessibilityProps();
   const { announceNavigation, announceActionComplete } = useScreenReaderAnnouncement();
+
+  // Simulated search delay for better UX feedback
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    if (text.trim().length > 0) {
+      setIsSearching(true);
+      // Simulate search delay
+      setTimeout(() => {
+        setIsSearching(false);
+      }, 300);
+    } else {
+      setIsSearching(false);
+    }
+  }, []);
 
   // Carrega entradas e stats ao montar e ao retornar para a tela
   useEffect(() => {
@@ -67,7 +82,7 @@ export default function JournalScreen() {
       announceActionComplete(
         'Abrir entrada',
         'success',
-        `Entrada do diário de ${new Date(entry.date).toLocaleDateString('pt-BR')} aberta.`
+        `Entrada do diário de ${new Date(entry.createdAt).toLocaleDateString('pt-BR')} aberta.`
       );
     }
   };
@@ -78,21 +93,48 @@ export default function JournalScreen() {
   };
 
   // Mapeia os dados para o formato esperado pelo componente de lista
-  const entriesList = journalEntries.map(entry => ({
-    id: entry.id,
-    date: new Date(entry.date).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: 'short', year: '2-digit'
-    }),
-    title: entry.promptCategory || 'Reflexão',
-    preview: entry.text,
-    mood: {
-      label: entry.moodTags[0] || '',
-      color: '#FFA726',
-      bg: '#FFF3E0',
-      icon: 'book',
-    },
-    tags: entry.moodTags || [],
-  }));
+  const entriesList = journalEntries
+    .filter(entry => {
+      // Se não há busca, mostra todas
+      if (!searchQuery.trim()) return true;
+      
+      const query = searchQuery.toLowerCase().trim();
+      
+      // Busca no conteúdo da entrada
+      const matchesContent = entry.content.toLowerCase().includes(query);
+      
+      // Busca na categoria/título
+      const matchesCategory = (entry.promptCategory || '').toLowerCase().includes(query);
+      
+      // Busca nas tags de humor
+      const matchesMoodTags = entry.moodTags.some(tag => 
+        tag.label.toLowerCase().includes(query) || 
+        tag.emoji.includes(query)
+      );
+      
+      // Busca na data (formato brasileiro)
+      const dateStr = new Date(entry.createdAt).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      }).toLowerCase();
+      const matchesDate = dateStr.includes(query);
+      
+      return matchesContent || matchesCategory || matchesMoodTags || matchesDate;
+    })
+    .map(entry => ({
+      id: entry.id,
+      date: new Date(entry.createdAt).toLocaleDateString('pt-BR', {
+        day: '2-digit', month: 'short', year: '2-digit'
+      }),
+      title: entry.promptCategory || 'Reflexão',
+      preview: entry.content,
+      mood: {
+        label: entry.moodTags[0] ? `${entry.moodTags[0].emoji} ${entry.moodTags[0].label}` : '',
+        color: '#FFA726',
+        bg: '#FFF3E0',
+        icon: 'book',
+      },
+      tags: entry.moodTags.map(tag => `${tag.emoji} ${tag.label}`) || [],
+    }));
 
   const { width, height } = Dimensions.get('window');
 
@@ -101,14 +143,20 @@ export default function JournalScreen() {
       gradientColors={colors.gradients.journal}
       gradientHeight={height * 0.4}
     >
-      <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+      <View style={[styles.container]}>
         {/* Custom Header */}
         <View style={styles.customHeader}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
           </TouchableOpacity>
           <ThemedText style={styles.headerTitle}>Diário</ThemedText>
-          <View style={styles.headerRight} />
+          <TouchableOpacity 
+            onPress={() => router.push('/journal-analytics')} 
+            style={styles.analyticsButton}
+            {...createButtonProps('Botão de Analytics', 'Navegar para tela de estatísticas do diário')}
+          >
+            <Ionicons name="stats-chart" size={24} color={colors.primary.main} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -117,12 +165,15 @@ export default function JournalScreen() {
         showsVerticalScrollIndicator={false}
       >
         <SearchAndActionBar
-          searchPlaceholder="Pesquisar entradas..."
+          searchPlaceholder="Pesquisar por conteúdo, categoria, humor..."
           searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           buttonLabel=""
           onButtonPress={() => router.push('/journal-entry')}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: spacing.md }}
+          isSearching={isSearching}
+          searchResultsCount={entriesList.length}
+          showSearchTips={journalEntries.length > 0 && searchQuery.trim().length === 0}
         />
 
         <Card style={styles.statsCard}>
@@ -138,6 +189,7 @@ export default function JournalScreen() {
         <JournalEntriesList
           entries={entriesList}
           onEntryPress={handleEntryPress}
+          searchQuery={searchQuery}
         />
 
         <TipsSection
@@ -162,16 +214,22 @@ export default function JournalScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.dragBar} />
-            <Pressable style={styles.closeModalButton} onPress={handleCloseModal}>
-              <ThemedText style={styles.closeModalText}>×</ThemedText>
-            </Pressable>
+            {/* Botão de fechar reformulado */}
+            <TouchableOpacity 
+              style={styles.modernCloseButton} 
+              onPress={handleCloseModal}
+              activeOpacity={0.7}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <Ionicons name="close" size={22} color={colors.primary.main} />
+            </TouchableOpacity>
             {selectedEntry && (
               <JournalEntryView
-                prompt={selectedEntry.prompt}
+                prompt=""
                 promptCategory={selectedEntry.promptCategory}
-                moodTags={selectedEntry.moodTags}
-                text={selectedEntry.text}
-                date={new Date(selectedEntry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
+                moodTags={selectedEntry.moodTags.map(tag => `${tag.emoji} ${tag.label}`)}
+                text={selectedEntry.content}
+                date={new Date(selectedEntry.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
                 onBack={handleCloseModal}
               />
             )}
@@ -196,6 +254,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  analyticsButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -274,6 +340,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
+  },
+  modernCloseButton: {
+    position: 'absolute',
+    top: 60, // Positioned lower for easier access
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF', // Using white directly
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0', // Light gray border
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 999,
   },
   closeModalText: {
     fontSize: 28,

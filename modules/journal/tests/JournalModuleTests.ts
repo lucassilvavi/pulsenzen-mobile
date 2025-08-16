@@ -44,12 +44,15 @@ export class JournalModuleTests {
     try {
       const newEntry: JournalEntry = {
         id: 'test-entry-' + Date.now(),
-        text: 'This is a test journal entry for validation.',
-        prompt: 'What did you learn today?',
+        content: 'This is a test journal entry for validation.',
         promptCategory: 'Reflexão',
-        moodTags: ['grateful', 'focused'],
-        date: new Date().toISOString(),
-        wordCount: 8
+        moodTags: [
+          { id: 'grateful', label: 'Grato', emoji: '🤗', category: 'positive', intensity: 4, hexColor: '#4CAF50' },
+          { id: 'focused', label: 'Focado', emoji: '🎯', category: 'neutral', intensity: 3, hexColor: '#FF9800' }
+        ],
+        createdAt: new Date().toISOString(),
+        wordCount: 8,
+        privacy: 'private'
       };
 
       await JournalService.saveEntry(newEntry);
@@ -88,7 +91,7 @@ export class JournalModuleTests {
 
     // Test 6: Get Random Prompt
     try {
-      const randomPrompt = JournalService.getRandomPrompt();
+      const randomPrompt = await JournalService.getRandomPrompt();
       this.addResult('JournalService.getRandomPrompt', 
         randomPrompt && randomPrompt.id ? 'PASS' : 'FAIL',
         `Random prompt: ${randomPrompt?.question || 'undefined'}`
@@ -176,11 +179,11 @@ export class JournalModuleTests {
   private validateJournalEntries(entries: JournalEntry[]): boolean {
     return entries.every(entry => 
       entry.id && 
-      entry.text && 
-      entry.prompt && 
-      entry.date &&
+      entry.content && 
+      entry.createdAt &&
       Array.isArray(entry.moodTags) &&
-      typeof entry.wordCount === 'number'
+      typeof entry.wordCount === 'number' &&
+      entry.privacy
     );
   }
 

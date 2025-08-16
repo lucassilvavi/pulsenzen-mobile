@@ -11,12 +11,23 @@
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "build:preview": "expo export --platform all --output-dir dist",
+    "build:production": "eas build --platform all --profile production",
+    "build:staging": "eas build --platform all --profile staging",
+    "deploy:staging": "expo publish --release-channel=staging",
+    "deploy:production": "expo publish --release-channel=production",
+    "performance:check": "node scripts/performance-check.js",
+    "security:audit": "npm audit && npx audit-ci",
+    "ci:setup": "npm ci && npx expo install",
+    "ci:test": "npm run lint && npm run test:coverage",
+    "ci:build": "npm run build:production"
   },
   "dependencies": {
     "@amplitude/analytics-react-native": "^1.4.14",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
@@ -58,7 +69,8 @@
     "react-native-svg": "^15.11.2",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "zod": "^4.0.14"
+    "zod": "^4.0.14",
+    "zustand": "^5.0.7"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -75,5 +87,19 @@
     "react-test-renderer": "19.0.0",
     "typescript": "~5.8.3"
   },
+  "bundlesize": [
+    {
+      "path": "./dist/**/*.js",
+      "maxSize": "500kb"
+    },
+    {
+      "path": "./dist/**/*.css",
+      "maxSize": "50kb"
+    },
+    {
+      "path": "./dist/assets/**/*",
+      "maxSize": "2mb"
+    }
+  ],
   "private": true
 }

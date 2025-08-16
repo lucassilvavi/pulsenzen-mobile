@@ -37,13 +37,13 @@ export default function HomeScreen() {
   //   }
   // }, [displayName, accessibilityState?.screenReaderEnabled, announceNavigation]);
 
-  if (showDebug) {
-    return <MoodDebugScreen />;
-  }
-
   useEffect(() => {
     console.log('hasAnsweredToday', hasAnsweredToday);
   }, [hasAnsweredToday]);
+
+  if (showDebug) {
+    return <MoodDebugScreen />;
+  }
 
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>

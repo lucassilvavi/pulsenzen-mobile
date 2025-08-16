@@ -214,6 +214,8 @@ export class JournalApiService {
       question: apiPrompt.question,
       category: apiPrompt.category,
       icon: apiPrompt.icon,
+      difficulty: 'intermediate',
+      tags: []
     };
   }
 
@@ -224,12 +226,19 @@ export class JournalApiService {
   private static mapApiEntryToLocal(apiEntry: JournalEntryAPI): JournalEntry {
     return {
       id: apiEntry.id,
-      text: apiEntry.content,
-      prompt: apiEntry.customPrompt || '',
+      content: apiEntry.content,
       promptCategory: apiEntry.category,
-      moodTags: apiEntry.moodTags.map(tag => `${tag.emoji} ${tag.label}`),
-      date: apiEntry.metadata.createdAt,
+      moodTags: apiEntry.moodTags.map(tag => ({
+        id: tag.id,
+        label: tag.label,
+        emoji: tag.emoji,
+        category: tag.category,
+        intensity: tag.intensity,
+        hexColor: '#FF8A65'
+      })),
+      createdAt: apiEntry.metadata.createdAt,
       wordCount: apiEntry.wordCount,
+      privacy: 'private' as const,
     };
   }
 
@@ -239,15 +248,14 @@ export class JournalApiService {
 
   private static mapLocalEntryToApi(localEntry: Partial<JournalEntry>): Partial<JournalEntryAPI> {
     return {
-      content: localEntry.text || '',
-      customPrompt: localEntry.prompt,
+      content: localEntry.content || '',
       category: localEntry.promptCategory || 'General',
       wordCount: localEntry.wordCount || 0,
-      characterCount: localEntry.text?.length || 0,
+      characterCount: localEntry.content?.length || 0,
       readingTime: Math.ceil((localEntry.wordCount || 0) / 200 * 60), // Rough estimate
-      keywords: localEntry.text ? this.extractKeywords(localEntry.text) : [],
+      keywords: localEntry.content ? this.extractKeywords(localEntry.content) : [],
       metadata: {
-        createdAt: localEntry.date || new Date().toISOString(),
+        createdAt: localEntry.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         deviceType: 'phone', // Could be determined from user agent

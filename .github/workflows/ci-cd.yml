@@ -1,0 +1,209 @@
+name: PulseZen CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+jobs:
+  test:
+    name: 🧪 Test & Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 🔍 Run ESLint
+        run: npm run lint
+      
+      - name: 🏗️ Type checking
+        run: npx tsc --noEmit
+      
+      - name: 🧪 Run tests
+        run: npm test -- --coverage --watchAll=false --testTimeout=30000
+      
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: pulsezen-coverage
+
+  build-preview:
+    name: 🔨 Build Preview
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main'
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 🔧 Setup Expo CLI
+        run: npm install -g @expo/cli@latest
+      
+      - name: 🏗️ Build Preview
+        run: |
+          echo "Building preview for PR/develop branch..."
+          npx expo export --platform all --output-dir dist
+      
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-build
+          path: dist/
+          retention-days: 30
+
+  build-production:
+    name: 🚀 Production Build
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 🔧 Setup Expo CLI
+        run: npm install -g @expo/cli@latest eas-cli@latest
+      
+      - name: 🔐 Expo authentication
+        run: npx expo login --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      
+      - name: 🏗️ EAS Build
+        run: |
+          echo "Building production app..."
+          npx eas build --platform all --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      
+      - name: 📤 Upload to app stores (if configured)
+        run: |
+          echo "Submitting to app stores..."
+          npx eas submit --platform all --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        continue-on-error: true
+
+  security-scan:
+    name: 🛡️ Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 🛡️ Run security audit
+        run: npm audit --audit-level=high
+      
+      - name: 🔍 Dependency vulnerability check
+        run: npx audit-ci --config .auditci.json
+        continue-on-error: true
+
+  deploy-staging:
+    name: 🎭 Deploy to Staging
+    needs: [test, build-preview]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 🔧 Setup Expo CLI
+        run: npm install -g @expo/cli@latest
+      
+      - name: 🔐 Expo authentication
+        run: npx expo login --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      
+      - name: 🎭 Publish to staging channel
+        run: |
+          npx expo publish --release-channel=staging
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  performance-monitoring:
+    name: 📈 Performance Monitoring
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📥 Install dependencies
+        run: npm ci
+      
+      - name: 📊 Bundle size analysis
+        run: |
+          npx expo export --platform web --output-dir dist-web
+          npx bundlesize
+        continue-on-error: true
+      
+      - name: 📈 Performance budget check
+        run: |
+          echo "Checking performance budgets..."
+          npm run performance:check
+        continue-on-error: true

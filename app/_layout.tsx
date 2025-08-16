@@ -94,6 +94,7 @@ export default function RootLayoutHybrid() {
                     <Stack.Screen name="breathing-session" options={{ headerShown: false }} />
                     <Stack.Screen name="journal" options={{ headerShown: false }} />
                     <Stack.Screen name="journal-entry" options={{ headerShown: false }} />
+                    <Stack.Screen name="journal-analytics" options={{ headerShown: false }} />
                     <Stack.Screen name="profile" options={{ headerShown: false }} />
                     <Stack.Screen name="sos" options={{ headerShown: false }} />
                     <Stack.Screen name="prediction-dashboard" options={{ headerShown: false }} />

@@ -1,0 +1,74 @@
+{
+  "timestamp": "2025-08-13T18:38:52.280Z",
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "warnings": 1,
+    "total": 4
+  },
+  "checks": [
+    {
+      "timestamp": "2025-08-13T18:38:52.277Z",
+      "type": "info",
+      "message": "Checking bundle size...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "warning",
+      "message": "Dist folder not found, skipping bundle size check",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "info",
+      "message": "Checking test performance...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "success",
+      "message": "Test suite performance OK: 45000ms / 60000ms",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "info",
+      "message": "Checking dependency health...",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "success",
+      "message": "Dependency count healthy: 60 dependencies",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "success",
+      "message": "No heavy dependencies detected",
+      "details": null
+    },
+    {
+      "timestamp": "2025-08-13T18:38:52.280Z",
+      "type": "info",
+      "message": "Generating performance report...",
+      "details": null
+    }
+  ],
+  "budgets": {
+    "bundleSize": {
+      "javascript": 512000,
+      "assets": 2097152,
+      "total": 3145728
+    },
+    "buildTime": {
+      "development": 30000,
+      "production": 300000
+    },
+    "testSuite": {
+      "unitTests": 60000,
+      "integrationTests": 180000
+    }
+  }
+}

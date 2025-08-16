@@ -1,6 +1,8 @@
-import { useToast } from '@/modules/ui/toast/ToastContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { Config } from '../../../config/environment';
+import { useToast } from '../../ui/toast/ToastContext';
+import { CrisisPredictionApiClient } from '../services/CrisisPredictionApiClient';
 import { PredictionDataSource } from '../services/PredictionDataSource';
 import { PredictionMockService } from '../services/PredictionMock';
 import { track } from '../services/Telemetry';
@@ -29,7 +31,11 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const TTL_MS = 3 * 60 * 60 * 1000; // 3h
 
   const toast = useToast();
-  const dataSource: PredictionDataSource = PredictionMockService;
+  
+  // Use API client in production/staging, mock in development (configurable)
+  const dataSource: PredictionDataSource = Config.isDev 
+    ? PredictionMockService 
+    : new CrisisPredictionApiClient();
   const generate = useCallback(async () => {
     setState(s => ({ ...s, loading: true }));
     await new Promise(r => setTimeout(r, 400));

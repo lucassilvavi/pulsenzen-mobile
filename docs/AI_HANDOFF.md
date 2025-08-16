@@ -15,7 +15,6 @@ Primary focus this sprint: Prediction (emotional balance) feature UX polish, toa
   - Prediction (emotional balance scoring + factors + interventions)
   - Journal (entries, CBT analysis modal / cognitive restructuring suggestions)
   - Breathing sessions
-  - Music / ambient sounds
   - SOS quick help
   - UI utility: Toast system, ErrorBoundary, PerformanceMonitor
 

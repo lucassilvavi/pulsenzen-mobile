@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import from the journal module
@@ -117,14 +117,36 @@ export default function JournalEntryScreen() {
         // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
+            const promptText = isCustomPrompt ? customPrompt : selectedPrompt?.question || '';
+            
             const entry = {
                 id: Date.now().toString(),
-                text: entryText.trim(),
-                prompt: isCustomPrompt ? customPrompt : selectedPrompt?.question || '',
-                promptCategory: isCustomPrompt ? 'Personalizado' : selectedPrompt?.category || '',
-                moodTags: selectedMoodTags,
-                date: new Date().toISOString(),
+                content: entryText,
+                prompt: promptText,
+                promptCategory: isCustomPrompt ? 'Personalizado' : selectedPrompt?.category || 'Reflexão Pessoal',
+                moodTags: selectedMoodTags.map(tag => {
+                    const [emoji, ...labelParts] = tag.split(' ');
+                    const label = labelParts.join(' ');
+                    // Determine category based on label
+                    let category: 'positive' | 'negative' | 'neutral' = 'neutral';
+                    if (['Feliz', 'Grato', 'Motivado', 'Amoroso', 'Calmo'].includes(label)) {
+                        category = 'positive';
+                    } else if (['Triste', 'Irritado', 'Ansioso', 'Cansado'].includes(label)) {
+                        category = 'negative';
+                    }
+                    
+                    return {
+                        id: tag,
+                        label: label,
+                        emoji: emoji,
+                        category: category,
+                        intensity: 3 as const,
+                        hexColor: category === 'positive' ? '#4CAF50' : category === 'negative' ? '#F44336' : '#FF9800'
+                    };
+                }),
+                createdAt: new Date().toISOString(),
                 wordCount: entryText.trim().split(/\s+/).length,
+                privacy: 'private' as const,
             };
 
             // Salva usando o service
@@ -229,20 +251,50 @@ export default function JournalEntryScreen() {
         >
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                    <View style={styles.dragBar} />
-                    <Pressable style={styles.closeModalButton} onPress={() => { setModalVisible(false); router.back(); }}>
-                        <ThemedText style={styles.closeModalText}>×</ThemedText>
-                    </Pressable>
-                    {viewEntry && (
-                        <JournalEntryView
-                            prompt={viewEntry.prompt}
-                            promptCategory={viewEntry.promptCategory}
-                            moodTags={viewEntry.moodTags}
-                            text={viewEntry.text}
-                            date={new Date(viewEntry.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
-                            onBack={() => { setModalVisible(false); router.back(); }}
-                        />
-                    )}
+                    {/* Close Button - NEW POSITION TEST */}
+                    <TouchableOpacity 
+                        style={{
+                            position: 'absolute',
+                            top: 60, // Much lower position for testing
+                            right: 20,
+                            width: 50, // Larger for testing
+                            height: 50,
+                            borderRadius: 25,
+                            backgroundColor: '#FF0000', // Red for testing - very visible
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            zIndex: 9999,
+                        }}
+                        onPress={() => { setModalVisible(false); router.back(); }}
+                        activeOpacity={0.7}
+                        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                    >
+                        <Ionicons name="close" size={24} color="white" />
+                    </TouchableOpacity>
+                    
+                    {/* Modern Header */}
+                    <View style={styles.modalHeader}>
+                        <View style={styles.dragIndicator} />
+                    </View>
+                    
+                    {/* Content with Improved Spacing */}
+                    <View style={styles.modalInnerContent}>
+                        {viewEntry && (
+                            <JournalEntryView
+                                prompt={viewEntry.prompt}
+                                promptCategory={viewEntry.promptCategory}
+                                moodTags={viewEntry.moodTags}
+                                text={viewEntry.content || viewEntry.text}
+                                date={new Date(viewEntry.date || viewEntry.createdAt).toLocaleDateString('pt-BR', { 
+                                    day: '2-digit', 
+                                    month: 'long', 
+                                    year: 'numeric',
+                                    weekday: 'long'
+                                })}
+                                onBack={() => { setModalVisible(false); router.back(); }}
+                            />
+                        )}
+                    </View>
                 </View>
             </View>
         </Modal>
@@ -256,31 +308,54 @@ export default function JournalEntryScreen() {
             transparent={true}
             onRequestClose={handleCustomPromptCancel}
         >
-            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <View style={{ width: '100%', backgroundColor: colors.neutral.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 24, paddingBottom: 32, paddingHorizontal: 20, shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 16 }}>
-                    <ThemedText style={{ fontSize: fontSize.md, color: colors.journal.accent, fontFamily: 'Inter-Bold', marginBottom: spacing.md }}>Crie sua pergunta</ThemedText>
-                    <CustomTextInput
-                        placeholder="Digite sua pergunta personalizada..."
-                        value={customPromptDraft}
-                        onChangeText={setCustomPromptDraft}
-                        inputStyle={{ minHeight: 60, borderColor: colors.neutral.divider, borderWidth: 1, borderRadius: 12, padding: spacing.sm, backgroundColor: colors.neutral.white, marginBottom: spacing.md }}
-                        multiline
-                        autoFocus
-                    />
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Button
-                            label="Cancelar"
-                            variant="outline"
-                            onPress={handleCustomPromptCancel}
-                            style={{ flex: 1, marginRight: spacing.xs }}
+            <View style={styles.modalOverlay}>
+                <View style={styles.customPromptModalContent}>
+                    {/* Modern Header */}
+                    <View style={styles.customPromptHeader}>
+                        <View style={styles.dragIndicator} />
+                        <View style={styles.customPromptTitleContainer}>
+                            <View style={styles.customPromptIconContainer}>
+                                <Ionicons name="create" size={20} color={colors.journal.accent} />
+                            </View>
+                            <ThemedText style={styles.customPromptTitle}>Crie sua pergunta</ThemedText>
+                        </View>
+                    </View>
+                    
+                    {/* Content */}
+                    <View style={styles.customPromptContent}>
+                        <ThemedText style={styles.customPromptDescription}>
+                            Crie uma pergunta personalizada para guiar sua reflexão de hoje.
+                        </ThemedText>
+                        
+                        <CustomTextInput
+                            placeholder="Ex: O que mais me deixou grato hoje e por quê?"
+                            value={customPromptDraft}
+                            onChangeText={setCustomPromptDraft}
+                            inputStyle={styles.customPromptTextInput}
+                            multiline
+                            autoFocus
                         />
-                        <Button
-                            label="Usar pergunta"
-                            variant="primary"
-                            onPress={handleCustomPromptConfirm}
-                            disabled={!customPromptDraft.trim()}
-                            style={{ flex: 1, marginLeft: spacing.xs }}
-                        />
+                        
+                        {/* Action Buttons */}
+                        <View style={styles.customPromptActions}>
+                            <Button
+                                label="Cancelar"
+                                variant="outline"
+                                onPress={handleCustomPromptCancel}
+                                style={styles.customPromptActionCancel}
+                                labelStyle={{ color: colors.neutral.text.secondary }}
+                            />
+                            <Button
+                                label="Usar pergunta"
+                                variant="primary"
+                                onPress={handleCustomPromptConfirm}
+                                disabled={!customPromptDraft.trim()}
+                                style={StyleSheet.flatten([
+                                    styles.customPromptActionConfirm,
+                                    { backgroundColor: customPromptDraft.trim() ? colors.journal.accent : colors.neutral.divider }
+                                ])}
+                            />
+                        </View>
                     </View>
                 </View>
             </View>
@@ -657,45 +732,128 @@ const styles = StyleSheet.create({
         backgroundColor: colors.neutral.white,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
-        paddingTop: 24,
-        paddingBottom: 32,
-        paddingHorizontal: 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.12,
         shadowRadius: 16,
         elevation: 16,
-        alignItems: 'stretch',
     },
-    closeModalButton: {
-        position: 'absolute',
-        top: 18,
-        right: 18,
-        zIndex: 10,
-        backgroundColor: 'rgba(255, 152, 0, 0.10)',
-        borderRadius: 20,
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
+    modalHeader: {
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.neutral.divider,
+        backgroundColor: colors.neutral.white,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
     },
-    closeModalText: {
-        fontSize: 28,
-        color: colors.journal.accent,
-        fontWeight: 'bold',
-        lineHeight: 32,
-    },
-    // Barra de arraste no topo
-    dragBar: {
+    dragIndicator: {
         alignSelf: 'center',
         width: 48,
         height: 5,
         borderRadius: 3,
-        backgroundColor: '#E0E0E0',
-        marginBottom: 18,
+        backgroundColor: colors.neutral.divider,
+        marginBottom: spacing.sm,
+    },
+    modernCloseButton: {
+        position: 'absolute',
+        top: 20, // Fixed distance from top of modal
+        right: 20, // Fixed distance from right of modal
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.neutral.white,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.neutral.divider,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 6,
+        zIndex: 999,
+    },
+    modalInnerContent: {
+        flex: 1,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+    },
+
+    // Custom Prompt Modal Styles
+    customPromptModalContent: {
+        width: '100%',
+        backgroundColor: colors.neutral.white,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        maxHeight: '70%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 16,
+        elevation: 16,
+    },
+    customPromptHeader: {
+        paddingTop: spacing.md,
+        paddingBottom: spacing.md,
+        paddingHorizontal: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.neutral.divider,
+    },
+    customPromptTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    customPromptIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: `${colors.journal.accent}15`,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: spacing.sm,
+    },
+    customPromptTitle: {
+        fontSize: fontSize.lg,
+        color: colors.journal.accent,
+        fontFamily: 'Inter-Bold',
+        letterSpacing: 0.3,
+    },
+    customPromptContent: {
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.lg,
+    },
+    customPromptDescription: {
+        fontSize: fontSize.sm,
+        color: colors.neutral.text.secondary,
+        fontFamily: 'Inter-Medium',
+        lineHeight: 20,
+        marginBottom: spacing.lg,
+        textAlign: 'center',
+    },
+    customPromptTextInput: {
+        minHeight: 80,
+        maxHeight: 120,
+        borderColor: colors.neutral.divider,
+        borderWidth: 1.5,
+        borderRadius: 16,
+        padding: spacing.md,
+        backgroundColor: colors.neutral.card,
+        marginBottom: spacing.lg,
+        fontSize: fontSize.md,
+        fontFamily: 'Inter-Regular',
+        lineHeight: 22,
+    },
+    customPromptActionCancel: {
+        flex: 1,
+        marginRight: spacing.sm,
+        borderColor: colors.neutral.divider,
+        backgroundColor: colors.neutral.card,
+    },
+    customPromptActionConfirm: {
+        flex: 1,
+        marginLeft: spacing.sm,
     },
 });
