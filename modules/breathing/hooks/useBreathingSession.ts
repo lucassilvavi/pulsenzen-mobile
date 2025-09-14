@@ -27,11 +27,17 @@ export function useBreathingSession({
   // Timer ref
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentPhaseRef = useRef<BreathingPhase>(currentPhase);
+  const currentCycleRef = useRef<number>(currentCycle); // Nova ref para currentCycle
+  const isExecutingPhaseRef = useRef<boolean>(false); // Proteção contra execuções múltiplas
 
   useEffect(() => {
     currentPhaseRef.current = currentPhase;
     onPhaseChange?.(currentPhase);
   }, [currentPhase, onPhaseChange]);
+
+  useEffect(() => {
+    currentCycleRef.current = currentCycle; // Sync ref with state
+  }, [currentCycle]);
 
   useEffect(() => {
     return () => {
@@ -51,6 +57,7 @@ export function useBreathingSession({
     setIsPlaying(false);
     setCurrentPhase('pause');
     setTimeRemaining(0);
+    isExecutingPhaseRef.current = false; // Reset protection
 
     if (timerRef.current) clearInterval(timerRef.current);
 
@@ -70,6 +77,14 @@ export function useBreathingSession({
   };
 
   const executeBreathingPhase = (phase: BreathingPhase, duration: number) => {
+    if (isExecutingPhaseRef.current) {
+      console.log('⚠️ Execution already in progress, skipping...');
+      return; // Evita execuções múltiplas
+    }
+    
+    isExecutingPhaseRef.current = true;
+    console.log('🚀 Executing phase:', phase, 'for', duration, 'seconds');
+    
     setCurrentPhase(phase);
     setTimeRemaining(duration);
 
@@ -104,6 +119,7 @@ export function useBreathingSession({
 
       if (remainingTime <= 0) {
         if (timerRef.current) clearInterval(timerRef.current);
+        isExecutingPhaseRef.current = false; // Libera para próxima execução
         moveToNextPhase();
       }
     }, 1000);
@@ -148,6 +164,7 @@ export function useBreathingSession({
 
   const moveToNextPhase = () => {
     const currentPhaseValue = currentPhaseRef.current;
+    const currentCycleValue = currentCycleRef.current; // Use ref para valor atual
 
     switch (currentPhaseValue) {
       case 'inhale':
@@ -162,16 +179,21 @@ export function useBreathingSession({
         break;
       case 'exhale':
         // Check if we need to complete more cycles
-        const nextCycle = currentCycle + 1;
+        const nextCycle = currentCycleValue + 1;
+        console.log('🔄 Ciclo Hook:', { currentCycle: currentCycleValue, nextCycle, totalCycles: technique.cycles });
         if (nextCycle < technique.cycles) {
           setCurrentCycle(nextCycle);
           executeBreathingPhase('inhale', technique.inhaleTime);
         } else {
-          // Session complete
-          setIsPlaying(false);
-          setCurrentPhase('pause');
-          setTimeRemaining(0);
-          onSessionComplete?.();
+          // Session complete - mas primeiro atualiza o ciclo final
+          setCurrentCycle(nextCycle);
+          setTimeout(() => {
+            console.log('🎯 Sessão completa!');
+            setIsPlaying(false);
+            setCurrentPhase('pause');
+            setTimeRemaining(0);
+            onSessionComplete?.();
+          }, 500); // Pequeno delay para mostrar o ciclo final
         }
         break;
     }
