@@ -1,1 +1,1 @@
-export { useJournal } from './useJournal';
+// Hooks exports - cleaned up to remove unused dependencies

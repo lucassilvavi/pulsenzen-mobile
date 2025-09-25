@@ -224,7 +224,26 @@ class JournalApiServiceAdapter implements IJournalService {
 
   async getEntries(filters?: JournalEntryFilters): Promise<JournalEntry[]> {
     const api = await this.getApiService();
-    return api.getEntries(filters as any);
+    const result = await api.getEntries(filters as any);
+    // For backward compatibility, return just the entries array
+    if (result && 'entries' in result) {
+      return result.entries;
+    }
+    return result as JournalEntry[];
+  }
+
+  // Add pagination method for the new infinite scroll
+  async getEntriesPaginated(filters?: any): Promise<{
+    entries: JournalEntry[];
+    pagination: {
+      page: number;
+      limit: number;
+      hasMore: boolean;
+      totalInPage: number;
+    };
+  }> {
+    const api = await this.getApiService();
+    return api.getEntries(filters);
   }
 
   async getEntryById(id: string): Promise<JournalEntry | null> {
@@ -279,7 +298,10 @@ class JournalMockServiceAdapter implements IJournalService {
 
   async getRandomPrompt(): Promise<JournalPrompt | null> {
     const mock = await this.getMockService();
-    return mock.getRandomPrompt();
+    const prompts = await mock.getPrompts();
+    if (prompts.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * prompts.length);
+    return prompts[randomIndex];
   }
 
   async getEntries(filters?: JournalEntryFilters): Promise<JournalEntry[]> {
@@ -289,7 +311,8 @@ class JournalMockServiceAdapter implements IJournalService {
 
   async getEntryById(id: string): Promise<JournalEntry | null> {
     const mock = await this.getMockService();
-    return mock.getEntryById(id);
+    const entries = await mock.getEntries();
+    return entries.find(entry => entry.id === id) || null;
   }
 
   async createEntry(entry: Partial<JournalEntry>): Promise<JournalEntry> {
@@ -298,28 +321,37 @@ class JournalMockServiceAdapter implements IJournalService {
   }
 
   async updateEntry(id: string, updates: Partial<JournalEntry>): Promise<JournalEntry> {
-    const mock = await this.getMockService();
-    return mock.updateEntry(id, updates);
+    throw new Error('Update functionality not implemented in mock service');
   }
 
   async deleteEntry(id: string): Promise<void> {
-    const mock = await this.getMockService();
-    return mock.deleteEntry(id);
+    throw new Error('Delete functionality not implemented in mock service');
   }
 
   async saveEntry(entry: JournalEntry): Promise<void> {
     const mock = await this.getMockService();
-    return mock.saveEntry(entry);
+    await mock.createEntry(entry);
   }
 
   async searchEntries(query: string): Promise<JournalEntry[]> {
     const mock = await this.getMockService();
-    return mock.searchEntries(query);
+    const entries = await mock.getEntries();
+    const lowercaseQuery = query.toLowerCase();
+    
+    return entries.filter(entry => 
+      entry.content.toLowerCase().includes(lowercaseQuery) ||
+      entry.promptCategory.toLowerCase().includes(lowercaseQuery) ||
+      entry.moodTags.some(tag => tag.label.toLowerCase().includes(lowercaseQuery))
+    );
   }
 
   async getStatistics(): Promise<JournalStats> {
     const mock = await this.getMockService();
-    return mock.getStatistics();
+    const entries = await mock.getEntries();
+    
+    // Use JournalStatsService for consistency
+    const { JournalStatsService } = await import('./JournalStatsService');
+    return JournalStatsService.calculateStats(entries);
   }
 }
 

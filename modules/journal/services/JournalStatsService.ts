@@ -11,7 +11,9 @@ export class JournalStatsService {
     // Considera positiva se tiver tag de categoria 'positive' ou sentimentScore > 0
     const positiveCount = entries.filter(e => {
       const hasPositiveTags = (e.moodTags || []).some(tag =>
-        tag.category === 'positive' || tag.label.toLowerCase().includes('feliz') || tag.label.toLowerCase().includes('grato')
+        tag.category === 'positive' || 
+        (tag.label && tag.label.toLowerCase().includes('feliz')) || 
+        (tag.label && tag.label.toLowerCase().includes('grato'))
       );
       const hasPositiveSentiment = e.sentimentScore && e.sentimentScore > 0.2;
       return hasPositiveTags || hasPositiveSentiment;

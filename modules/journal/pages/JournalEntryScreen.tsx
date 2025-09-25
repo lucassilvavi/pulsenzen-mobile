@@ -16,11 +16,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import from the journal module
 import { JournalEntryView, PromptSelector, SelectedPromptDisplay } from '../components';
-import { DEFAULT_MOOD_TAGS } from '../constants';
 import { JournalService } from '../services';
-import { JournalPrompt } from '../types';
+import { JournalServiceProvider } from '../services/JournalServiceProvider';
+import { JournalPrompt, MoodTag } from '../types';
 
 const { width, height } = Dimensions.get('window');
+
+// Default mood tags for selection
+
+const DEFAULT_MOOD_TAGS: MoodTag[] = [
+  { id: '1', label: 'Feliz', emoji: '😊', category: 'positive', intensity: 3, hexColor: '#4CAF50' },
+  { id: '2', label: 'Triste', emoji: '😢', category: 'negative', intensity: 3, hexColor: '#F44336' },
+  { id: '3', label: 'Ansioso', emoji: '😰', category: 'negative', intensity: 4, hexColor: '#FF9800' },
+  { id: '4', label: 'Calmo', emoji: '😌', category: 'positive', intensity: 2, hexColor: '#2196F3' },
+  { id: '5', label: 'Motivado', emoji: '💪', category: 'positive', intensity: 4, hexColor: '#9C27B0' },
+  { id: '6', label: 'Cansado', emoji: '😴', category: 'neutral', intensity: 3, hexColor: '#607D8B' },
+  { id: '7', label: 'Grato', emoji: '🙏', category: 'positive', intensity: 5, hexColor: '#8BC34A' },
+  { id: '8', label: 'Irritado', emoji: '😠', category: 'negative', intensity: 4, hexColor: '#E91E63' },
+];
 
 
 export default function JournalEntryScreen() {
@@ -31,7 +44,7 @@ export default function JournalEntryScreen() {
         null
     );
     const [entryText, setEntryText] = useState('');
-    const [selectedMoodTags, setSelectedMoodTags] = useState<string[]>([]);
+    const [selectedMoodTags, setSelectedMoodTags] = useState<MoodTag[]>([]);
     const [isCustomPrompt, setIsCustomPrompt] = useState(false);
     const [customPrompt, setCustomPrompt] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -124,33 +137,16 @@ export default function JournalEntryScreen() {
                 content: entryText,
                 prompt: promptText,
                 promptCategory: isCustomPrompt ? 'Personalizado' : selectedPrompt?.category || 'Reflexão Pessoal',
-                moodTags: selectedMoodTags.map(tag => {
-                    const [emoji, ...labelParts] = tag.split(' ');
-                    const label = labelParts.join(' ');
-                    // Determine category based on label
-                    let category: 'positive' | 'negative' | 'neutral' = 'neutral';
-                    if (['Feliz', 'Grato', 'Motivado', 'Amoroso', 'Calmo'].includes(label)) {
-                        category = 'positive';
-                    } else if (['Triste', 'Irritado', 'Ansioso', 'Cansado'].includes(label)) {
-                        category = 'negative';
-                    }
-                    
-                    return {
-                        id: tag,
-                        label: label,
-                        emoji: emoji,
-                        category: category,
-                        intensity: 3 as const,
-                        hexColor: category === 'positive' ? '#4CAF50' : category === 'negative' ? '#F44336' : '#FF9800'
-                    };
-                }),
+                moodTags: selectedMoodTags,
                 createdAt: new Date().toISOString(),
                 wordCount: entryText.trim().split(/\s+/).length,
                 privacy: 'private' as const,
             };
 
             // Salva usando o service
-            await JournalService.saveEntry(entry);
+            await JournalServiceProvider.createEntry(entry);
+
+            console.log('✅ Entry saved successfully:', entry);
 
             // Clear draft
             await AsyncStorage.removeItem('journalDraft');
@@ -194,10 +190,10 @@ export default function JournalEntryScreen() {
         setCustomPrompt('');
     };
 
-    const toggleMoodTag = (tag: string) => {
+    const toggleMoodTag = (tag: MoodTag) => {
         setSelectedMoodTags(prev =>
-            prev.includes(tag)
-                ? prev.filter(t => t !== tag)
+            prev.some(t => t.id === tag.id)
+                ? prev.filter(t => t.id !== tag.id)
                 : [...prev, tag]
         );
         // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -281,16 +277,26 @@ export default function JournalEntryScreen() {
                     <View style={styles.modalInnerContent}>
                         {viewEntry && (
                             <JournalEntryView
-                                prompt={viewEntry.prompt}
-                                promptCategory={viewEntry.promptCategory}
-                                moodTags={viewEntry.moodTags}
-                                text={viewEntry.content || viewEntry.text}
-                                date={new Date(viewEntry.date || viewEntry.createdAt).toLocaleDateString('pt-BR', { 
-                                    day: '2-digit', 
-                                    month: 'long', 
-                                    year: 'numeric',
-                                    weekday: 'long'
-                                })}
+                                entry={{
+                                    id: viewEntry.id || 'temp',
+                                    content: viewEntry.content || viewEntry.text || '',
+                                    promptCategory: viewEntry.promptCategory || 'Geral',
+                                    moodTags: viewEntry.moodTags || [],
+                                    createdAt: viewEntry.createdAt || viewEntry.date || new Date().toISOString(),
+                                    updatedAt: viewEntry.updatedAt || new Date().toISOString(),
+                                    wordCount: viewEntry.wordCount || 0,
+                                    readingTimeMinutes: viewEntry.readingTimeMinutes || 1,
+                                    isFavorite: viewEntry.isFavorite || false,
+                                    privacy: viewEntry.privacy || 'private',
+                                    selectedPrompt: viewEntry.prompt ? {
+                                        id: 'custom',
+                                        question: viewEntry.prompt,
+                                        category: viewEntry.promptCategory || 'Geral',
+                                        icon: 'help-circle',
+                                        difficulty: 'beginner' as const,
+                                        tags: []
+                                    } : undefined
+                                }}
                                 onBack={() => { setModalVisible(false); router.back(); }}
                             />
                         )}
@@ -474,14 +480,14 @@ export default function JournalEntryScreen() {
                                 <View style={styles.moodTagsGrid}>
                                     {DEFAULT_MOOD_TAGS.map((tag) => (
                                         <Button
-                                            key={tag}
-                                            label={tag}
-                                            variant={selectedMoodTags.includes(tag) ? "primary" : "outline"}
+                                            key={tag.id}
+                                            label={`${tag.emoji} ${tag.label}`}
+                                            variant={selectedMoodTags.some(selected => selected.id === tag.id) ? "primary" : "outline"}
                                             size="small"
                                             onPress={() => toggleMoodTag(tag)}
-                                            style={selectedMoodTags.includes(tag) ? StyleSheet.flatten([styles.moodTag, { backgroundColor: colors.journal.accent }]) : styles.moodTag}
+                                            style={selectedMoodTags.some(selected => selected.id === tag.id) ? StyleSheet.flatten([styles.moodTag, { backgroundColor: colors.journal.accent }]) : styles.moodTag}
                                             labelStyle={{
-                                                color: selectedMoodTags.includes(tag) ? colors.neutral.white : colors.journal.accent,
+                                                color: selectedMoodTags.some(selected => selected.id === tag.id) ? colors.neutral.white : colors.journal.accent,
                                                 fontSize: fontSize.sm,
                                             }}
                                         />

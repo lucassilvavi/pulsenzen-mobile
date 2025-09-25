@@ -1,4 +1,5 @@
 // Real API Service for Journal Module - Ready for Production
+import AuthService from '../../../services/authService';
 import { JournalEntryAPI, JournalPromptAPI, MoodTagAPI } from '../models/ApiModels';
 import { JournalEntry, JournalPrompt, JournalStats } from '../types';
 
@@ -7,14 +8,13 @@ import { JournalEntry, JournalPrompt, JournalStats } from '../types';
  * This service handles all API communication for journal functionality
  */
 export class JournalApiService {
-  private static readonly BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.pulsezen.com';
+  private static readonly BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.pulsezen.com';
   private static readonly API_VERSION = 'v1';
   
   // Authentication headers
-  private static getHeaders(): HeadersInit {
-    // Get auth token from secure storage (AsyncStorage in React Native)
-    const authToken = (global as any)?.userToken || 
-                     (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
+  private static async getHeaders(): Promise<HeadersInit> {
+    // Get auth token from AuthService
+    const authToken = await AuthService.getToken();
     return {
       'Content-Type': 'application/json',
       'Authorization': authToken ? `Bearer ${authToken}` : '',
@@ -30,10 +30,12 @@ export class JournalApiService {
     const url = `${this.BASE_URL}/${this.API_VERSION}${endpoint}`;
     
     try {
+      const headers = await this.getHeaders();
+      
       const response = await fetch(url, {
         ...options,
         headers: {
-          ...this.getHeaders(),
+          ...headers,
           ...options.headers,
         },
       });
@@ -42,9 +44,10 @@ export class JournalApiService {
         throw new Error(`API Error: ${response.status} - ${response.statusText}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      return data;
     } catch (error) {
-      console.error(`API Request failed for ${endpoint}:`, error);
+      console.error(`❌ API Request failed for ${endpoint}:`, error);
       throw error;
     }
   }
@@ -91,23 +94,66 @@ export class JournalApiService {
 
   // Journal Entries API
   static async getEntries(filters?: {
+    page?: number;
     limit?: number;
     offset?: number;
     startDate?: string;
     endDate?: string;
     category?: string;
     search?: string;
-  }): Promise<JournalEntry[]> {
-    const queryParams = new URLSearchParams(filters as Record<string, string>);
-    const endpoint = `/journal/entries${queryParams.toString() ? `?${queryParams}` : ''}`;
+    isFavorite?: boolean;
+    privacyLevel?: string;
+    moodTags?: string[];
+    minWords?: number;
+    maxWords?: number;
+  }): Promise<{
+    entries: JournalEntry[];
+    pagination: {
+      page: number;
+      limit: number;
+      hasMore: boolean;
+      totalInPage: number;
+    };
+  }> {
+    // Convert parameters to URL query string
+    const queryParams = new URLSearchParams();
     
-    const apiEntries = await this.apiRequest<JournalEntryAPI[]>(endpoint);
-    return this.mapApiEntriesToLocal(apiEntries);
+    if (filters?.page) queryParams.append('page', filters.page.toString());
+    if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+    if (filters?.offset) queryParams.append('offset', filters.offset.toString());
+    if (filters?.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters?.endDate) queryParams.append('endDate', filters.endDate);
+    if (filters?.category) queryParams.append('category', filters.category);
+    if (filters?.search) queryParams.append('search', filters.search);
+    if (filters?.isFavorite !== undefined) queryParams.append('isFavorite', filters.isFavorite.toString());
+    if (filters?.privacyLevel) queryParams.append('privacyLevel', filters.privacyLevel);
+    if (filters?.moodTags && filters.moodTags.length > 0) {
+      filters.moodTags.forEach(tag => queryParams.append('moodTags', tag));
+    }
+    if (filters?.minWords) queryParams.append('minWords', filters.minWords.toString());
+    if (filters?.maxWords) queryParams.append('maxWords', filters.maxWords.toString());
+    
+    const endpoint = `/journal${queryParams.toString() ? `?${queryParams}` : ''}`;
+    
+    const response = await this.apiRequest<{
+      data: JournalEntryAPI[];
+      pagination: {
+        page: number;
+        limit: number;
+        hasMore: boolean;
+        totalInPage: number;
+      };
+    }>(endpoint);
+    
+    return {
+      entries: this.mapApiEntriesToLocal(response.data),
+      pagination: response.pagination
+    };
   }
 
   static async getEntryById(id: string): Promise<JournalEntry | null> {
     try {
-      const apiEntry = await this.apiRequest<JournalEntryAPI>(`/journal/entries/${id}`);
+      const apiEntry = await this.apiRequest<JournalEntryAPI>(`/journal/${id}`);
       return this.mapApiEntryToLocal(apiEntry);
     } catch (error) {
       console.error(`Failed to get entry ${id}:`, error);
@@ -118,18 +164,19 @@ export class JournalApiService {
   static async createEntry(entry: Partial<JournalEntry>): Promise<JournalEntry> {
     const apiEntryData = this.mapLocalEntryToApi(entry);
     
-    const createdEntry = await this.apiRequest<JournalEntryAPI>('/journal/entries', {
+    const createdEntry = await this.apiRequest<any>('/journal', {
       method: 'POST',
       body: JSON.stringify(apiEntryData),
     });
 
-    return this.mapApiEntryToLocal(createdEntry);
+    const localEntry = this.mapApiEntryToLocal(createdEntry);
+    return localEntry;
   }
 
   static async updateEntry(id: string, updates: Partial<JournalEntry>): Promise<JournalEntry> {
     const apiUpdateData = this.mapLocalEntryToApi(updates);
     
-    const updatedEntry = await this.apiRequest<JournalEntryAPI>(`/journal/entries/${id}`, {
+    const updatedEntry = await this.apiRequest<JournalEntryAPI>(`/journal/${id}`, {
       method: 'PUT',
       body: JSON.stringify(apiUpdateData),
     });
@@ -138,7 +185,7 @@ export class JournalApiService {
   }
 
   static async deleteEntry(id: string): Promise<void> {
-    await this.apiRequest(`/journal/entries/${id}`, {
+    await this.apiRequest(`/journal/${id}`, {
       method: 'DELETE',
     });
   }
@@ -223,42 +270,63 @@ export class JournalApiService {
     return apiPrompts.map(this.mapApiPromptToLocal);
   }
 
-  private static mapApiEntryToLocal(apiEntry: JournalEntryAPI): JournalEntry {
+  private static mapApiEntryToLocal(apiEntry: any): JournalEntry {
+    // The API is returning a different structure, map based on actual response
     return {
       id: apiEntry.id,
       content: apiEntry.content,
-      promptCategory: apiEntry.category,
-      moodTags: apiEntry.moodTags.map(tag => ({
+      promptCategory: apiEntry.promptCategory || 'Geral',
+      moodTags: (apiEntry.moodTags || []).map((tag: any) => ({
+        id: tag.id || `tag-${Math.random()}`,
+        label: tag.label || tag.name || '',
+        emoji: tag.emoji || '😐',
+        category: tag.category || 'neutral' as const,
+        intensity: tag.intensity || 3 as const,
+        hexColor: tag.color || tag.hexColor || '#666666',
+      })),
+      createdAt: apiEntry.createdAt || new Date().toISOString(),
+      updatedAt: apiEntry.updatedAt || new Date().toISOString(), 
+      wordCount: apiEntry.wordCount || 0,
+      readingTimeMinutes: apiEntry.readingTimeMinutes || 1,
+      isFavorite: apiEntry.isFavorite || false,
+      privacy: apiEntry.privacyLevel || 'private',
+      selectedPrompt: (apiEntry.customPrompt || apiEntry.metadata?.title) ? {
+        id: apiEntry.promptId || 'custom',
+        question: apiEntry.customPrompt || apiEntry.metadata?.title || '',
+        category: apiEntry.promptCategory || 'Geral',
+        icon: 'help-circle',
+        difficulty: 'beginner' as const,
+        tags: [],
+      } : undefined,
+    };
+  }
+
+  private static mapApiEntriesToLocal(apiEntries: any[]): JournalEntry[] {
+    return apiEntries.map(this.mapApiEntryToLocal);
+  }
+
+  private static mapLocalEntryToApi(localEntry: Partial<JournalEntry>): any {
+    // Map to the format expected by the API controller
+    return {
+      content: localEntry.content || '',
+      title: localEntry.selectedPrompt?.question || (localEntry as any).prompt || 'Entrada sem título',
+      promptCategory: localEntry.promptCategory || 'general',
+      customPrompt: localEntry.selectedPrompt?.question || (localEntry as any).prompt || null,
+      moodTags: (localEntry.moodTags || []).map(tag => ({
         id: tag.id,
         label: tag.label,
         emoji: tag.emoji,
         category: tag.category,
         intensity: tag.intensity,
-        hexColor: '#FF8A65'
+        hexColor: tag.hexColor
       })),
-      createdAt: apiEntry.metadata.createdAt,
-      wordCount: apiEntry.wordCount,
-      privacy: 'private' as const,
-    };
-  }
-
-  private static mapApiEntriesToLocal(apiEntries: JournalEntryAPI[]): JournalEntry[] {
-    return apiEntries.map(this.mapApiEntryToLocal);
-  }
-
-  private static mapLocalEntryToApi(localEntry: Partial<JournalEntry>): Partial<JournalEntryAPI> {
-    return {
-      content: localEntry.content || '',
-      category: localEntry.promptCategory || 'General',
-      wordCount: localEntry.wordCount || 0,
-      characterCount: localEntry.content?.length || 0,
-      readingTime: Math.ceil((localEntry.wordCount || 0) / 200 * 60), // Rough estimate
-      keywords: localEntry.content ? this.extractKeywords(localEntry.content) : [],
+      privacyLevel: localEntry.privacy || 'private',
+      isFavorite: localEntry.isFavorite || false,
       metadata: {
         createdAt: localEntry.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        deviceType: 'phone', // Could be determined from user agent
+        deviceType: 'phone',
         appVersion: '1.0.0',
         writingSession: {
           startTime: new Date().toISOString(),
@@ -284,7 +352,8 @@ export class JournalApiService {
   // Error Handling and Offline Support
   static async isOnline(): Promise<boolean> {
     try {
-      await this.apiRequest('/health');
+      // Use the API root endpoint for health check
+      await this.apiRequest('/');
       return true;
     } catch {
       return false;
@@ -304,12 +373,23 @@ export class JournalApiService {
 
   static async getEntriesWithFallback(): Promise<JournalEntry[]> {
     try {
-      return await this.getEntries();
+      const result = await this.getEntries();
+      return result.entries;
     } catch (error) {
       console.warn('API unavailable, falling back to mock data');
       const { JournalService } = await import('../services/JournalService');
       return await JournalService.getEntries();
     }
+  }
+
+  static async getEntriesPaginated(filters?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    category?: string;
+    isFavorite?: boolean;
+  }) {
+    return await this.getEntries(filters);
   }
 }
 

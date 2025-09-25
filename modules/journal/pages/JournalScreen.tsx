@@ -2,76 +2,94 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Dimensions, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import {
+  ActivityIndicator,
+  FlatList,
+  ListRenderItem,
+  Modal,
+  RefreshControl,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Card from '@/components/base/Card';
 import ScreenContainer from '@/components/base/ScreenContainer';
-import SearchAndActionBar from '@/components/SearchAndActionBar';
 import StatsBar from '@/components/StatsBar';
 import { ThemedText } from '@/components/ThemedText';
-import TipsSection from '@/components/TipsSection';
 import { colors } from '@/constants/theme';
 import { useAccessibilityProps, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { fontSize, spacing } from '@/utils/responsive';
 
-import { JournalEntriesList, JournalEntryView } from '../components';
-import { JournalService, JournalStatsService } from '../services';
+import { JournalEntryCardFlat, JournalEntryView } from '../components';
+import { useJournalInfiniteScroll } from '../hooks/useJournalInfiniteScroll';
+import { JournalStatsService } from '../services';
 import { JournalEntry } from '../types';
 
 export default function JournalScreen() {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [stats, setStats] = useState({ totalEntries: 0, uniqueDays: 0, percentPositive: 0 });
   const [isSearching, setIsSearching] = useState(false);
 
+  // Use the new infinite scroll hook
+  const {
+    entries: journalEntries,
+    loading,
+    refreshing,
+    hasMore,
+    error,
+    loadMore,
+    refresh,
+    applyFilters,
+    clearFilters
+  } = useJournalInfiniteScroll();
+
   // Accessibility hooks
   const { createButtonProps } = useAccessibilityProps();
   const { announceNavigation, announceActionComplete } = useScreenReaderAnnouncement();
 
-  // Simulated search delay for better UX feedback
+  // Update stats when entries change
+  useEffect(() => {
+    setStats(JournalStatsService.calculateStats(journalEntries));
+  }, [journalEntries]);
+
+  // Announce navigation when component mounts
+  useEffect(() => {
+    announceNavigation(
+      'Tela do Diário',
+      `Página do diário carregada. Você tem ${journalEntries.length} entradas no seu diário. Use a barra de pesquisa para encontrar entradas específicas ou toque no botão adicionar para criar uma nova entrada.`
+    );
+  }, [announceNavigation, journalEntries.length]);
+
+  // Handle search with debounce and apply filters
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
-    if (text.trim().length > 0) {
-      setIsSearching(true);
-      // Simulate search delay
-      setTimeout(() => {
-        setIsSearching(false);
-      }, 300);
-    } else {
+    setIsSearching(true);
+    
+    // Debounce search
+    const timeoutId = setTimeout(async () => {
+      if (text.trim().length > 0) {
+        await applyFilters({ search: text.trim() });
+      } else {
+        await clearFilters();
+      }
       setIsSearching(false);
-    }
-  }, []);
+    }, 300);
 
-  // Carrega entradas e stats ao montar e ao retornar para a tela
-  useEffect(() => {
-    const loadEntries = async () => {
-      const entries = await JournalService.getEntries();
-      setJournalEntries(entries);
-      setStats(JournalStatsService.calculateStats(entries));
-      
-      // Announce page content for screen readers
-      announceNavigation(
-        'Tela do Diário',
-        `Página do diário carregada. Você tem ${entries.length} entradas no seu diário. Use a barra de pesquisa para encontrar entradas específicas ou toque no botão adicionar para criar uma nova entrada.`
-      );
-    };
-    loadEntries();
-  }, [announceNavigation]);
+    // Cleanup timeout on next call
+    return () => clearTimeout(timeoutId);
+  }, [applyFilters, clearFilters]);
 
+  // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      const loadEntries = async () => {
-        const entries = await JournalService.getEntries();
-        setJournalEntries(entries);
-        setStats(JournalStatsService.calculateStats(entries));
-      };
-      loadEntries();
-    }, [])
+      refresh();
+    }, [refresh])
   );
 
   const handleEntryPress = (entryId: string) => {
@@ -92,61 +110,117 @@ export default function JournalScreen() {
     setSelectedEntry(null);
   };
 
-  // Mapeia os dados para o formato esperado pelo componente de lista
-  const entriesList = journalEntries
-    .filter(entry => {
-      // Se não há busca, mostra todas
-      if (!searchQuery.trim()) return true;
-      
-      const query = searchQuery.toLowerCase().trim();
-      
-      // Busca no conteúdo da entrada
-      const matchesContent = entry.content.toLowerCase().includes(query);
-      
-      // Busca na categoria/título
-      const matchesCategory = (entry.promptCategory || '').toLowerCase().includes(query);
-      
-      // Busca nas tags de humor
-      const matchesMoodTags = entry.moodTags.some(tag => 
-        tag.label.toLowerCase().includes(query) || 
-        tag.emoji.includes(query)
-      );
-      
-      // Busca na data (formato brasileiro)
-      const dateStr = new Date(entry.createdAt).toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      }).toLowerCase();
-      const matchesDate = dateStr.includes(query);
-      
-      return matchesContent || matchesCategory || matchesMoodTags || matchesDate;
-    })
-    .map(entry => ({
-      id: entry.id,
-      date: new Date(entry.createdAt).toLocaleDateString('pt-BR', {
-        day: '2-digit', month: 'short', year: '2-digit'
-      }),
-      title: entry.promptCategory || 'Reflexão',
-      preview: entry.content,
-      mood: {
-        label: entry.moodTags[0] ? `${entry.moodTags[0].emoji} ${entry.moodTags[0].label}` : '',
-        color: '#FFA726',
-        bg: '#FFF3E0',
-        icon: 'book',
-      },
-      tags: entry.moodTags.map(tag => `${tag.emoji} ${tag.label}`) || [],
-    }));
+  // Render item for FlatList
+  const renderJournalEntry: ListRenderItem<JournalEntry> = ({ item }) => (
+    <JournalEntryCardFlat 
+      entry={item} 
+      onPress={handleEntryPress}
+    />
+  );
 
-  const { width, height } = Dimensions.get('window');
+  // Render empty state
+  const renderEmptyComponent = () => {
+    if (loading && journalEntries.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={colors.primary.main} />
+          <ThemedText style={styles.emptyTitle}>Carregando entradas...</ThemedText>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.error.main} />
+          <ThemedText style={styles.emptyTitle}>Erro ao carregar entradas</ThemedText>
+          <ThemedText style={styles.emptyDescription}>{error}</ThemedText>
+          <TouchableOpacity 
+            onPress={refresh}
+            style={styles.retryButton}
+          >
+            <ThemedText style={styles.retryText}>Tentar novamente</ThemedText>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (searchQuery.trim()) {
+      return (
+        <View style={styles.emptyState}>
+          <Ionicons name="search" size={48} color={colors.neutral.text.secondary} />
+          <ThemedText style={styles.emptyTitle}>Nenhuma entrada encontrada</ThemedText>
+          <ThemedText style={styles.emptyDescription}>
+            Não encontramos entradas com "{searchQuery}"
+          </ThemedText>
+          <TouchableOpacity 
+            onPress={() => {
+              setSearchQuery('');
+              clearFilters();
+            }}
+            style={styles.retryButton}
+          >
+            <ThemedText style={styles.retryText}>Limpar busca</ThemedText>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="book-outline" size={48} color={colors.neutral.text.secondary} />
+        <ThemedText style={styles.emptyTitle}>Seu diário está vazio</ThemedText>
+        <ThemedText style={styles.emptyDescription}>
+          Comece criando sua primeira entrada!{'\n'}
+          Use o botão + no header para começar.
+        </ThemedText>
+        <TouchableOpacity 
+          onPress={() => router.push('/journal-entry')}
+          style={styles.retryButton}
+        >
+          <ThemedText style={styles.retryText}>Criar primeira entrada</ThemedText>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Render footer with loading indicator
+  const renderFooter = () => {
+    if (!hasMore) return null;
+    
+    return (
+      <View style={styles.loadingFooter}>
+        <ActivityIndicator size="small" color={colors.primary.main} />
+        <ThemedText style={styles.loadingText}>Carregando mais entradas...</ThemedText>
+      </View>
+    );
+  };
+
+  // Render header component (only stats and tips now)
+  const renderHeader = () => (
+    <>
+      <Card style={styles.statsCard}>
+        <StatsBar
+          stats={[
+            { value: stats.totalEntries, label: 'Entradas' },
+            { value: stats.uniqueDays, label: 'Dias' },
+            { value: `${stats.percentPositive}%`, label: 'Positivas' },
+          ]}
+        />
+      </Card>
+    </>
+  );
 
   return (
-    <ScreenContainer
-      gradientColors={colors.gradients.journal}
-      gradientHeight={height * 0.4}
-    >
-      <View style={[styles.container]}>
-        {/* Custom Header */}
-        <View style={styles.customHeader}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+    <ScreenContainer style={styles.container}>
+      <View style={[styles.customHeader, { paddingTop: insets.top }]}>
+        {/* Top Row - Navigation and Title */}
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={styles.backButton}
+            {...createButtonProps('Botão Voltar', 'Voltar para a tela anterior')}
+          >
             <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
           </TouchableOpacity>
           <ThemedText style={styles.headerTitle}>Diário</ThemedText>
@@ -159,84 +233,81 @@ export default function JournalScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <SearchAndActionBar
-          searchPlaceholder="Pesquisar por conteúdo, categoria, humor..."
-          searchValue={searchQuery}
-          onSearchChange={handleSearchChange}
-          buttonLabel=""
-          onButtonPress={() => router.push('/journal-entry')}
-          style={{ marginBottom: spacing.md }}
-          isSearching={isSearching}
-          searchResultsCount={entriesList.length}
-          showSearchTips={journalEntries.length > 0 && searchQuery.trim().length === 0}
-        />
+        {/* Bottom Row - Search and Add Button */}
+        <View style={styles.headerBottomRow}>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color={colors.neutral.text.secondary} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Pesquisar por conteúdo, categoria, humor..."
+              placeholderTextColor={colors.neutral.text.secondary}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              returnKeyType="search"
+              {...createButtonProps('Campo de busca', 'Digite para buscar entradas do diário')}
+            />
+            {(searchQuery.length > 0 || isSearching) && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  clearFilters();
+                }}
+                style={styles.clearSearchButton}
+                {...createButtonProps('Limpar busca', 'Limpar campo de busca')}
+              >
+                {isSearching ? (
+                  <ActivityIndicator size="small" color={colors.neutral.text.secondary} />
+                ) : (
+                  <Ionicons name="close-circle" size={20} color={colors.neutral.text.secondary} />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            onPress={() => router.push('/journal-entry')}
+            style={styles.addButton}
+            {...createButtonProps('Adicionar entrada', 'Criar nova entrada no diário')}
+          >
+            <Ionicons name="add" size={24} color={colors.neutral.background} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-        <Card style={styles.statsCard}>
-          <StatsBar
-            stats={[
-              { value: stats.totalEntries, label: 'Entradas' },
-              { value: stats.uniqueDays, label: 'Dias' },
-              { value: `${stats.percentPositive}%`, label: 'Positivas' },
-            ]}
+      <FlatList
+        data={journalEntries}
+        renderItem={renderJournalEntry}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmptyComponent}
+        ListFooterComponent={renderFooter}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            colors={[colors.primary.main]}
           />
-        </Card>
-
-        <JournalEntriesList
-          entries={entriesList}
-          onEntryPress={handleEntryPress}
-          searchQuery={searchQuery}
-        />
-
-        <TipsSection
-          title="Dicas para um diário eficaz"
-          tips={[
-            'Escreva regularmente, mesmo que por apenas 5 minutos',
-            'Seja honesto com seus sentimentos e pensamentos',
-            'Não se preocupe com gramática ou estrutura',
-            'Revise entradas antigas para observar padrões e crescimento',
-          ]}
-          style={styles.tipsCard}
-        />
-      </ScrollView>
+        }
+        contentContainerStyle={styles.flatListContent}
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* Modal de leitura do diário */}
       <Modal
         visible={modalVisible && !!selectedEntry}
         animationType="slide"
-        transparent={true}
+        presentationStyle="pageSheet"
         onRequestClose={handleCloseModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.dragBar} />
-            {/* Botão de fechar reformulado */}
-            <TouchableOpacity 
-              style={styles.modernCloseButton} 
-              onPress={handleCloseModal}
-              activeOpacity={0.7}
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            >
-              <Ionicons name="close" size={22} color={colors.primary.main} />
-            </TouchableOpacity>
-            {selectedEntry && (
-              <JournalEntryView
-                prompt=""
-                promptCategory={selectedEntry.promptCategory}
-                moodTags={selectedEntry.moodTags.map(tag => `${tag.emoji} ${tag.label}`)}
-                text={selectedEntry.content}
-                date={new Date(selectedEntry.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })}
-                onBack={handleCloseModal}
-              />
-            )}
-          </View>
-        </View>
+        {selectedEntry && (
+          <JournalEntryView
+            entry={selectedEntry}
+            onBack={handleCloseModal}
+          />
+        )}
       </Modal>
-      </View>
     </ScreenContainer>
   );
 }
@@ -246,124 +317,131 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.md,
+    backgroundColor: colors.neutral.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.neutral.divider,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  headerBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.neutral.card,
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.neutral.divider,
+    minHeight: 44, // Better touch target
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: fontSize.md,
+    color: colors.neutral.text.primary,
+    paddingVertical: spacing.xs,
+  },
+  clearSearchButton: {
+    padding: spacing.xs,
+    marginLeft: spacing.xs,
+  },
+  addButton: {
+    backgroundColor: colors.primary.main,
+    borderRadius: 12,
+    padding: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 48,
+    minHeight: 48,
+    // Shadow for better visibility
+    shadowColor: colors.primary.main,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  analyticsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: spacing.xs,
   },
   headerTitle: {
-    fontSize: fontSize.lg,
-    fontFamily: 'Inter-SemiBold',
-    color: colors.primary.main,
+    fontSize: fontSize.xl,
+    fontWeight: 'bold',
+    color: colors.neutral.text.primary,
   },
-  headerRight: {
-    width: 40,
-    height: 40,
+  analyticsButton: {
+    padding: spacing.xs,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
+  flatListContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   statsCard: {
-    padding: 15,
-    marginBottom: 20,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
   },
   tipsCard: {
-    padding: 20,
-    marginBottom: 20,
+    margin: spacing.lg,
+    padding: spacing.md,
   },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '100%',
-    minHeight: '100%',
-    maxHeight: '100%',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 24,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 16,
-    alignItems: 'stretch',
-  },
-  dragBar: {
-    alignSelf: 'center',
-    width: 48,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#E0E0E0',
-    marginBottom: 18,
-  },
-  closeModalButton: {
-    position: 'absolute',
-    top: 18,
-    right: 18,
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 152, 0, 0.10)',
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+  emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    paddingVertical: spacing.xl * 2,
+    paddingHorizontal: spacing.lg,
   },
-  modernCloseButton: {
-    position: 'absolute',
-    top: 60, // Positioned lower for easier access
-    right: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF', // Using white directly
-    justifyContent: 'center',
+  emptyTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: colors.neutral.text.primary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  emptyDescription: {
+    fontSize: fontSize.md,
+    color: colors.neutral.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  retryButton: {
+    backgroundColor: colors.primary.main,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    marginTop: spacing.md,
+  },
+  retryText: {
+    color: colors.primary.contrast,
+    fontSize: fontSize.md,
+    fontWeight: '600',
+  },
+  loadingFooter: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0', // Light gray border
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 6,
-    zIndex: 999,
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
   },
-  closeModalText: {
-    fontSize: 28,
-    color: '#FFA726',
-    fontWeight: 'bold',
-    lineHeight: 32,
+  loadingText: {
+    fontSize: fontSize.sm,
+    color: colors.neutral.text.secondary,
+    marginTop: spacing.xs,
   },
 });
