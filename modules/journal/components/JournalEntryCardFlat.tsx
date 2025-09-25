@@ -44,7 +44,7 @@ export const JournalEntryCardFlat: React.FC<JournalEntryCardProps> = ({ entry, o
           <View style={styles.dateContainer}>
             <ThemedText style={styles.date}>{formatDate(entry.createdAt)}</ThemedText>
             {entry.isFavorite && (
-              <Ionicons name="heart" size={16} color={colors.warning.main} />
+              <Ionicons name="heart" size={16} color={colors.journal.mood.positive} />
             )}
           </View>
           <View style={styles.metadata}>
@@ -98,7 +98,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.neutral.divider,
+    borderColor: colors.journal.border.light,
+    backgroundColor: colors.journal.surface,
   },
   header: {
     flexDirection: 'row',
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: fontSize.sm,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.secondary,
   },
   metadata: {
     flexDirection: 'row',
@@ -121,16 +122,17 @@ const styles = StyleSheet.create({
   },
   wordCount: {
     fontSize: fontSize.xs,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.muted,
   },
   readingTime: {
     fontSize: fontSize.xs,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.muted,
   },
   content: {
     fontSize: fontSize.md,
     lineHeight: 22,
     marginBottom: spacing.sm,
+    color: colors.journal.text.body,
   },
   moodTags: {
     flexDirection: 'row',
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
   },
   moreTags: {
     fontSize: fontSize.xs,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.muted,
     alignSelf: 'center',
   },
   footer: {
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: fontSize.xs,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.muted,
     textTransform: 'capitalize',
   },
   indicator: {

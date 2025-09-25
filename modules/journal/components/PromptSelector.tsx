@@ -3,7 +3,6 @@ import Card from '@/components/base/Card';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
-import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { JournalPrompt } from '../types';
 
@@ -79,6 +78,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.neutral.divider,
+    // Sombra sutil para iOS
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
   },
   promptContent: {
     padding: spacing.md,

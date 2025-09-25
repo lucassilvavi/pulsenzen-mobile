@@ -91,9 +91,42 @@ export const colors = {
   },
   
   journal: {
-    primary: '#FFE0B2',
-    secondary: '#FFF8E1',
-    accent: '#FF9800',
+    // Primary: Base suave do gradiente para backgrounds principais
+    primary: '#A8D5BA',
+    // Light: Tom mais claro para cards e superfícies elevadas  
+    light: '#C8E6D0',
+    // Secondary: Tom neutro suave para backgrounds secundários
+    secondary: '#F2F9F5',
+    // Surface: Branco com leve tint verde para cards de entrada
+    surface: '#FDFEFD',
+    // Accent: Verde sereno para elementos interativos (CTA, botões)
+    accent: '#7FB069',
+    // Text colors otimizadas para legibilidade e calma
+    text: {
+      primary: '#2D4A3A',      // Verde escuro para títulos
+      secondary: '#52704C',     // Verde médio para subtítulos  
+      body: '#4A5D4F',         // Verde acinzentado para corpo de texto
+      muted: '#8FA089',        // Verde claro para texto secundário
+      placeholder: '#B8C5BA',  // Verde muito claro para placeholders
+    },
+    // Border colors harmoniosas
+    border: {
+      light: '#E8F0EA',        // Bordas sutis
+      medium: '#D1E0D4',       // Bordas visíveis mas suaves
+      focus: '#7FB069',        // Bordas em foco (mesmo que accent)
+    },
+    // Status colors específicas para journal
+    mood: {
+      positive: '#7FB069',     // Verde natural para humor positivo
+      neutral: '#9BB89D',      // Verde neutro para reflexões
+      negative: '#B8986D',     // Tom terroso para momentos difíceis
+    },
+    // Interactive states
+    interactive: {
+      hover: '#98C4A8',        // Hover mais saturado
+      pressed: '#6DA556',      // Pressed mais escuro
+      disabled: '#C8D4CA',     // Estado desabilitado suave
+    }
   },
   
   profile: {
@@ -108,7 +141,7 @@ export const colors = {
     breathing: ['#A1CEDC', '#E8F4F8'],
     sleep: ['#9575CD', '#EDE7F6'],
     sos: ['#FFCDD2', '#FFEBEE'],
-    journal: ['#FFE0B2', '#FFF8E1'],
+    journal: ['#A8D5BA', '#F2F9F5'],
     profile: ['#E1F5FE', '#F5F5F5'],
   },
   

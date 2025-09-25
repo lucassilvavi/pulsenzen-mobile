@@ -15,6 +15,7 @@ import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, ScrollView, S
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import from the journal module
+import { LinearGradient } from 'expo-linear-gradient';
 import { JournalEntryView, PromptSelector, SelectedPromptDisplay } from '../components';
 import { JournalService } from '../services';
 import { JournalServiceProvider } from '../services/JournalServiceProvider';
@@ -376,18 +377,20 @@ export default function JournalEntryScreen() {
                 style={styles.keyboardContainer}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <ScreenContainer
-                    gradientColors={colors.gradients.journal}
-                    gradientHeight={height * 0.34}
-                >
-                    <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+             <ScreenContainer style={{ ...styles.container, paddingTop: insets.top + 40 }}>
+                      <LinearGradient
+                            colors={['#A8D5BA', '#F2F9F5']}
+                            style={styles.headerGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 0, y: 1 }}
+                            />
                         {/* Header */}
-                        <View style={styles.header}>
+                        <View style={styles.customHeader}>
                             <TouchableOpacity
                                 onPress={() => router.back()}
                                 style={styles.backButton}
                             >
-                                <Ionicons name="chevron-back" size={28} color={colors.neutral.white} />
+                            <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
                             </TouchableOpacity>
                             
                             <ThemedText style={styles.headerTitle}>
@@ -399,8 +402,12 @@ export default function JournalEntryScreen() {
                         
                         <ScrollView
                             style={styles.contentContainer}
-                            showsVerticalScrollIndicator={false}
                             contentContainerStyle={styles.scrollContent}
+                            showsVerticalScrollIndicator={false}
+                            accessible={true}
+                            accessibilityRole="scrollbar"
+                            accessibilityLabel="Conteúdo da página de respiração"
+                            accessibilityHint="Role para ver as técnicas de respiração, benefícios e dicas"
                         >
                         {/* Prompt Selection */}
                         {!selectedPrompt && !isCustomPrompt && (
@@ -511,7 +518,7 @@ export default function JournalEntryScreen() {
                             </View>
                         )}
                     </ScrollView>
-                </View>
+                
             </ScreenContainer>
         </KeyboardAvoidingView>
             <CBTAnalysisModal visible={analysisVisible} onClose={() => setAnalysisVisible(false)} text={entryText} />
@@ -523,34 +530,56 @@ const styles = StyleSheet.create({
     keyboardContainer: {
         flex: 1,
     },
+ headerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 300,
+    zIndex: 0,
+  },
     container: {
         flex: 1,
-        paddingHorizontal: spacing.lg,
     },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: spacing.md,
-        paddingBottom: spacing.lg,
+    customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    zIndex: 1,
+
     },
-    backButton: {
-        padding: spacing.sm,
-    },
+backButton: {
+    padding: spacing.xs,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.journal.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.journal.border.light,
+  },
     headerTitle: {
         fontSize: fontSize.lg,
-        fontFamily: 'Inter-Bold',
-        color: colors.neutral.white,
-        textAlign: 'center',
+        fontFamily: 'Inter-SemiBold',
+        color: colors.journal.text.primary,
     },
     headerRight: {
-        width: 44, // Same width as back button to center the title
+          width: 40,
+          height: 40,
     },
     closeButton: {
-        backgroundColor: 'rgba(255, 152, 0, 0.2)',
+        backgroundColor: colors.journal.surface,
         borderRadius: 20,
         width: 40,
         height: 40,
+        borderWidth: 1,
+        borderColor: colors.journal.border.light,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerContent: {
         flex: 1,
@@ -558,21 +587,29 @@ const styles = StyleSheet.create({
     },
     headerDate: {
         fontSize: fontSize.sm,
-        color: colors.neutral.text.secondary,
+        color: colors.journal.text.secondary,
         marginTop: 4,
     },
     saveButton: {
-        backgroundColor: 'rgba(255, 152, 0, 0.2)',
+        backgroundColor: colors.journal.accent,
         borderRadius: 20,
         width: 40,
         height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: colors.journal.accent,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 3,
     },
     contentContainer: {
         flex: 1,
-        paddingBottom: spacing.xl,
+    
     },
     scrollContent: {
-        paddingBottom: spacing.xl,
+        paddingHorizontal: 20,
+        paddingBottom: 30,
     },
     promptSection: {
         marginBottom: spacing.xl,
@@ -610,13 +647,13 @@ const styles = StyleSheet.create({
     },
     promptCategory: {
         fontSize: fontSize.sm,
-        color: colors.neutral.text.secondary,
+        color: colors.journal.text.secondary,
         marginBottom: 4,
     },
     promptQuestion: {
         fontSize: fontSize.md,
         fontFamily: 'Inter-Medium',
-        color: colors.neutral.text.primary,
+        color: colors.journal.text.primary,
     },
     customPromptButton: {
         borderWidth: 1,
@@ -630,20 +667,23 @@ const styles = StyleSheet.create({
     },
     customPromptSection: {
         marginBottom: spacing.xl,
-        backgroundColor: colors.neutral.white,
+        backgroundColor: colors.journal.surface,
         borderRadius: 12,
         padding: spacing.md,
         elevation: 2,
+        borderWidth: 1,
+        borderColor: colors.journal.border.light,
     },
     customPromptInput: {
         minHeight: 100,
         maxHeight: 150,
-        borderColor: colors.neutral.divider,
+        borderColor: colors.journal.border.light,
         borderWidth: 1,
         borderRadius: 12,
         padding: spacing.sm,
         marginBottom: spacing.md,
-        backgroundColor: colors.neutral.white,
+        backgroundColor: colors.journal.surface,
+        color: colors.journal.text.primary,
     },
     customPromptActions: {
         flexDirection: 'row',
@@ -657,10 +697,12 @@ const styles = StyleSheet.create({
         marginBottom: spacing.xl,
     },
     selectedPromptCard: {
-        backgroundColor: colors.neutral.card,
+        backgroundColor: colors.journal.surface,
         borderRadius: 12,
         overflow: 'hidden',
         elevation: 2,
+        borderWidth: 1,
+        borderColor: colors.journal.border.light,
     },
     selectedPromptHeader: {
         flexDirection: 'row',
@@ -671,7 +713,7 @@ const styles = StyleSheet.create({
     },
     selectedPromptCategory: {
         fontSize: fontSize.sm,
-        color: colors.neutral.white,
+        color: colors.journal.surface,
         fontFamily: 'Inter-Bold',
     },
     editPromptButton: {
@@ -684,7 +726,7 @@ const styles = StyleSheet.create({
     },
     selectedPromptText: {
         fontSize: fontSize.md,
-        color: colors.neutral.text.primary,
+        color: colors.journal.text.primary,
         padding: spacing.md,
     },
     entrySection: {
@@ -693,15 +735,18 @@ const styles = StyleSheet.create({
     entryTextArea: {
         minHeight: 120,
         maxHeight: 200,
-        borderColor: colors.neutral.divider,
+        borderColor: colors.journal.border.light,
         borderWidth: 1,
         borderRadius: 12,
         padding: spacing.sm,
-        backgroundColor: colors.neutral.white,
+        backgroundColor: colors.journal.surface,
+        color: colors.journal.text.primary,
+        fontSize: fontSize.md,
+        lineHeight: 22,
     },
     wordCount: {
         fontSize: fontSize.sm,
-        color: colors.neutral.text.secondary,
+        color: colors.journal.text.muted,
         textAlign: 'right',
         marginTop: 4,
     },
@@ -735,7 +780,7 @@ const styles = StyleSheet.create({
         width: '100%',
         minHeight: '100%',
         maxHeight: '100%',
-        backgroundColor: colors.neutral.white,
+        backgroundColor: colors.journal.surface,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
         shadowColor: '#000',
@@ -749,8 +794,8 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.md,
         paddingHorizontal: spacing.lg,
         borderBottomWidth: 1,
-        borderBottomColor: colors.neutral.divider,
-        backgroundColor: colors.neutral.white,
+        borderBottomColor: colors.journal.border.light,
+        backgroundColor: colors.journal.surface,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
     },
@@ -759,7 +804,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 5,
         borderRadius: 3,
-        backgroundColor: colors.neutral.divider,
+        backgroundColor: colors.journal.border.medium,
         marginBottom: spacing.sm,
     },
     modernCloseButton: {
@@ -769,11 +814,11 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: colors.neutral.white,
+        backgroundColor: colors.journal.surface,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: colors.neutral.divider,
+        borderColor: colors.journal.border.light,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.12,
@@ -790,7 +835,7 @@ const styles = StyleSheet.create({
     // Custom Prompt Modal Styles
     customPromptModalContent: {
         width: '100%',
-        backgroundColor: colors.neutral.white,
+        backgroundColor: colors.journal.surface,
         borderTopLeftRadius: 28,
         borderTopRightRadius: 28,
         maxHeight: '70%',
@@ -805,7 +850,7 @@ const styles = StyleSheet.create({
         paddingBottom: spacing.md,
         paddingHorizontal: spacing.lg,
         borderBottomWidth: 1,
-        borderBottomColor: colors.neutral.divider,
+        borderBottomColor: colors.journal.border.light,
     },
     customPromptTitleContainer: {
         flexDirection: 'row',
@@ -833,7 +878,7 @@ const styles = StyleSheet.create({
     },
     customPromptDescription: {
         fontSize: fontSize.sm,
-        color: colors.neutral.text.secondary,
+        color: colors.journal.text.secondary,
         fontFamily: 'Inter-Medium',
         lineHeight: 20,
         marginBottom: spacing.lg,
@@ -842,21 +887,22 @@ const styles = StyleSheet.create({
     customPromptTextInput: {
         minHeight: 80,
         maxHeight: 120,
-        borderColor: colors.neutral.divider,
+        borderColor: colors.journal.border.light,
         borderWidth: 1.5,
         borderRadius: 16,
         padding: spacing.md,
-        backgroundColor: colors.neutral.card,
+        backgroundColor: colors.journal.secondary,
         marginBottom: spacing.lg,
         fontSize: fontSize.md,
         fontFamily: 'Inter-Regular',
         lineHeight: 22,
+        color: colors.journal.text.primary,
     },
     customPromptActionCancel: {
         flex: 1,
         marginRight: spacing.sm,
-        borderColor: colors.neutral.divider,
-        backgroundColor: colors.neutral.card,
+        borderColor: colors.journal.border.light,
+        backgroundColor: colors.journal.secondary,
     },
     customPromptActionConfirm: {
         flex: 1,

@@ -23,6 +23,7 @@ import { colors } from '@/constants/theme';
 import { useAccessibilityProps, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { fontSize, spacing } from '@/utils/responsive';
 
+import { LinearGradient } from 'expo-linear-gradient';
 import { JournalEntryCardFlat, JournalEntryView } from '../components';
 import { useJournalInfiniteScroll } from '../hooks/useJournalInfiniteScroll';
 import { JournalStatsService } from '../services';
@@ -213,6 +214,12 @@ export default function JournalScreen() {
 
   return (
     <ScreenContainer style={styles.container}>
+      <LinearGradient
+        colors={['#A8D5BA', '#F2F9F5']}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
       <View style={[styles.customHeader, { paddingTop: insets.top }]}>
         {/* Top Row - Navigation and Title */}
         <View style={styles.headerTopRow}>
@@ -316,14 +323,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+    headerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 300,
+    zIndex: 0,
+  },
   customHeader: {
     flexDirection: 'column',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.md,
-    backgroundColor: colors.neutral.background,
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
-    borderBottomColor: colors.neutral.divider,
+    borderBottomColor: colors.journal.border.light,
+    zIndex: 1,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -340,21 +356,22 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.neutral.card,
+    backgroundColor: colors.journal.surface,
     borderRadius: 12,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.neutral.divider,
+    borderColor: colors.journal.border.light,
     minHeight: 44, // Better touch target
   },
   searchIcon: {
     marginRight: spacing.sm,
+    color: colors.journal.text.muted,
   },
   searchInput: {
     flex: 1,
     fontSize: fontSize.md,
-    color: colors.neutral.text.primary,
+    color: colors.journal.text.primary,
     paddingVertical: spacing.xs,
   },
   clearSearchButton: {
@@ -362,30 +379,38 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
   addButton: {
-    backgroundColor: colors.primary.main,
+    backgroundColor: colors.journal.accent,
     borderRadius: 12,
     padding: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 48,
     minHeight: 48,
-    // Shadow for better visibility
-    shadowColor: colors.primary.main,
+    // Shadow for better visibility with journal accent
+    shadowColor: colors.journal.accent,
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
   backButton: {
     padding: spacing.xs,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.journal.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.journal.border.light,
   },
   headerTitle: {
     fontSize: fontSize.xl,
     fontWeight: 'bold',
-    color: colors.neutral.text.primary,
+    color: colors.journal.text.primary,
   },
   analyticsButton: {
     padding: spacing.xs,
@@ -411,26 +436,26 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: fontSize.lg,
     fontWeight: '600',
-    color: colors.neutral.text.primary,
+    color: colors.journal.text.primary,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
   emptyDescription: {
     fontSize: fontSize.md,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: colors.primary.main,
+    backgroundColor: colors.journal.accent,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 8,
     marginTop: spacing.md,
   },
   retryText: {
-    color: colors.primary.contrast,
+    color: colors.journal.surface,
     fontSize: fontSize.md,
     fontWeight: '600',
   },
@@ -441,7 +466,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: fontSize.sm,
-    color: colors.neutral.text.secondary,
+    color: colors.journal.text.muted,
     marginTop: spacing.xs,
   },
 });
