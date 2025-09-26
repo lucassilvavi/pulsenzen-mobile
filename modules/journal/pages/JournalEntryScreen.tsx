@@ -312,28 +312,54 @@ export default function JournalEntryScreen() {
         <Modal
             visible={customPromptModal}
             animationType="slide"
-            transparent={true}
+            presentationStyle="pageSheet"
             onRequestClose={handleCustomPromptCancel}
         >
-            <View style={styles.modalOverlay}>
-                <View style={styles.customPromptModalContent}>
-                    {/* Modern Header */}
-                    <View style={styles.customPromptHeader}>
-                        <View style={styles.dragIndicator} />
-                        <View style={styles.customPromptTitleContainer}>
-                            <View style={styles.customPromptIconContainer}>
-                                <Ionicons name="create" size={20} color={colors.journal.accent} />
-                            </View>
-                            <ThemedText style={styles.customPromptTitle}>Crie sua pergunta</ThemedText>
-                        </View>
-                    </View>
+            <View style={styles.customPromptContainer}>
+                <LinearGradient
+                    colors={['#A8D5BA', '#F2F9F5']}
+                    style={styles.modalHeaderGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                />
+                {/* Header */}
+                <View style={styles.pageSheetHeader}>
+                    <TouchableOpacity
+                        onPress={handleCustomPromptCancel}
+                        style={styles.headerButton}
+                    >
+                        <Ionicons name="close" size={24} color={colors.journal.text.secondary} />
+                    </TouchableOpacity>
                     
-                    {/* Content */}
-                    <View style={styles.customPromptContent}>
-                        <ThemedText style={styles.customPromptDescription}>
-                            Crie uma pergunta personalizada para guiar sua reflexão de hoje.
-                        </ThemedText>
-                        
+                    <ThemedText style={styles.pageSheetTitle}>Crie sua pergunta</ThemedText>
+                    
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (customPromptDraft.trim()) {
+                                handleCustomPromptConfirm();
+                                setCustomPromptModal(false);
+                                setIsCustomPrompt(true);
+                            }
+                        }}
+                        style={[
+                            styles.headerButton,
+                            styles.saveHeaderButton,
+                            { opacity: customPromptDraft.trim() ? 1 : 0.5 }
+                        ]}
+                        disabled={!customPromptDraft.trim()}
+                    >
+                        <Ionicons name="checkmark" size={24} color={colors.journal.surface} />
+                    </TouchableOpacity>
+                </View>
+                
+                {/* Content */}
+                <ScrollView style={styles.customPromptScrollView} contentContainerStyle={styles.customPromptContent}>
+                    <ThemedText style={styles.customPromptDescription}>
+                        Crie uma pergunta personalizada para guiar sua reflexão de hoje.{'\n'}
+                        Uma boa pergunta deve ser específica e inspirar uma resposta reflexiva.
+                    </ThemedText>
+                    
+                    <View style={styles.inputContainer}>
                         <CustomTextInput
                             placeholder="Ex: O que mais me deixou grato hoje e por quê?"
                             value={customPromptDraft}
@@ -342,29 +368,27 @@ export default function JournalEntryScreen() {
                             multiline
                             autoFocus
                         />
-                        
-                        {/* Action Buttons */}
-                        <View style={styles.customPromptActions}>
-                            <Button
-                                label="Cancelar"
-                                variant="outline"
-                                onPress={handleCustomPromptCancel}
-                                style={styles.customPromptActionCancel}
-                                labelStyle={{ color: colors.neutral.text.secondary }}
-                            />
-                            <Button
-                                label="Usar pergunta"
-                                variant="primary"
-                                onPress={handleCustomPromptConfirm}
-                                disabled={!customPromptDraft.trim()}
-                                style={StyleSheet.flatten([
-                                    styles.customPromptActionConfirm,
-                                    { backgroundColor: customPromptDraft.trim() ? colors.journal.accent : colors.neutral.divider }
-                                ])}
-                            />
-                        </View>
                     </View>
-                </View>
+                    
+                    {/* Exemplo de perguntas */}
+                    <View style={styles.examplePromptsSection}>
+                        <ThemedText style={styles.examplePromptsTitle}>💡 Exemplos de perguntas:</ThemedText>
+                        {[
+                            "Qual foi o momento mais significativo do meu dia?",
+                            "O que aprendi sobre mim mesmo hoje?",
+                            "Como posso melhorar meu bem-estar amanhã?",
+                            "Que desafio enfrentei e como me senti sobre isso?"
+                        ].map((example, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={styles.examplePromptItem}
+                                onPress={() => setCustomPromptDraft(example)}
+                            >
+                                <ThemedText style={styles.examplePromptText}>{example}</ThemedText>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </ScrollView>
             </View>
         </Modal>
     );
@@ -874,29 +898,27 @@ backButton: {
     },
     customPromptContent: {
         paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.lg,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.xl,
     },
     customPromptDescription: {
-        fontSize: fontSize.sm,
-        color: colors.journal.text.secondary,
-        fontFamily: 'Inter-Medium',
-        lineHeight: 20,
-        marginBottom: spacing.lg,
+        fontSize: fontSize.md,
+        color: colors.journal.text.body,
+        lineHeight: 22,
+        marginBottom: spacing.xl,
         textAlign: 'center',
     },
     customPromptTextInput: {
-        minHeight: 80,
-        maxHeight: 120,
-        borderColor: colors.journal.border.light,
-        borderWidth: 1.5,
-        borderRadius: 16,
+        minHeight: 120,
+        maxHeight: 180,
+        borderRadius: 12,
         padding: spacing.md,
-        backgroundColor: colors.journal.secondary,
-        marginBottom: spacing.lg,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
         fontSize: fontSize.md,
-        fontFamily: 'Inter-Regular',
         lineHeight: 22,
         color: colors.journal.text.primary,
+        textAlignVertical: 'top',
+        fontFamily: 'Inter-Regular',
     },
     customPromptActionCancel: {
         flex: 1,
@@ -907,5 +929,152 @@ backButton: {
     customPromptActionConfirm: {
         flex: 1,
         marginLeft: spacing.sm,
+    },
+    
+    // New styles for pageSheet modal
+    customPromptContainer: {
+        flex: 1,
+        backgroundColor: colors.journal.surface,
+    },
+    
+    modalHeaderGradient: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        height: 300,
+        zIndex: 0,
+    },
+    
+    modalCloseButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.journal.secondary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.journal.border.light,
+    },
+    
+    modalSaveButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.journal.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: colors.journal.accent,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    
+    customPromptScrollView: {
+        flex: 1,
+    },
+    
+    examplePromptsSection: {
+        marginTop: spacing.lg,
+    },
+    
+    examplePromptsTitle: {
+        fontSize: fontSize.md,
+        fontWeight: '600',
+        color: colors.journal.text.primary,
+        marginBottom: spacing.md,
+        textAlign: 'left',
+    },
+    
+    examplePromptItem: {
+        padding: spacing.md,  
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 12,
+        marginBottom: spacing.sm,
+        // iOS - sombras nativas
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 3,
+            },
+            // Android - elevation muito sutil
+            android: {
+                elevation: 0.5,
+            },
+        }),
+    },
+    
+    examplePromptText: {
+        fontSize: fontSize.sm,
+        color: colors.journal.text.body,
+        lineHeight: 20,
+    },
+    
+    pageSheetHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.md,
+        paddingBottom: spacing.lg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.journal.border.light,
+        backgroundColor: 'transparent',
+        minHeight: 70,
+        zIndex: 1,
+    },
+    
+    pageSheetTitle: {
+        fontSize: fontSize.lg,
+        fontWeight: '600',
+        color: colors.journal.text.primary,
+        flex: 1,
+        textAlign: 'center',
+        marginHorizontal: spacing.sm,
+        fontFamily: 'Inter-SemiBold',
+    },
+    
+    inputContainer: {
+        marginVertical: spacing.md,
+    },
+    
+    headerButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        // Platform-specific shadows
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.06,
+                shadowRadius: 3,
+            },
+            android: {
+                elevation: 0.5,
+            },
+        }),
+    },
+    
+    saveHeaderButton: {
+        backgroundColor: colors.journal.accent,
+        // Platform-specific shadows for accent button
+        ...Platform.select({
+            ios: {
+                shadowColor: colors.journal.accent,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.12,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 1,
+            },
+        }),
     },
 });
