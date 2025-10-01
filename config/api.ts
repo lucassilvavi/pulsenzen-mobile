@@ -18,7 +18,7 @@ const validateEnvironment = () => {
   }
 
   return {
-    baseUrl: requiredVars.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.3.75:3333',
+    baseUrl: requiredVars.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3333/api',
     version: requiredVars.EXPO_PUBLIC_API_VERSION || 'v1',
   };
 };

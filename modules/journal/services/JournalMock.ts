@@ -1,5 +1,5 @@
 // Enhanced Mock data for Journal Module - Updated for new Type System
-import { JournalEntry, JournalPrompt, MoodTag } from '../types';
+import { JournalPrompt, MoodTag } from '../types';
 
 // Mock Mood Tags
 export const mockMoodTags: MoodTag[] = [
@@ -126,109 +126,5 @@ export const mockJournalPrompts: JournalPrompt[] = [
     tags: ['criatividade', 'imaginação', 'expressão'],
     estimatedTime: 12,
     type: 'creative'
-  }
-];
-
-// Enhanced Journal Entries with new structure
-export const mockJournalEntries: JournalEntry[] = [
-  {
-    id: 'entry_1',
-    content: 'Hoje estou especialmente grato pela minha família e pelos pequenos momentos de alegria que experimentei. Acordei com o sol entrando pela janela e isso me trouxe uma sensação de paz que não sentia há tempo. Às vezes são essas pequenas coisas que fazem toda a diferença no nosso dia.',
-    selectedPrompt: mockJournalPrompts[0], // Gratidão prompt
-    promptCategory: 'Gratidão',
-    moodTags: [mockMoodTags[0], mockMoodTags[1]], // Feliz, Grato
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    wordCount: 65,
-    readingTimeMinutes: 1,
-    isFavorite: true,
-    sentimentScore: 0.8,
-    privacy: 'private',
-    metadata: {
-      deviceType: 'phone',
-      timezone: 'America/Sao_Paulo',
-      writingDuration: 180,
-      revisionCount: 2
-    }
-  },
-  {
-    id: 'entry_2',
-    content: 'Hoje foi um dia desafiador no trabalho. Enfrentei uma situação difícil com um colega, mas consegui manter a calma e resolver as coisas através do diálogo. Aprendi que é importante não levar as coisas para o lado pessoal e focar na solução dos problemas.',
-    selectedPrompt: mockJournalPrompts[3], // Desafios prompt
-    promptCategory: 'Desafios',
-    moodTags: [mockMoodTags[13], mockMoodTags[9]], // Frustrado, Curioso
-    createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-    updatedAt: new Date(Date.now() - 172800000).toISOString(),
-    wordCount: 52,
-    readingTimeMinutes: 1,
-    isFavorite: false,
-    sentimentScore: 0.2,
-    privacy: 'private',
-    metadata: {
-      deviceType: 'phone',
-      timezone: 'America/Sao_Paulo',
-      writingDuration: 240,
-      revisionCount: 1
-    }
-  },
-  {
-    id: 'entry_3',
-    content: 'Estou me sentindo muito ansioso hoje. Não consigo parar de pensar nos compromissos da próxima semana. Talvez eu precise dedicar mais tempo para relaxar e praticar mindfulness. Vou tentar fazer alguns exercícios de respiração antes de dormir.',
-    selectedPrompt: mockJournalPrompts[1], // Emoções prompt
-    promptCategory: 'Emoções',
-    moodTags: [mockMoodTags[11], mockMoodTags[7]], // Ansioso, Pensativo
-    createdAt: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-    updatedAt: new Date(Date.now() - 259200000).toISOString(),
-    wordCount: 48,
-    readingTimeMinutes: 1,
-    isFavorite: false,
-    sentimentScore: -0.3,
-    privacy: 'private',
-    metadata: {
-      deviceType: 'phone',
-      timezone: 'America/Sao_Paulo',
-      writingDuration: 300,
-      revisionCount: 3
-    }
-  },
-  {
-    id: 'entry_4',
-    content: 'Que dia incrível! Consegui finalizar o projeto que estava me desafiando há semanas. A sensação de conquista é indescritível. Celebrei com meus amigos e me sinto muito grato por ter pessoas que torcem por mim. Isso me motiva a continuar buscando meus objetivos.',
-    selectedPrompt: mockJournalPrompts[2], // Conquistas prompt
-    promptCategory: 'Conquistas',
-    moodTags: [mockMoodTags[2], mockMoodTags[5], mockMoodTags[1]], // Animado, Confiante, Grato
-    createdAt: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
-    updatedAt: new Date(Date.now() - 345600000).toISOString(),
-    wordCount: 58,
-    readingTimeMinutes: 1,
-    isFavorite: true,
-    sentimentScore: 0.9,
-    privacy: 'shared',
-    metadata: {
-      deviceType: 'phone',
-      timezone: 'America/Sao_Paulo',
-      writingDuration: 210,
-      revisionCount: 1
-    }
-  },
-  {
-    id: 'entry_5',
-    content: 'Hoje passei um tempo refletindo sobre meus relacionamentos. Percebi que preciso ser mais presente com as pessoas que amo. Às vezes fico tão focado no trabalho que esqueço de dar atenção para quem realmente importa. Vou fazer um esforço para mudar isso.',
-    selectedPrompt: mockJournalPrompts[5], // Relacionamentos prompt
-    promptCategory: 'Relacionamentos',
-    moodTags: [mockMoodTags[7], mockMoodTags[4]], // Pensativo, Amado
-    createdAt: new Date(Date.now() - 432000000).toISOString(), // 5 days ago
-    updatedAt: new Date(Date.now() - 432000000).toISOString(),
-    wordCount: 55,
-    readingTimeMinutes: 1,
-    isFavorite: false,
-    sentimentScore: 0.1,
-    privacy: 'private',
-    metadata: {
-      deviceType: 'phone',
-      timezone: 'America/Sao_Paulo',
-      writingDuration: 280,
-      revisionCount: 2
-    }
   }
 ];

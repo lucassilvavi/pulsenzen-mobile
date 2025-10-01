@@ -3,22 +3,21 @@ import { colors } from '@/constants/theme';
 import { useAccessibilityProps, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MoodTimelineChart } from '../components/MoodTimelineChart';
 import { JournalService, JournalStatsService } from '../services';
+import { ReportSharingService } from '../services/ReportSharingService';
 import { JournalEntry } from '../types';
 
 const { width } = Dimensions.get('window');
@@ -28,8 +27,9 @@ export default function JournalAnalyticsScreen() {
   const { createButtonProps } = useAccessibilityProps();
   const { announceNavigation } = useScreenReaderAnnouncement();
   
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [stats, setStats] = useState({
+  const [entries, setEntries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>({
     totalEntries: 0,
     uniqueDays: 0,
     percentPositive: 0,
@@ -38,30 +38,58 @@ export default function JournalAnalyticsScreen() {
     currentStreak: 0,
     longestStreak: 0,
     moodDistribution: [] as { mood: string; count: number; percentage: number }[],
-    weeklyProgress: [] as { week: string; entries: number }[]
+    weeklyProgress: [] as { week: string; entries: number }[],
+    moodTimeline: [] as any[]
   });
 
   const scrollY = new Animated.Value(0);
 
   const loadAnalyticsData = useCallback(async () => {
     try {
-      const journalEntries = await JournalService.getEntries();
-      setEntries(journalEntries);
+      // Buscar dados completos da API de analytics
+      const [analyticsData, timelineData] = await Promise.all([
+        JournalService.getAnalytics(),
+        JournalService.getTimelineData(7)
+      ]);
       
-      const basicStats = JournalStatsService.calculateStats(journalEntries);
-      const advancedStats = calculateAdvancedStats(journalEntries);
-      
-      setStats({
-        ...basicStats,
-        ...advancedStats
-      });
+      // Transformar dados da timeline para o formato esperado pelo MoodTimelineChart
+      const timelineEntries = timelineData.map((day: any) => ({
+        date: day.date,
+        dayOfWeek: day.dayOfWeek, // Usar o dayOfWeek da API
+        mood: day.moodLevel === 'radiante' ? 9 : 
+              day.moodLevel === 'bem' ? 7 : 
+              day.moodLevel === 'neutro' ? 5 : 3,
+        emoji: day.moodEmoji || '😐'
+      }));
+
+      setStats(analyticsData);
+      setEntries(timelineEntries);
       
       announceNavigation(
         'Analytics da Jornada',
-        `Seus dados foram carregados. Você tem ${journalEntries.length} entradas e ${basicStats.uniqueDays} dias de escrita.`
+        `Seus dados foram carregados. Você tem ${analyticsData.totalEntries} entradas e ${analyticsData.uniqueDays} dias de escrita.`
       );
     } catch (error) {
-      console.error('Erro ao carregar analytics:', error);
+      console.error('Erro ao carregar analytics da API:', error);
+      // Fallback para dados locais em caso de erro
+      try {
+        const journalEntries = await JournalService.getEntries();
+        setEntries(journalEntries);
+        
+        const basicStats = JournalStatsService.calculateStats(journalEntries);
+        const advancedStats = calculateAdvancedStats(journalEntries);
+        
+        setStats({
+          ...basicStats,
+          ...advancedStats
+        });
+
+        console.log('Fallback para dados locais realizado com sucesso');
+      } catch (fallbackError) {
+        console.error('Erro no fallback:', fallbackError);
+      }
+    } finally {
+      setLoading(false);
     }
   }, [announceNavigation]);
 
@@ -88,10 +116,12 @@ export default function JournalAnalyticsScreen() {
     // Distribuição de humor
     const moodMap = new Map<string, number>();
     entries.forEach(entry => {
-      entry.moodTags.forEach(tag => {
-        const tagKey = `${tag.emoji} ${tag.label}`;
-        moodMap.set(tagKey, (moodMap.get(tagKey) || 0) + 1);
-      });
+      if (entry.moodTags && Array.isArray(entry.moodTags)) {
+        entry.moodTags.forEach(tag => {
+          const tagKey = `${tag.emoji} ${tag.label}`;
+          moodMap.set(tagKey, (moodMap.get(tagKey) || 0) + 1);
+        });
+      }
     });
 
     const moodDistribution = Array.from(moodMap.entries())
@@ -124,6 +154,19 @@ export default function JournalAnalyticsScreen() {
     };
   };
 
+  const handleShareReport = async () => {
+    try {
+      // Mostrar loading ou feedback
+      console.log('Gerando relatório terapêutico...');
+      
+      // Usar o serviço de compartilhamento nativo
+      await ReportSharingService.shareTherapeuticReport(stats);
+      
+    } catch (error) {
+      console.error('Erro ao compartilhar relatório:', error);
+    }
+  };
+
   const getStreakColor = (streak: number) => {
     if (streak >= 7) return '#4CAF50';
     if (streak >= 3) return '#FF9800';
@@ -137,37 +180,102 @@ export default function JournalAnalyticsScreen() {
     return '💭';
   };
 
+  const getMotivationalMessage = (currentStreak: number, longestStreak: number) => {
+    if (currentStreak === 0) {
+      return "Que tal escrever hoje? Cada jornada começa com um único passo! ✨";
+    }
+    
+    if (currentStreak === 1) {
+      return "Ótimo começo! Continue escrevendo para manter o ritmo! 🌱";
+    }
+    
+    if (currentStreak >= 2 && currentStreak <= 6) {
+      return "Você está construindo um bom hábito! Continue assim! 💪";
+    }
+    
+    if (currentStreak >= 7 && currentStreak <= 13) {
+      return "Uma semana incrível! Sua consistência está impressionante! 🌟";
+    }
+    
+    if (currentStreak >= 14) {
+      return "Extraordinário! Você é um exemplo de dedicação! 🏆";
+    }
+    
+    if (currentStreak === longestStreak && currentStreak > 1) {
+      return "Novo recorde! Você está superando seus próprios limites! 🎉";
+    }
+    
+    return "Continue sua jornada de autoconhecimento! 📖";
+  };
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <BlurView intensity={95} style={styles.headerBlur}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerBackButton}>
-              <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
-            </TouchableOpacity>
-            <ThemedText style={styles.headerTitle}>Analytics</ThemedText>
-            <TouchableOpacity style={styles.headerActionButton}>
-              <Ionicons name="share" size={22} color={colors.primary.main} />
-            </TouchableOpacity>
-          </View>
-        </BlurView>
+      <LinearGradient
+        colors={['#A8D5BA', '#F2F9F5']}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
+      <View style={[styles.customHeader, { paddingTop: insets.top + 40 }]}>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            style={styles.backButton}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para o journal"
+            accessibilityHint="Navega de volta para a tela principal do journal"
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.primary.main} />
+          </TouchableOpacity>
+          <ThemedText style={styles.headerTitle}>Relatório</ThemedText>
+          <TouchableOpacity 
+            style={styles.shareButton}
+            onPress={handleShareReport}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Compartilhar analytics"
+            accessibilityHint="Compartilha seus dados de analytics do journal"
+          >
+            <Ionicons name="share" size={22} color={colors.primary.main} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 80 }]}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-      >
+      {loading ? (
+        <View style={[styles.loadingContainer, { paddingTop: insets.top + 100 }]}>
+          <LinearGradient
+            colors={['#4A90E2', '#7BB3F0']}
+            style={styles.loadingCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.loadingContent}>
+              <ThemedText style={styles.loadingTitle}>Analisando sua jornada...</ThemedText>
+              <ThemedText style={styles.loadingSubtitle}>
+                Calculando insights personalizados ✨
+              </ThemedText>
+              <View style={styles.loadingIndicator}>
+                <View style={styles.loadingDot} />
+                <View style={[styles.loadingDot, styles.loadingDotDelay1]} />
+                <View style={[styles.loadingDot, styles.loadingDotDelay2]} />
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: spacing.lg }]}
+          showsVerticalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+        >
         {/* Hero Stats */}
         <LinearGradient
-          colors={['#667eea', '#764ba2', '#8B5FBF']}
+          colors={['#4A90E2', '#7BB3F0']}
           style={styles.heroSection}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -179,21 +287,36 @@ export default function JournalAnalyticsScreen() {
             </ThemedText>
             
             <View style={styles.mainStatsGrid}>
-              <View style={styles.mainStat}>
+              <View 
+                style={styles.mainStat}
+                accessible={true}
+                accessibilityRole="text"
+                accessibilityLabel={`${stats.totalEntries} entradas no journal`}
+              >
                 <View style={styles.statIconContainer}>
                   <Ionicons name="document-text" size={24} color="rgba(255,255,255,0.9)" />
                 </View>
                 <ThemedText style={styles.mainStatNumber}>{stats.totalEntries}</ThemedText>
                 <ThemedText style={styles.mainStatLabel}>Entradas</ThemedText>
               </View>
-              <View style={styles.mainStat}>
+              <View 
+                style={styles.mainStat}
+                accessible={true}
+                accessibilityRole="text"
+                accessibilityLabel={`${stats.uniqueDays} dias únicos de escrita`}
+              >
                 <View style={styles.statIconContainer}>
                   <Ionicons name="calendar" size={24} color="rgba(255,255,255,0.9)" />
                 </View>
                 <ThemedText style={styles.mainStatNumber}>{stats.uniqueDays}</ThemedText>
                 <ThemedText style={styles.mainStatLabel}>Dias</ThemedText>
               </View>
-              <View style={styles.mainStat}>
+              <View 
+                style={styles.mainStat}
+                accessible={true}
+                accessibilityRole="text"
+                accessibilityLabel={`${stats.totalWords} palavras escritas no total`}
+              >
                 <View style={styles.statIconContainer}>
                   <Ionicons name="text" size={24} color="rgba(255,255,255,0.9)" />
                 </View>
@@ -204,53 +327,13 @@ export default function JournalAnalyticsScreen() {
           </View>
         </LinearGradient>
 
-        {/* Streak Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Consistência</ThemedText>
-            <ThemedText style={styles.streakEmoji}>🔥</ThemedText>
-          </View>
-          
-          <View style={styles.streakContainer}>
-            <LinearGradient
-              colors={[getStreakColor(stats.currentStreak), getStreakColor(stats.currentStreak) + '80']}
-              style={styles.streakCard}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={styles.streakHeader}>
-                <View style={styles.streakIconContainer}>
-                  <ThemedText style={styles.streakEmojiLarge}>
-                    {getStreakEmoji(stats.currentStreak)}
-                  </ThemedText>
-                </View>
-                <View style={styles.streakContent}>
-                  <ThemedText style={styles.streakNumber}>{stats.currentStreak}</ThemedText>
-                  <ThemedText style={styles.streakLabel}>Dias seguidos</ThemedText>
-                </View>
-              </View>
-              <View style={styles.streakFooter}>
-                <Ionicons name="trophy" size={16} color="rgba(255,255,255,0.8)" />
-                <ThemedText style={styles.streakDescription}>
-                  Seu recorde: {stats.longestStreak} dias
-                </ThemedText>
-              </View>
-            </LinearGradient>
-          </View>
-        </View>
-
         {/* Mood Timeline */}
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Evolução Emocional</ThemedText>
           
           <View style={styles.chartContainer}>
             <MoodTimelineChart 
-              data={entries.slice(-14).map((entry, index) => ({
-                date: entry.createdAt,
-                mood: entry.sentimentScore ? Math.round(entry.sentimentScore * 4) + 6 : Math.floor(Math.random() * 4) + 6,
-                emoji: entry.moodTags[0]?.emoji || ['😊', '😌', '✨', '🌟'][Math.floor(Math.random() * 4)],
-                label: new Date(entry.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-              }))}
+              data={entries}
             />
           </View>
         </View>
@@ -261,7 +344,7 @@ export default function JournalAnalyticsScreen() {
             <ThemedText style={styles.sectionTitle}>Suas Emoções Principais 🎭</ThemedText>
             
             <View style={styles.moodList}>
-              {stats.moodDistribution.map((mood, index) => (
+              {stats.moodDistribution.map((mood: any, index: number) => (
                 <View key={mood.mood} style={styles.moodItem}>
                   <View style={styles.moodInfo}>
                     <ThemedText style={styles.moodEmoji}>
@@ -272,9 +355,9 @@ export default function JournalAnalyticsScreen() {
                       <ThemedText style={styles.moodCount}>{mood.count} vezes</ThemedText>
                     </View>
                   </View>
-                  <View style={styles.moodBar}>
+                                    <View style={styles.moodBar}>
                     <LinearGradient
-                      colors={['#667eea', '#764ba2']}
+                      colors={['#4A90E2', '#7BB3F0']}
                       style={[styles.moodBarFill, { width: `${mood.percentage}%` }]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
@@ -292,10 +375,10 @@ export default function JournalAnalyticsScreen() {
           <ThemedText style={styles.sectionTitle}>Progresso Semanal 📈</ThemedText>
           
           <View style={styles.weeklyGrid}>
-            {stats.weeklyProgress.map((week, index) => (
+            {stats.weeklyProgress.map((week: any, index: number) => (
               <View key={week.week} style={styles.weekCard}>
                 <LinearGradient
-                  colors={index % 2 === 0 ? ['#4facfe', '#00f2fe'] : ['#43e97b', '#38f9d7']}
+                  colors={index % 2 === 0 ? ['#4A90E2', '#7BB3F0'] : ['#5BA7F7', '#8EC5F9']}
                   style={styles.weekCardGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
@@ -309,6 +392,64 @@ export default function JournalAnalyticsScreen() {
           </View>
         </View>
 
+                {/* Streak Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.sectionTitle}>Consistência</ThemedText>
+          </View>
+          
+          <View style={styles.streakContainer}>
+            <LinearGradient
+              colors={['#5BA7F7', '#8EC5F9']}
+              style={styles.streakCard}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              accessible={true}
+              accessibilityRole="text"
+              accessibilityLabel={`Sequência atual de ${stats.streak?.currentStreak || 0} dias seguidos. Seu recorde é ${stats.streak?.longestStreak || 0} dias`}
+            >
+              {/* Header com streak atual */}
+              <View style={styles.streakHeader}>
+                <View style={styles.streakIconContainer}>
+                  <ThemedText style={styles.streakEmojiLarge}>
+                    {getStreakEmoji(stats.streak?.currentStreak || 0)}
+                  </ThemedText>
+                </View>
+                <View style={styles.streakContent}>
+                  <ThemedText style={styles.streakNumber}>
+                    {stats.streak?.currentStreak || 0}
+                  </ThemedText>
+                  <ThemedText style={styles.streakLabel}>
+                    {(stats.streak?.currentStreak || 0) === 1 ? 'Dia seguido' : 'Dias seguidos'}
+                  </ThemedText>
+                </View>
+                <View style={styles.streakBadge}>
+                  <ThemedText style={styles.streakBadgeText}>
+                    {(stats.streak?.currentStreak || 0) > 0 ? 'ATIVO' : 'PARADO'}
+                  </ThemedText>
+                </View>
+              </View>
+
+              {/* Separador */}
+              <View style={styles.streakDivider} />
+
+              {/* Footer com recorde e motivação */}
+              <View style={styles.streakFooter}>
+                <View style={styles.streakRecord}>
+                  <Ionicons name="trophy" size={16} color="#FFD700" />
+                  <ThemedText style={styles.streakRecordText}>
+                    Recorde: {stats.streak?.longestStreak || 0} {(stats.streak?.longestStreak || 0) === 1 ? 'dia' : 'dias'}
+                  </ThemedText>
+                </View>
+                
+                <ThemedText style={styles.streakMotivation}>
+                  {getMotivationalMessage(stats.streak?.currentStreak || 0, stats.streak?.longestStreak || 0)}
+                </ThemedText>
+              </View>
+            </LinearGradient>
+          </View>
+        </View>
+
         {/* Additional Stats */}
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Outros Insights 💡</ThemedText>
@@ -316,7 +457,7 @@ export default function JournalAnalyticsScreen() {
           <View style={styles.additionalStats}>
             <View style={styles.statCard}>
               <LinearGradient
-                colors={['#f093fb', '#f5576c']}
+                colors={['#4A90E2', '#6BB6FF']}
                 style={styles.statCardGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -329,7 +470,7 @@ export default function JournalAnalyticsScreen() {
             
             <View style={styles.statCard}>
               <LinearGradient
-                colors={['#4facfe', '#00f2fe']}
+                colors={['#5BA7F7', '#87CEEB']}
                 style={styles.statCardGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -342,7 +483,7 @@ export default function JournalAnalyticsScreen() {
             
             <View style={styles.statCard}>
               <LinearGradient
-                colors={['#43e97b', '#38f9d7']}
+                colors={['#4169E1', '#6495ED']}
                 style={styles.statCardGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -357,6 +498,7 @@ export default function JournalAnalyticsScreen() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+      )}
     </View>
   );
 }
@@ -364,45 +506,57 @@ export default function JournalAnalyticsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral.background,
   },
-  header: {
+  headerGradient: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
-    zIndex: 1000,
+    top: 0,
+    height: 300,
+    zIndex: 0,
   },
-  headerBlur: {
-    paddingBottom: 12,
+  customHeader: {
+    flexDirection: 'column',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.journal.border.light,
+    zIndex: 1,
   },
-  headerContent: {
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
-  headerBackButton: {
+  backButton: {
+    padding: spacing.xs,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: colors.journal.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.journal.border.light,
   },
   headerTitle: {
     fontSize: fontSize.xl,
-    fontWeight: '600',
-    color: colors.primary.main,
+    fontWeight: 'bold',
+    color: colors.journal.text.primary,
   },
-  headerActionButton: {
+  shareButton: {
+    padding: spacing.xs,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: colors.journal.surface,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.journal.border.light,
   },
   scrollView: {
     flex: 1,
@@ -412,9 +566,14 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     marginHorizontal: spacing.lg,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
     marginBottom: spacing.xl,
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
   },
   heroContent: {
     padding: spacing.xl,
@@ -451,8 +610,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   mainStatNumber: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '700',
     color: 'white',
   },
   mainStatLabel: {
@@ -467,7 +626,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: '600',
-    color: colors.neutral.text.primary,
+    color: colors.journal.text.primary,
     marginBottom: spacing.lg,
   },
   sectionHeader: {
@@ -484,8 +643,13 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   streakCard: {
-    borderRadius: 16,
+    borderRadius: 24,
     padding: spacing.lg,
+    shadowColor: '#5BA7F7',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
   },
   streakHeader: {
     flexDirection: 'row',
@@ -506,13 +670,13 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs,
   },
   streakEmojiLarge: {
-    fontSize: 28,
+    fontSize: 24,
   },
   streakContent: {
     flex: 1,
   },
   streakNumber: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
     color: 'white',
   },
@@ -526,8 +690,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
   streakFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     marginTop: spacing.sm,
   },
   chartContainer: {
@@ -632,14 +795,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     flex: 1,
     marginHorizontal: spacing.xs,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 12,
+    elevation: 8,
     overflow: 'hidden',
   },
   statCardGradient: {
@@ -674,5 +837,97 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 80,
+  },
+  
+  // Loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  loadingCard: {
+    borderRadius: 20,
+    padding: spacing.xl,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+    width: width - (spacing.lg * 2),
+  },
+  loadingContent: {
+    alignItems: 'center',
+  },
+  loadingTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: colors.journal.text.primary,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  loadingSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.journal.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  loadingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4A90E2',
+    marginHorizontal: 4,
+    opacity: 0.4,
+  },
+  loadingDotDelay1: {
+    opacity: 0.7,
+  },
+  loadingDotDelay2: {
+    opacity: 1,
+  },
+  // Novos estilos para Consistência melhorada
+  streakBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  streakBadgeText: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    color: 'white',
+    letterSpacing: 0.5,
+  },
+  streakDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginVertical: spacing.md,
+  },
+  streakRecord: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  streakRecordText: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginLeft: spacing.xs,
+    fontWeight: '600',
+  },
+  streakMotivation: {
+    fontSize: fontSize.sm,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontStyle: 'italic',
+    lineHeight: 20,
+    marginTop: spacing.xs,
   },
 });

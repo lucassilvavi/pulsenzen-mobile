@@ -8,16 +8,22 @@ import { JournalEntry, JournalPrompt, JournalStats } from '../types';
  * This service handles all API communication for journal functionality
  */
 export class JournalApiService {
-  private static readonly BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.pulsezen.com';
+  private static readonly BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3333';
   private static readonly API_VERSION = 'v1';
   
   // Authentication headers
   private static async getHeaders(): Promise<HeadersInit> {
     // Get auth token from AuthService
     const authToken = await AuthService.getToken();
+    
+    // Se não há token, lançar erro específico
+    if (!authToken) {
+      throw new Error('Authentication required. Please login first.');
+    }
+    
     return {
       'Content-Type': 'application/json',
-      'Authorization': authToken ? `Bearer ${authToken}` : '',
+      'Authorization': `Bearer ${authToken}`,
       'X-App-Version': '1.0.0',
     };
   }

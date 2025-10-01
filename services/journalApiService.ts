@@ -61,29 +61,29 @@ export interface JournalPrompt {
 
 export interface JournalStats {
   totalEntries: number
+  uniqueDays: number
+  totalWords: number
+  avgWordsPerEntry: number
   currentStreak: number
   longestStreak: number
-  totalWords: number
-  averageWordsPerEntry: number
-  entriesThisWeek: number
-  entriesThisMonth: number
-  favoriteCategory: string
-  mostUsedMoodTags: Array<{
-    id: string
+  percentPositive: number
+  moodDistribution: Array<{
+    mood: string
+    count: number
+    percentage: number
+  }>
+  weeklyProgress: Array<{
+    week: string
+    entries: number
+    startDate: string
+    endDate: string
+  }>
+  moodTimeline: Array<{
+    date: string
+    mood: number
     emoji: string
     label: string
-    count: number
   }>
-  moodTrends: Array<{
-    date: string
-    averageMood: number
-    entries: number
-  }>
-  writingPatterns: {
-    hourOfDay: { [hour: string]: number }
-    dayOfWeek: { [day: string]: number }
-    wordsPerDay: { [date: string]: number }
-  }
 }
 
 export interface CreateJournalEntryData {
@@ -293,10 +293,54 @@ class JournalApiService {
     return response.data
   }
 
+  /**
+   * Busca analytics completos do journal
+   */
+  async getJournalAnalytics() {
+    const response = await this.makeRequest('/journal/analytics', {
+      method: 'GET',
+    })
+
+    return response.data
+  }
+
+  /**
+   * Busca dados da timeline do journal
+   */
+  async getTimelineData(days: number = 7) {
+    const response = await this.makeRequest(`/journal/analytics/timeline?days=${days}`, {
+      method: 'GET',
+    })
+
+    return response.data
+  }
+
+  /**
+   * Busca distribuição de humores
+   */
+  async getMoodDistribution() {
+    const response = await this.makeRequest('/journal/analytics/mood-distribution', {
+      method: 'GET',
+    })
+
+    return response.data
+  }
+
+  /**
+   * Busca dados de streak
+   */
+  async getStreakData() {
+    const response = await this.makeRequest('/journal/analytics/streak', {
+      method: 'GET',
+    })
+
+    return response.data
+  }
+
   // ===== MÉTODOS PARA PROMPTS =====
 
   /**
-   * Busca prompts para o journal
+   * Busca prompts de journal disponíveis
    */
   async getJournalPrompts(filters: JournalPromptFilters = {}): Promise<JournalPrompt[]> {
     const queryParams = new URLSearchParams()
@@ -316,6 +360,8 @@ class JournalApiService {
 
     return response.data
   }
+
+
 
   // ===== MÉTODOS DE UTILIDADE =====
 

@@ -1,7 +1,13 @@
-import { JournalEntry, JournalStats } from '../types';
+import { JournalEntry } from '../types';
+
+export interface JournalStatsBasic {
+  totalEntries: number;
+  uniqueDays: number;
+  percentPositive: number;
+}
 
 export class JournalStatsService {
-  static calculateStats(entries: JournalEntry[]): JournalStats {
+  static calculateStats(entries: JournalEntry[]): JournalStatsBasic {
     const totalEntries = entries.length;
     const uniqueDaysSet = new Set(
       entries.map(e => new Date(e.createdAt).toDateString())

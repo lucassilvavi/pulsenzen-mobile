@@ -1,7 +1,7 @@
 // Journal Service - Streamlined for Essential Operations
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { JournalEntry, JournalEntryFilters, JournalPrompt } from '../types';
-import { mockJournalEntries, mockJournalPrompts } from './JournalMock';
+import { mockJournalPrompts } from './JournalMock';
 
 const STORAGE_KEY = 'journal_entries_v2';
 
@@ -12,22 +12,19 @@ export class JournalService {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const entries = JSON.parse(stored);
-        return [...entries, ...mockJournalEntries]; // Merge with mock data
+        return entries;
       }
-      return mockJournalEntries;
+      return []; // Return empty array instead of mock data
     } catch (error) {
       console.error('Error loading entries:', error);
-      return mockJournalEntries;
+      return [];
     }
   }
 
   private static async saveEntries(entries: JournalEntry[]): Promise<void> {
     try {
-      // Only save user-created entries (not mock data)
-      const userEntries = entries.filter(entry => 
-        !mockJournalEntries.some(mock => mock.id === entry.id)
-      );
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userEntries));
+      // Save all user-created entries
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     } catch (error) {
       console.error('Error saving entries:', error);
     }
@@ -113,5 +110,43 @@ export class JournalService {
     await this.saveEntries(updatedEntries);
     
     return newEntry;
+  }
+
+  // === Analytics API ===
+  static async getAnalytics() {
+    try {
+      console.log('🚀 Buscando analytics da API...');
+      const { journalApiService } = await import('../../../services/journalApiService');
+      return await journalApiService.getJournalAnalytics();
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar analytics da API:', error);
+      
+      // Tratamento específico para erro de autenticação
+      if (error?.message?.includes('Authentication required')) {
+        throw new Error('Sessão expirada. Faça login novamente para acessar os dados.');
+      }
+      
+      // Outros erros de API
+      throw new Error('Não foi possível carregar os dados. Verifique sua conexão.');
+    }
+  }
+
+  // === Timeline API ===
+  static async getTimelineData(days: number = 7) {
+    try {
+      console.log('🚀 Buscando timeline da API...');
+      const { journalApiService } = await import('../../../services/journalApiService');
+      return await journalApiService.getTimelineData(days);
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar timeline da API:', error);
+      
+      // Tratamento específico para erro de autenticação
+      if (error?.message?.includes('Authentication required')) {
+        throw new Error('Sessão expirada. Faça login novamente para acessar os dados.');
+      }
+      
+      // Outros erros de API
+      throw new Error('Não foi possível carregar a timeline. Verifique sua conexão.');
+    }
   }
 }

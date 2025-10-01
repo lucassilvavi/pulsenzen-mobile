@@ -220,7 +220,7 @@ export default function JournalScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
       />
-      <View style={[styles.customHeader, { paddingTop: insets.top }]}>
+      <View style={[styles.customHeader, { paddingTop: insets.top -10 }]}>
         {/* Top Row - Navigation and Title */}
         <View style={styles.headerTopRow}>
           <TouchableOpacity 
@@ -413,7 +413,15 @@ const styles = StyleSheet.create({
     color: colors.journal.text.primary,
   },
   analyticsButton: {
-    padding: spacing.xs,
+    padding: spacing.xs, 
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.journal.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.journal.border.light,
   },
   flatListContent: {
     paddingHorizontal: spacing.lg,
