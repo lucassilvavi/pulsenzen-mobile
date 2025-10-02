@@ -2,7 +2,6 @@ import { MoodDebugScreen } from '@/components/debug/MoodDebugScreen';
 import HeaderSection from '@/components/HeaderSection';
 import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
-import StreakSection from '@/components/StreakSection';
 import { ThemedView } from '@/components/ThemedView';
 import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { useUserData } from '@/hooks/useUserData';
@@ -65,7 +64,7 @@ export default function HomeScreen() {
         <MoodSelector />
         <PredictionBanner />
         <QuickAccess />
-        <StreakSection />
+        {/*<StreakSection />*/}
         <RecommendedSection />
       </ScrollView>
     </ThemedView>
