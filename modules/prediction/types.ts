@@ -34,6 +34,18 @@ export interface PredictionDetail extends PredictionSummary {
   interventions: InterventionSuggestion[];
 }
 
+// Novo: Estado para quando não há dados suficientes
+export interface InsufficientDataState {
+  id: 'insufficient_data';
+  type: 'insufficient_data';
+  message: string;
+  suggestions: string[];
+  requiredActions: string[];
+}
+
+// União de tipos para resultado da API
+export type PredictionResult = PredictionDetail | InsufficientDataState;
+
 export interface PredictionState {
   current: PredictionSummary | null;
   history: PredictionSummary[];
@@ -42,4 +54,6 @@ export interface PredictionState {
   loading: boolean;
   lastUpdated: number | null;
   onboardingSeen?: boolean;
+  // Novo: estado para dados insuficientes
+  insufficientData?: InsufficientDataState;
 }

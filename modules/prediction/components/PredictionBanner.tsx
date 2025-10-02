@@ -14,9 +14,20 @@ function levelColors(level: string) {
 }
 
 export const PredictionBanner: React.FC = () => {
-  const { current, loading } = usePrediction();
+  const { current, loading, insufficientData } = usePrediction();
   const [modalVisible, setModalVisible] = React.useState(false);
-  const palette = useMemo(() => levelColors(current?.level || 'low'), [current]);
+  
+  // Se há dados insuficientes, usar cor neutra
+  const palette = useMemo(() => {
+    if (insufficientData) {
+      return { 
+        bg: [colors.neutral.background, colors.neutral.card] as const, 
+        text: colors.neutral.text.primary 
+      };
+    }
+    return levelColors(current?.level || 'low');
+  }, [current, insufficientData]);
+  
   const gradientColors = [palette.bg[0], palette.bg[1]] as const;
 
   React.useEffect(()=>{ track('prediction_banner_view'); },[]);
@@ -32,22 +43,39 @@ export const PredictionBanner: React.FC = () => {
     >
       <LinearGradient colors={gradientColors} style={styles.container}>
         <View style={styles.left}>
-          <ThemedText style={[styles.title, { color: palette.text }]}>Equilíbrio</ThemedText>
-          {loading && !current && (
-            <View style={{ marginTop:4 }}>
-              <ActivityIndicator size="small" color={palette.text} />
-            </View>
-          )}
-          {current && !loading && (
-            <ThemedText style={[styles.score, { color: palette.text }]}>{(current.score * 100).toFixed(0)}%</ThemedText>
-          )}
-          {current && (
-            <ThemedText style={styles.subtitle}>{current.label}</ThemedText>
+          {insufficientData ? (
+            <>
+              <ThemedText style={[styles.title, { color: palette.text }]}>Análise Indisponível</ThemedText>
+              <ThemedText style={[styles.subtitle, { color: colors.neutral.text.secondary }]}>
+                {insufficientData.message}
+              </ThemedText>
+            </>
+          ) : (
+            <>
+              <ThemedText style={[styles.title, { color: palette.text }]}>Equilíbrio</ThemedText>
+              {loading && !current && (
+                <View style={{ marginTop:4 }}>
+                  <ActivityIndicator size="small" color={palette.text} />
+                </View>
+              )}
+              {current && !loading && (
+                <ThemedText style={[styles.score, { color: palette.text }]}>{(current.score * 100).toFixed(0)}%</ThemedText>
+              )}
+              {current && (
+                <ThemedText style={styles.subtitle}>{current.label}</ThemedText>
+              )}
+            </>
           )}
         </View>
         <View style={styles.right}>
-          <TouchableOpacity onPress={() => { setModalVisible(true); track('prediction_banner_modal_open'); }} accessibilityLabel="Abrir detalhamento completo" style={styles.dashboardBtn}>
-            <ThemedText style={[styles.cta, { color: palette.text }]}>Detalhes</ThemedText>
+          <TouchableOpacity 
+            onPress={() => { setModalVisible(true); track('prediction_banner_modal_open'); }} 
+            accessibilityLabel={insufficientData ? "Ver como gerar análise" : "Abrir detalhamento completo"} 
+            style={styles.dashboardBtn}
+          >
+            <ThemedText style={[styles.cta, { color: palette.text }]}>
+              {insufficientData ? "Como Gerar" : "Detalhes"}
+            </ThemedText>
           </TouchableOpacity>
         </View>
       </LinearGradient>

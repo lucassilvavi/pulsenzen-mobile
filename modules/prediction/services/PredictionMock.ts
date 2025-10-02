@@ -1,4 +1,4 @@
-import { InterventionSuggestion, PredictionDetail, RiskFactor } from '../types';
+import { InterventionSuggestion, PredictionDetail, PredictionResult, RiskFactor } from '../types';
 import { PredictionDataSource } from './PredictionDataSource';
 
 function randomBetween(min: number, max: number) {
@@ -12,7 +12,7 @@ function deriveLevel(score: number) {
 }
 
 export const PredictionMockService: PredictionDataSource & { generateMockPrediction(): PredictionDetail } = {
-  fetchLatest(): Promise<PredictionDetail> { return Promise.resolve(this.generateMockPrediction()); },
+  fetchLatest(): Promise<PredictionResult> { return Promise.resolve(this.generateMockPrediction()); },
   generateMockPrediction(): PredictionDetail {
     const baseScore = randomBetween(0.2, 0.85);
     const jitter = (Math.random() - 0.5) * 0.05;

@@ -4,20 +4,22 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Modal, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePrediction } from '../context/PredictionContext';
 import { track } from '../services/Telemetry';
+import InsufficientDataContent from './InsufficientDataContent';
 import { InterventionsCarousel } from './InterventionsCarousel';
 import { Skeleton } from './Skeleton';
 
 export const PredictionDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { current, factors, interventions, refresh, loading, lastUpdated } = usePrediction();
+  const { current, factors, interventions, refresh, loading, lastUpdated, insufficientData } = usePrediction();
   const [expandedFactors, setExpandedFactors] = React.useState<Record<string, boolean>>({});
   const { onboardingSeen, markOnboardingSeen } = usePrediction() as any;
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [tooltipFactor, setTooltipFactor] = React.useState<string | null>(null);
+  const [showInsufficientDataModal, setShowInsufficientDataModal] = React.useState(false);
   // (reduce motion handled inside specific animated components like carousel)
 
   React.useEffect(() => {
@@ -64,6 +66,28 @@ export const PredictionDashboardScreen: React.FC = () => {
           </View>
         )}
 
+        {insufficientData && (
+          <View style={styles.insufficientDataCard}>
+            <View style={styles.insufficientDataHeader}>
+              <View style={styles.insufficientDataIcon}>
+                <Ionicons name="analytics-outline" size={24} color={colors.primary.main} />
+              </View>
+              <View style={styles.insufficientDataContent}>
+                <ThemedText style={styles.insufficientDataTitle}>Análise em Construção</ThemedText>
+                <ThemedText style={styles.insufficientDataMessage}>{insufficientData.message}</ThemedText>
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.comoGerarButton} 
+              onPress={() => setShowInsufficientDataModal(true)}
+              accessibilityLabel="Ver como gerar análise"
+            >
+              <ThemedText style={styles.comoGerarButtonText}>Como Gerar</ThemedText>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary.main} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {current && (
           <View style={[styles.card, { borderLeftWidth: 6, borderLeftColor: getRiskPalette(current.level).border }]}> 
             <ThemedText style={[styles.cardTitle, { color: getRiskPalette(current.level).text }]}>Status Atual</ThemedText>
@@ -75,53 +99,57 @@ export const PredictionDashboardScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={styles.card}>
-          <ThemedText style={styles.cardTitle}>Fatores Recentes</ThemedText>
-          {factors.map(f => {
-            const weightPct = Math.round(f.weight * 100);
-            const intensity = weightPct >= 25 ? 'Alto' : weightPct >= 15 ? 'Médio' : 'Leve';
-            const expanded = !!expandedFactors[f.id];
-            const meta = getFactorCategoryMeta(f.category);
-            return (
-              <View key={f.id} style={styles.factorRow}>
-                <View style={styles.factorHeader}>
-                  <View style={styles.factorLeft}>
-                    <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}> 
-                      <Ionicons name={meta.icon as any} size={16} color={meta.color} />
-                    </View>
-                    <ThemedText style={styles.factorLabel}>{f.label}</ThemedText>
-                  </View>
-                  <View style={[styles.badge, intensity==='Alto'? { backgroundColor: colors.riskIntensity.high.bg }: intensity==='Médio'? { backgroundColor: colors.riskIntensity.medium.bg } : { backgroundColor: colors.riskIntensity.low.bg } ]}>
-                    <ThemedText style={styles.badgeText}>{intensity}</ThemedText>
-                  </View>
-                  <TouchableOpacity onPress={() => toggleFactor(f.id)} onLongPress={() => {
-                    const willOpen = tooltipFactor !== f.id;
-                    setTooltipFactor(willOpen ? f.id : null);
-                    track(willOpen ? 'prediction_factor_tooltip_open' : 'prediction_factor_tooltip_close', { id: f.id });
-                  }} accessibilityRole="button" accessibilityLabel={expanded ? 'Colapsar fator' : 'Expandir fator'}>
-                    <ThemedText style={styles.factorWeight}>{expanded ? '−' : '+'}</ThemedText>
-                  </TouchableOpacity>
-                </View>
-                {expanded && (
-                  <>
-                    <ThemedText style={styles.factorDesc}>{f.description}</ThemedText>
-                    <ThemedText style={styles.factorSuggestion}>Sugestão: {f.suggestion}</ThemedText>
-                    {tooltipFactor===f.id && (
-                      <View style={styles.tooltip}>
-                        <ThemedText style={styles.tooltipText}>Dica TCC: Observe o pensamento sem julgá-lo e registre um gatilho específico.</ThemedText>
+        {!insufficientData && (
+          <>
+            <View style={styles.card}>
+              <ThemedText style={styles.cardTitle}>Fatores Recentes</ThemedText>
+              {factors.map(f => {
+                const weightPct = Math.round(f.weight * 100);
+                const intensity = weightPct >= 25 ? 'Alto' : weightPct >= 15 ? 'Médio' : 'Leve';
+                const expanded = !!expandedFactors[f.id];
+                const meta = getFactorCategoryMeta(f.category);
+                return (
+                  <View key={f.id} style={styles.factorRow}>
+                    <View style={styles.factorHeader}>
+                      <View style={styles.factorLeft}>
+                        <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}> 
+                          <Ionicons name={meta.icon as any} size={16} color={meta.color} />
+                        </View>
+                        <ThemedText style={styles.factorLabel}>{f.label}</ThemedText>
                       </View>
+                      <View style={[styles.badge, intensity==='Alto'? { backgroundColor: colors.riskIntensity.high.bg }: intensity==='Médio'? { backgroundColor: colors.riskIntensity.medium.bg } : { backgroundColor: colors.riskIntensity.low.bg } ]}>
+                        <ThemedText style={styles.badgeText}>{intensity}</ThemedText>
+                      </View>
+                      <TouchableOpacity onPress={() => toggleFactor(f.id)} onLongPress={() => {
+                        const willOpen = tooltipFactor !== f.id;
+                        setTooltipFactor(willOpen ? f.id : null);
+                        track(willOpen ? 'prediction_factor_tooltip_open' : 'prediction_factor_tooltip_close', { id: f.id });
+                      }} accessibilityRole="button" accessibilityLabel={expanded ? 'Colapsar fator' : 'Expandir fator'}>
+                        <ThemedText style={styles.factorWeight}>{expanded ? '−' : '+'}</ThemedText>
+                      </TouchableOpacity>
+                    </View>
+                    {expanded && (
+                      <>
+                        <ThemedText style={styles.factorDesc}>{f.description}</ThemedText>
+                        <ThemedText style={styles.factorSuggestion}>Sugestão: {f.suggestion}</ThemedText>
+                        {tooltipFactor===f.id && (
+                          <View style={styles.tooltip}>
+                            <ThemedText style={styles.tooltipText}>Dica TCC: Observe o pensamento sem julgá-lo e registre um gatilho específico.</ThemedText>
+                          </View>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </View>
-            );
-          })}
-        </View>
+                  </View>
+                );
+              })}
+            </View>
 
-        <View style={styles.card}>
-          <ThemedText style={styles.cardTitle}>Sugestões</ThemedText>
-          <InterventionsCarousel />
-        </View>
+            <View style={styles.card}>
+              <ThemedText style={styles.cardTitle}>Sugestões</ThemedText>
+              <InterventionsCarousel />
+            </View>
+          </>
+        )}
 
         {showOnboarding && (
           <View style={styles.onboardingBubble}>
@@ -133,6 +161,18 @@ export const PredictionDashboardScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Modal de dados insuficientes */}
+      {insufficientData && (
+        <Modal visible={showInsufficientDataModal} animationType="slide" transparent onRequestClose={() => setShowInsufficientDataModal(false)}>
+          <View style={styles.modalOverlay}>
+            <InsufficientDataContent 
+              insufficientData={insufficientData} 
+              onClose={() => setShowInsufficientDataModal(false)} 
+            />
+          </View>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -172,4 +212,69 @@ const styles = StyleSheet.create({
   onboardingText:{ fontFamily:'Inter-Regular', fontSize: fontSize.sm, color: colors.neutral.text.primary, marginBottom: spacing.md },
   onboardingButton:{ alignSelf:'flex-end', backgroundColor: colors.primary.main, paddingHorizontal:16, paddingVertical:8, borderRadius:12 },
   onboardingButtonText:{ fontFamily:'Inter-SemiBold', fontSize: fontSize.sm, color:'#FFF' },
+  insufficientDataCard: { 
+    backgroundColor: colors.primary.light + '08', 
+    padding: spacing.lg, 
+    borderRadius: 16, 
+    marginBottom: spacing.lg, 
+    borderLeftWidth: 4, 
+    borderLeftColor: colors.primary.main 
+  },
+  insufficientDataHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    marginBottom: spacing.md 
+  },
+  insufficientDataIcon: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: colors.primary.light + '20', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginRight: spacing.md 
+  },
+  insufficientDataContent: { 
+    flex: 1 
+  },
+  insufficientDataTitle: { 
+    fontFamily: 'Inter-SemiBold', 
+    fontSize: fontSize.md, 
+    color: colors.primary.main, 
+    marginBottom: spacing.xs 
+  },
+  insufficientDataMessage: { 
+    fontFamily: 'Inter-Regular', 
+    fontSize: fontSize.sm, 
+    color: colors.neutral.text.primary, 
+    lineHeight: 20 
+  },
+  insufficientDataHelper: { 
+    fontFamily: 'Inter-Medium', 
+    fontSize: fontSize.sm, 
+    color: colors.neutral.text.secondary, 
+    lineHeight: 20, 
+    textAlign: 'center' 
+  },
+  comoGerarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.light + '20',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+    marginTop: spacing.md,
+  },
+  comoGerarButtonText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: fontSize.sm,
+    color: colors.primary.main,
+    marginRight: spacing.xs,
+  },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.18)', 
+    justifyContent: 'flex-end' 
+  },
 });

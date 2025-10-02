@@ -3,7 +3,7 @@ import { appConfig } from '../../../config/appConfig';
 import AuthService from '../../../services/authService';
 import { logger } from '../../../utils/secureLogger';
 import { networkManager } from '../../../utils/simpleNetworkManager';
-import { InterventionSuggestion, PredictionDetail, RiskFactor, RiskLevel } from '../types';
+import { InsufficientDataState, InterventionSuggestion, PredictionDetail, PredictionResult, RiskFactor, RiskLevel } from '../types';
 import { PredictionDataSource } from './PredictionDataSource';
 import { PredictionMockService } from './PredictionMock';
 
@@ -19,7 +19,7 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
   /**
    * Fetch latest prediction from Crisis Prediction Engine™
    */
-  async fetchLatest(): Promise<PredictionDetail> {
+  async fetchLatest(): Promise<PredictionResult> {
     try {
       logger.info('CrisisPredictionApiClient', 'Fetching latest prediction from backend');
 
@@ -27,8 +27,8 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
       const authHeader = await AuthService.getAuthHeader();
       
       if (!Object.keys(authHeader).length) {
-        logger.warn('CrisisPredictionApiClient', 'No authentication token available, falling back to mock');
-        return this.fallbackToMock();
+        logger.warn('CrisisPredictionApiClient', 'No authentication token available');
+        return this.createInsufficientDataResponse('Você precisa estar logado para ver sua análise de bem-estar.');
       }
 
       const response = await networkManager.get<any>(
@@ -56,7 +56,20 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
             success: apiResponse.success,
             error: apiResponse.error 
           });
-          return this.fallbackToMock();
+          
+          // Se a API explicitamente disse que não há dados, não use mock
+          if (apiResponse.error && apiResponse.error.includes('predição válida encontrada')) {
+            return this.createInsufficientDataResponse(
+              'Ainda não temos dados suficientes para gerar sua análise personalizada.',
+              [
+                'Continue registrando seu humor diariamente',
+                'Escreva pelo menos 2-3 entradas no diário',
+                'Volte em alguns dias para ver sua análise'
+              ]
+            );
+          }
+          
+          return this.createInsufficientDataResponse('Erro ao processar dados de análise.');
         }
       } else {
         logger.warn('CrisisPredictionApiClient', 'Network request failed', {
@@ -65,6 +78,19 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         });
         
         // Handle specific error cases
+        if (response.status === 404) {
+          // 404 significa que não há dados suficientes para análise
+          return this.createInsufficientDataResponse(
+            'Ainda não temos dados suficientes para gerar sua análise personalizada.',
+            [
+              'Continue registrando seu humor diariamente',
+              'Escreva pelo menos 2-3 entradas no diário',
+              'Use o app por alguns dias consecutivos',
+              'Volte em alguns dias para ver sua análise'
+            ]
+          );
+        }
+        
         if (response.status === 401) {
           // Try token refresh and retry once
           logger.info('CrisisPredictionApiClient', 'Attempting token refresh due to 401 error');
@@ -73,21 +99,30 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
           if (refreshResult.success) {
             return this.retryWithNewToken();
           }
+          
+          return this.createInsufficientDataResponse('Sessão expirada. Faça login novamente.');
         }
         
-        return this.fallbackToMock();
+        // Outros erros de rede
+        return this.createInsufficientDataResponse(
+          'Não foi possível carregar sua análise no momento.',
+          ['Verifique sua conexão com a internet', 'Tente novamente em alguns minutos']
+        );
       }
-            } catch (error) {
+    } catch (error) {
       logger.error('CrisisPredictionApiClient', 'All retry attempts failed', error as Error);
-      // Final fallback to mock data
-      return this.fallbackToMock();
+      // Em caso de erro grave, informar que não há dados disponíveis
+      return this.createInsufficientDataResponse(
+        'Não foi possível carregar sua análise no momento.',
+        ['Verifique sua conexão com a internet', 'Tente novamente em alguns minutos']
+      );
     }
   }
 
   /**
    * Retry request with refreshed token
    */
-  private async retryWithNewToken(): Promise<PredictionDetail> {
+  private async retryWithNewToken(): Promise<PredictionResult> {
     try {
       logger.info('CrisisPredictionApiClient', 'Retrying prediction request with refreshed token');
       
@@ -108,17 +143,38 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         logger.info('CrisisPredictionApiClient', 'Retry successful');
         return this.mapApiResponseToPredictionDetail(retryResponse.data.data);
       } else {
-        logger.warn('CrisisPredictionApiClient', 'Retry failed, falling back to mock');
-        return this.fallbackToMock();
+        logger.warn('CrisisPredictionApiClient', 'Retry failed');
+        return this.createInsufficientDataResponse('Sessão expirada. Faça login novamente.');
       }
     } catch (error) {
       logger.error('CrisisPredictionApiClient', 'Retry attempt failed', error as Error);
-      return this.fallbackToMock();
+      return this.createInsufficientDataResponse('Erro de autenticação. Tente fazer login novamente.');
     }
   }
 
-    /**
-   * Fallback to mock service when API is unavailable
+  /**
+   * Create response for insufficient data scenarios
+   */
+  private createInsufficientDataResponse(message: string, suggestions?: string[]): InsufficientDataState {
+    return {
+      id: 'insufficient_data',
+      type: 'insufficient_data',
+      message,
+      suggestions: suggestions || [
+        'Registre seu humor pelo menos 3 vezes',
+        'Escreva no diário pelo menos 2 entradas',
+        'Use o app por alguns dias para gerar dados'
+      ],
+      requiredActions: [
+        'Registrar humor diariamente',
+        'Escrever entradas no diário',
+        'Aguardar alguns dias para análise'
+      ]
+    };
+  }
+
+  /**
+   * Fallback to mock service when API is unavailable (DEPRECATED - only for development)
    */
   private fallbackToMock(): PredictionDetail {
     return PredictionMockService.generateMockPrediction();
