@@ -74,6 +74,7 @@ export const STORAGE_KEYS = {
   USER_STATS: 'user_stats',
   USER_ACHIEVEMENTS: 'user_achievements', 
   USER_SETTINGS: 'user_settings',
+  USER_AVATAR: 'user_avatar',
 } as const;
 
 export const PROFILE_COLORS = {

@@ -1,3 +1,4 @@
+import { AvatarPicker } from '@/components/AvatarPicker';
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
 import { BiometricSettings } from '@/components/biometric';
@@ -5,38 +6,57 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUserAvatar } from '@/hooks/useUserAvatar';
 import { useUserData } from '@/hooks/useUserData';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ACHIEVEMENTS } from '../constants';
+import { EditProfileModal } from '../components/EditProfileModal';
 import { ProfileService } from '../services/ProfileService';
-import { Achievement, UserStats } from '../types';
+import { Achievement, UserProfile, UserStats } from '../types';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { logout } = useAuth();
   const { displayName, email } = useUserData();
+  const { userAvatar, updateUserAvatar } = useUserAvatar();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
   useEffect(() => {
     loadLocalData();
-  }, []);
+  }, [displayName, email]); // Add dependencies to reload when user data changes
 
   const loadLocalData = async () => {
     try {
-      // Only load local data (stats and achievements)
+      // Load local data (stats, achievements, profile)
       const stats = await ProfileService.getUserStats();
       const userAchievements = await ProfileService.getUserAchievements();
+      const profile = await ProfileService.getUserProfile();
 
       setUserStats(stats);
       setAchievements(Array.isArray(userAchievements) ? userAchievements : []); // Ensure achievements is always an array
+      
+      // Set profile with current user data if no saved profile exists
+      if (profile) {
+        setUserProfile(profile);
+      } else {
+        // Create default profile from current user data
+        const defaultProfile: UserProfile = {
+          name: displayName || 'Usuário',
+          email: email || '',
+          createdAt: new Date().toISOString(),
+        };
+        setUserProfile(defaultProfile);
+      }
+      
+      console.log('📱 Avatar carregado:', userAvatar ? 'Foto encontrada' : 'Nenhuma foto salva');
     } catch (error) {
       console.error('Erro ao carregar dados locais:', error);
       // Set default values in case of error
@@ -45,7 +65,32 @@ export default function ProfileScreen() {
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Em desenvolvimento', 'Esta funcionalidade estará disponível em breve!');
+    setIsEditModalVisible(true);
+  };
+
+  const handleProfileUpdated = (updatedProfile: UserProfile) => {
+    setUserProfile(updatedProfile);
+    // Avatar é automaticamente sincronizado pelo hook useUserAvatar
+  };
+
+  const loadUserAvatar = async () => {
+    // Avatar é gerenciado pelo hook useUserAvatar
+    // Não precisa mais carregar aqui
+  };
+
+  const handleAvatarChange = async (newAvatarUri: string | null) => {
+    try {
+      console.log('📷 Salvando nova foto do avatar:', newAvatarUri);
+      const success = await updateUserAvatar(newAvatarUri);
+      if (success) {
+        console.log('✅ Avatar salvo com sucesso!');
+      } else {
+        throw new Error('Falha ao salvar avatar');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao salvar avatar:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a foto.');
+    }
   };
 
   const handleNotifications = () => {
@@ -111,22 +156,21 @@ export default function ProfileScreen() {
       >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={require('@/assets/images/profile-placeholder.png')}
-              style={styles.avatar}
-              contentFit="cover"
-            />
-          </View>
+          <AvatarPicker
+            currentImage={userAvatar || undefined}
+            onImageSelected={handleAvatarChange}
+            size={100}
+            showEditButton={true}
+          />
           <ThemedText style={styles.userName}>
-            {displayName}
+            {userProfile?.name || displayName}
           </ThemedText>
           <ThemedText style={styles.userEmail}>
-            {email || 'usuario@pulsezen.com'}
+            {userProfile?.email || email || 'usuario@pulsezen.com'}
           </ThemedText>
         </View>
 
-        {/* Profile Stats */}
+        {/* Profile Stats 
         <Card style={styles.statsCard}>
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
@@ -151,8 +195,8 @@ export default function ProfileScreen() {
             </View>
           </View>
         </Card>
-
-        {/* Achievements */}
+*/}
+        {/* Achievements 
         <Card style={styles.sectionCard}>
           <ThemedText style={styles.sectionTitle}>Conquistas</ThemedText>
           <View style={styles.achievementsGrid}>
@@ -176,7 +220,7 @@ export default function ProfileScreen() {
               );
             })}
           </View>
-        </Card>
+        </Card>*/}
 
         {/* Settings */}
         <Card style={styles.sectionCard}>
@@ -187,10 +231,10 @@ export default function ProfileScreen() {
             <ThemedText style={styles.settingArrow}>›</ThemedText>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.settingItem} onPress={handleNotifications}>
+          {/* <TouchableOpacity style={styles.settingItem} onPress={handleNotifications}>
             <ThemedText style={styles.settingLabel}>Notificações</ThemedText>
             <ThemedText style={styles.settingArrow}>›</ThemedText>
-          </TouchableOpacity>
+          </TouchableOpacity>*/}
           
           <TouchableOpacity style={styles.settingItem} onPress={handlePrivacy}>
             <ThemedText style={styles.settingLabel}>Privacidade</ThemedText>
@@ -217,6 +261,14 @@ export default function ProfileScreen() {
           style={styles.logoutButton}
         />
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        visible={isEditModalVisible}
+        onClose={() => setIsEditModalVisible(false)}
+        currentProfile={userProfile}
+        onProfileUpdated={handleProfileUpdated}
+      />
     </ThemedView>
   );
 }
@@ -268,27 +320,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xl,
   },
-  avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-    shadowColor: colors.neutral.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-  },
   userName: {
     fontSize: fontSize.xl,
     fontFamily: 'Inter-Bold',
     color: colors.primary.main,
     marginBottom: spacing.xs,
+    marginTop: spacing.md,
   },
   userEmail: {
     fontSize: fontSize.md,

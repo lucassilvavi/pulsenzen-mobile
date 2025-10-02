@@ -42,6 +42,31 @@ export class ProfileService {
     }
   }
 
+  // Avatar Methods
+  static async getUserAvatar(): Promise<string | null> {
+    try {
+      const avatarUri = await AsyncStorage.getItem(STORAGE_KEYS.USER_AVATAR);
+      return avatarUri;
+    } catch (error) {
+      console.error('Error getting user avatar:', error);
+      return null;
+    }
+  }
+
+  static async saveUserAvatar(avatarUri: string | null): Promise<boolean> {
+    try {
+      if (avatarUri) {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_AVATAR, avatarUri);
+      } else {
+        await AsyncStorage.removeItem(STORAGE_KEYS.USER_AVATAR);
+      }
+      return true;
+    } catch (error) {
+      console.error('Error saving user avatar:', error);
+      return false;
+    }
+  }
+
   // User Stats Methods
   static async getUserStats(): Promise<UserStats | null> {
     try {
