@@ -57,7 +57,7 @@ const moods: Mood[] = [
 export default function MoodSelector() {
   const { 
     currentPeriod, 
-    hasAnsweredToday, 
+    hasAnsweredCurrentPeriod, 
     isLoading, 
     submitMood 
   } = useMood();
@@ -72,7 +72,7 @@ export default function MoodSelector() {
 
   // Anima a entrada quando o componente deve aparecer
   React.useEffect(() => {
-    if (!isLoading && !hasAnsweredToday) {
+    if (!isLoading && !hasAnsweredCurrentPeriod) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 1200,
@@ -101,11 +101,11 @@ export default function MoodSelector() {
       
       Animated.stagger(50, animations).start();
     }
-  }, [isLoading, hasAnsweredToday, fadeAnim, scaleAnims]);
+  }, [isLoading, hasAnsweredCurrentPeriod, fadeAnim, scaleAnims]);
 
   // Animação de pulso suave para chamar atenção
   React.useEffect(() => {
-    if (!isLoading && !hasAnsweredToday) {
+    if (!isLoading && !hasAnsweredCurrentPeriod) {
       const pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -129,7 +129,7 @@ export default function MoodSelector() {
         pulseAnimation.stop();
       };
     }
-  }, [isLoading, hasAnsweredToday, pulseAnim]);
+  }, [isLoading, hasAnsweredCurrentPeriod, pulseAnim]);
 
   const handleMoodSelect = async (mood: MoodLevel, index: number) => {
     if (isSubmitting) return;
@@ -254,7 +254,7 @@ export default function MoodSelector() {
     );
   }
 
-  if (hasAnsweredToday) {
+  if (hasAnsweredCurrentPeriod) {
     return null;
   }
 

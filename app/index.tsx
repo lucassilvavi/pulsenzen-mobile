@@ -3,12 +3,11 @@ import HeaderSection from '@/components/HeaderSection';
 import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
 import { ThemedView } from '@/components/ThemedView';
-import { useAccessibilityState, useScreenReaderAnnouncement } from '@/hooks/useAccessibility';
 import { useUserData } from '@/hooks/useUserData';
-import { MoodSelector, useMood } from '@/modules/mood';
+import { MoodSelector } from '@/modules/mood';
 import { PredictionBanner } from '@/modules/prediction';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,14 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { displayName } = useUserData();
-  const [showDebug, setShowDebug] = useState(false);
+  const [showDebug] = useState(false);
   
-  // Mood hook para debug
-  const { hasAnsweredToday, isLoading, currentPeriod, refreshData, checkTodayResponse } = useMood();
-  
-  // Accessibility hooks
-  const accessibilityState = useAccessibilityState();
-  const { announceNavigation } = useScreenReaderAnnouncement();
+  // Accessibility hooks - TODO: Re-enable when needed
+  // const accessibilityState = useAccessibilityState();
+  // const { announceNavigation } = useScreenReaderAnnouncement();
 
   // Announce screen content when loading
   // TODO: Re-enable when needed
@@ -35,10 +31,6 @@ export default function HomeScreen() {
   //     );
   //   }
   // }, [displayName, accessibilityState?.screenReaderEnabled, announceNavigation]);
-
-  useEffect(() => {
-    console.log('hasAnsweredToday', hasAnsweredToday);
-  }, [hasAnsweredToday]);
 
   if (showDebug) {
     return <MoodDebugScreen />;

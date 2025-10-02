@@ -11,14 +11,14 @@ import { useMood } from '../../modules/mood/hooks/useMood';
 export function MoodDebugScreen() {
   const {
     currentPeriod,
-    hasAnsweredToday,
+    hasAnsweredCurrentPeriod,
     isLoading,
     loadingStates,
     errorStates,
     syncStatus,
     todayEntries,
     recentStats,
-    checkTodayResponse,
+    checkCurrentPeriodResponse,
     getMoodEntries,
     refreshData
   } = useMood();
@@ -51,7 +51,7 @@ export function MoodDebugScreen() {
   }, [getMoodEntries]);
 
   const handleManualCheck = async () => {
-    const result = await checkTodayResponse();
+    const result = await checkCurrentPeriodResponse();
     alert(`Check result: ${result}`);
   };
 
@@ -69,7 +69,7 @@ export function MoodDebugScreen() {
           <ThemedText style={styles.sectionTitle}>Estado Atual</ThemedText>
           <Text style={styles.debugText}>
             Período Atual: {currentPeriod}{'\n'}
-            Respondeu Hoje: {hasAnsweredToday ? 'SIM' : 'NÃO'}{'\n'}
+            Respondeu Hoje: {hasAnsweredCurrentPeriod ? 'SIM' : 'NÃO'}{'\n'}
             Carregando: {isLoading ? 'SIM' : 'NÃO'}{'\n'}
             Data/Hora: {new Date().toLocaleString('pt-BR')}
           </Text>

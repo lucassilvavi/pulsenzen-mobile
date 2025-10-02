@@ -27,6 +27,24 @@ export interface User {
   onboardingComplete?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  profile?: {
+    firstName: string;
+    lastName: string;
+    onboardingCompleted: boolean;
+    dateOfBirth?: string;
+    goals?: string[];
+    mentalHealthConcerns?: string[];
+    preferredActivities?: string[];
+    currentStressLevel?: number;
+    sleepHours?: number;
+    exerciseFrequency?: string;
+    preferredContactMethod?: string;
+    notificationPreferences?: {
+      reminders: boolean;
+      progress: boolean;
+      tips: boolean;
+    };
+  };
 }
 
 export interface UserProfile {

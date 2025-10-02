@@ -310,6 +310,17 @@ class AutoSyncService {
     try {
       switch (item.action) {
         case 'create':
+          // Verifica se já existe uma entrada para este período antes de criar
+          try {
+            const validation = await moodApiClient.validatePeriod(item.entry.period, item.entry.date);
+            if (!validation.success || !validation.data?.can_create) {
+              console.log(`[AutoSyncService] Período ${item.entry.period} já possui entrada para ${item.entry.date}, removendo da fila`);
+              return true; // Remove da fila pois já foi criado
+            }
+          } catch (validationError) {
+            console.warn(`[AutoSyncService] Erro na validação de período, tentando criar mesmo assim:`, validationError);
+          }
+
           const createResponse = await moodApiClient.createMoodEntry({
             mood_level: item.entry.mood,
             period: item.entry.period,
@@ -318,6 +329,7 @@ class AutoSyncService {
             activities: item.entry.activities,
             emotions: item.entry.emotions
           });
+          console.log(`[AutoSyncService] createResponse para ${item.id}:`, createResponse);
           return createResponse.success;
 
         case 'update':

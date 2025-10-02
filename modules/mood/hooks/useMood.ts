@@ -61,9 +61,9 @@ interface SyncStatus {
  * - Analytics integration
  */
 export function useMood(): UseMoodReturn {
-  // Estados principais
+    // Estados primários
   const [currentPeriod, setCurrentPeriod] = useState<MoodPeriod>('manha');
-  const [hasAnsweredToday, setHasAnsweredToday] = useState<boolean>(false);
+  const [hasAnsweredCurrentPeriod, setHasAnsweredCurrentPeriod] = useState<boolean>(false);
   const [todayEntries, setTodayEntries] = useState<MoodEntry[]>([]);
   const [recentStats, setRecentStats] = useState<{
     averageMood: number;
@@ -339,18 +339,16 @@ export function useMood(): UseMoodReturn {
   // ============ MAIN OPERATIONS ============
 
   /**
-   * Verifica se já respondeu hoje no período atual
+   * Verifica se já respondeu no período atual
    */
-  const checkTodayResponse = useCallback(async (): Promise<boolean> => {
+  const checkCurrentPeriodResponse = useCallback(async (): Promise<boolean> => {
     try {
-      const answered = await moodService.hasAnsweredToday();
-      console.log('answered', answered);
-      console.log('[useMood] Verificação de resposta de hoje:', answered);
-      setHasAnsweredToday(answered);
+      const answered = await moodService.hasAnsweredCurrentPeriod();
+      setHasAnsweredCurrentPeriod(answered);
       return answered;
     } catch (err) {
-      console.error('Erro ao verificar resposta de hoje:', err);
-      setHasAnsweredToday(false);
+      console.error('[useMood] Erro ao verificar resposta do período atual:', err);
+      setHasAnsweredCurrentPeriod(false);
       return false;
     }
   }, []);
@@ -701,7 +699,7 @@ export function useMood(): UseMoodReturn {
       const response = await moodService.saveMoodResponse(mood, additionalData);
       
       if (response.success) {
-        setHasAnsweredToday(true);
+        setHasAnsweredCurrentPeriod(true);
         
         // ✅ NOVO: Adiciona entrada à fila de sync automático
         if (response.data) {
@@ -783,7 +781,7 @@ export function useMood(): UseMoodReturn {
       await Promise.all([
         loadEntries(false),
         loadStats(30, false),
-        checkTodayResponse()
+        checkCurrentPeriodResponse()
       ]);
 
       // Atualiza timestamp de sync
@@ -797,19 +795,19 @@ export function useMood(): UseMoodReturn {
     } finally {
       setLoadingState('refreshing', false);
     }
-  }, [clearErrors, setErrorByType, setLoadingState, loadEntries, loadStats, checkTodayResponse]);
+  }, [clearErrors, setErrorByType, setLoadingState, loadEntries, loadStats, checkCurrentPeriodResponse]);
 
   /**
    * Reset para teste (força nova resposta)
    */
-  const resetTodayResponse = useCallback(async (): Promise<void> => {
+  const resetCurrentPeriodResponse = useCallback(async (): Promise<void> => {
     try {
       clearErrors();
       await moodService.resetTodayResponse();
-      setHasAnsweredToday(false);
+      setHasAnsweredCurrentPeriod(false);
     } catch (err) {
-      setErrorByType('general', 'Erro ao resetar resposta de hoje');
-      console.error('Erro no resetTodayResponse:', err);
+      setErrorByType('general', 'Erro ao resetar resposta do período atual');
+      console.error('Erro no resetCurrentPeriodResponse:', err);
     }
   }, [clearErrors, setErrorByType]);
 
@@ -881,19 +879,19 @@ export function useMood(): UseMoodReturn {
         await Promise.all([
           loadEntries(true),
           loadStats(30, true),
-          checkTodayResponse()
+          checkCurrentPeriodResponse()
         ]);
         
       } catch (err) {
+        console.error('[useMood] ❌ Erro na inicialização:', err);
         setErrorByType('general', 'Erro ao inicializar estado do humor');
-        console.error('Erro na inicialização do mood:', err);
       } finally {
         setLoadingState('initializing', false);
       }
     };
     
     initialize();
-  }, [clearErrors, setErrorByType, setLoadingState, initializeAutoSync, loadEntries, loadStats, checkTodayResponse]);
+  }, [clearErrors, setErrorByType, setLoadingState, initializeAutoSync, loadEntries, loadStats, checkCurrentPeriodResponse]);
 
   /**
    * Verifica mudança de período a cada minuto
@@ -903,12 +901,12 @@ export function useMood(): UseMoodReturn {
       const newPeriod = moodService.getCurrentPeriod();
       if (newPeriod !== currentPeriod) {
         setCurrentPeriod(newPeriod);
-        checkTodayResponse(); // Recheck porque mudou o período
+        checkCurrentPeriodResponse(); // Recheck porque mudou o período
       }
     }, 60000); // 1 minuto
 
     return () => clearInterval(interval);
-  }, [currentPeriod, checkTodayResponse]);
+  }, [currentPeriod, checkCurrentPeriodResponse]);
 
   /**
    * Background sync a cada 5 minutos quando online
@@ -986,7 +984,7 @@ export function useMood(): UseMoodReturn {
   return {
     // Estados principais (compatibilidade)
     currentPeriod,
-    hasAnsweredToday,
+    hasAnsweredCurrentPeriod,
     isLoading,
     error,
     todayEntries,
@@ -1001,7 +999,7 @@ export function useMood(): UseMoodReturn {
     submitMood,
     getMoodEntries,
     getMoodStats,
-    resetTodayResponse,
+    resetCurrentPeriodResponse,
     refreshStatus,
     
     // Métodos avançados
@@ -1016,7 +1014,7 @@ export function useMood(): UseMoodReturn {
     refreshData,
     
     // Utilitários
-    checkTodayResponse
+    checkCurrentPeriodResponse
   };
 }
 

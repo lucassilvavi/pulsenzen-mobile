@@ -29,11 +29,16 @@ class MoodService {
   getCurrentPeriod(): MoodPeriod {
     const hour = new Date().getHours();
     
+    // Manhã: 05:00 - 11:59
     if (hour >= PERIOD_HOURS.manha.start && hour < PERIOD_HOURS.manha.end) {
       return 'manha';
-    } else if (hour >= PERIOD_HOURS.tarde.start && hour < PERIOD_HOURS.tarde.end) {
+    } 
+    // Tarde: 12:00 - 17:59
+    else if (hour >= PERIOD_HOURS.tarde.start && hour < PERIOD_HOURS.tarde.end) {
       return 'tarde';
-    } else {
+    } 
+    // Noite: 18:00 - 23:59 E 00:00 - 04:59
+    else {
       return 'noite';
     }
   }
@@ -41,16 +46,24 @@ class MoodService {
   /**
    * Verifica se o usuário já respondeu no período atual - INTEGRAÇÃO API
    */
-  async hasAnsweredToday(): Promise<boolean> {
+  async hasAnsweredCurrentPeriod(): Promise<boolean> {
     const today = new Date().toISOString().split('T')[0];
     const currentPeriod = this.getCurrentPeriod();
     try {
       const response = await moodApiClient.validatePeriod(currentPeriod, today);
-      console.log('response.data.lucas', response);
+      console.log('response.data.current_period_validation', response);
       return response.success && response.data ? !response.data.can_create : false;
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * @deprecated Use hasAnsweredCurrentPeriod() instead
+   * Mantido para compatibilidade
+   */
+  async hasAnsweredToday(): Promise<boolean> {
+    return this.hasAnsweredCurrentPeriod();
   }
 
   /**

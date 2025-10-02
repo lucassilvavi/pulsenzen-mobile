@@ -19,7 +19,7 @@ const { width } = Dimensions.get('window');
 export default function MoodSelector({ onMoodSelect, disabled = false, compact = false }: MoodSelectorProps) {
   const { 
     currentPeriod, 
-    hasAnsweredToday, 
+    hasAnsweredCurrentPeriod, 
     isLoading, 
     loadingStates,
     errorStates,
@@ -38,7 +38,7 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
 
   // Anima a entrada quando o componente deve aparecer
   React.useEffect(() => {
-    if (!isLoading && !hasAnsweredToday) {
+    if (!isLoading && !hasAnsweredCurrentPeriod) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: ANIMATION_DURATIONS.FADE_IN,
@@ -67,11 +67,11 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
       
       Animated.stagger(50, animations).start();
     }
-  }, [isLoading, hasAnsweredToday, fadeAnim, scaleAnims]);
+  }, [isLoading, hasAnsweredCurrentPeriod, fadeAnim, scaleAnims]);
 
   // Animação de pulso suave para chamar atenção
   React.useEffect(() => {
-    if (!isLoading && !hasAnsweredToday) {
+    if (!isLoading && !hasAnsweredCurrentPeriod) {
       const pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -95,7 +95,7 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
         pulseAnimation.stop();
       };
     }
-  }, [isLoading, hasAnsweredToday, pulseAnim]);
+  }, [isLoading, hasAnsweredCurrentPeriod, pulseAnim]);
 
   const handleMoodSelect = async (mood: MoodLevel, index: number) => {
     if (isSubmitting || disabled || loadingStates.submittingMood) return;
@@ -217,11 +217,12 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" color={colors.primary.main} />
+        <ThemedText style={styles.loadingText}>Carregando estado do humor...</ThemedText>
       </View>
     );
   }
 
-  if (hasAnsweredToday) {
+  if (hasAnsweredCurrentPeriod) {
     return null;
   }
 

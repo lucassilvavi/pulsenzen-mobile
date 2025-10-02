@@ -98,7 +98,7 @@ export interface SyncStatusUI {
 export interface UseMoodReturn {
   // Estados principais (compatibilidade)
   currentPeriod: MoodPeriod;
-  hasAnsweredToday: boolean;
+  hasAnsweredCurrentPeriod: boolean;
   isLoading: boolean;
   error: string | null;
   todayEntries: MoodEntry[];
@@ -117,13 +117,13 @@ export interface UseMoodReturn {
   submitMood: (mood: MoodLevel, additionalData?: Partial<MoodEntry>) => Promise<MoodResponse>;
   getMoodEntries: () => Promise<MoodEntry[]>;
   getMoodStats: (days?: number) => Promise<MoodStats>;
-  resetTodayResponse: () => Promise<void>;
+  resetCurrentPeriodResponse: () => Promise<void>;
   refreshStatus: () => Promise<void>;
   
   // Métodos avançados
   clearErrors: () => void;
   initializeAutoSync: () => Promise<void>;
-  checkTodayResponse: () => Promise<boolean>;
+  checkCurrentPeriodResponse: () => Promise<boolean>;
   
   // Novos métodos - Item 11.2 Features Avançadas
   bulkDeleteEntries: (entryIds: string[]) => Promise<{

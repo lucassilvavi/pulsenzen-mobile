@@ -49,9 +49,9 @@ export const MOOD_OPTIONS: MoodOption[] = [
 ];
 
 export const PERIOD_HOURS = {
-  manha: { start: 5, end: 12 },
-  tarde: { start: 12, end: 18 },
-  noite: { start: 18, end: 5 }
+  manha: { start: 5, end: 12 },   // 05:00 - 11:59
+  tarde: { start: 12, end: 18 },  // 12:00 - 17:59  
+  noite: { start: 18, end: 24 }   // 18:00 - 23:59 (+ 00:00 - 04:59)
 } as const;
 
 export const PERIOD_LABELS = {

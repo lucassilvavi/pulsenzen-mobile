@@ -10,10 +10,9 @@ export function useUserData() {
 
   const userData = useMemo(() => {
     // Nome do usuário com fallbacks
-    const firstName = userProfile?.profile?.firstName;
-    const lastName = userProfile?.profile?.lastName;
+    const firstName = user?.profile?.firstName;
+    const lastName = user?.profile?.lastName;
     const email = user?.email;
-    
     let displayName = 'Visitante';
     if (firstName) {
       displayName = lastName ? `${firstName} ${lastName}` : firstName;
