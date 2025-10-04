@@ -93,7 +93,17 @@ class ConfigManager {
   private parseFirebaseConfig(): any {
     try {
       const configString = process.env.EXPO_PUBLIC_FIREBASE_CONFIG;
-      return configString ? JSON.parse(configString) : null;
+      
+      // 🔧 Validação melhorada: Verifica se é um valor válido antes de fazer parse
+      if (!configString || 
+          configString.trim() === '' || 
+          configString === 'your-firebase-config' ||
+          configString.startsWith('your-')) {
+        console.log('Firebase config not configured or using placeholder value, skipping');
+        return null;
+      }
+      
+      return JSON.parse(configString);
     } catch (error) {
       console.warn('Failed to parse Firebase config:', error);
       return null;
