@@ -4,9 +4,9 @@
 
 ## 📊 **Status Geral**
 - **Total de Tarefas**: 16
-- **Concluídas**: 6 ✅
+- **Concluídas**: 7 ✅
 - **Em Progresso**: 1 🎯
-- **Pendentes**: 9
+- **Pendentes**: 8
 
 ---
 
@@ -36,12 +36,12 @@
   - **Impacto Alcançado**: Console significativamente mais limpo, performance de startup melhorada
   - **Prioridade**: 🟡 ALTA ✅ COMPLETA
 
-### 🔄 **Task 6**
-- [ ] **Implementar lazy loading para AutoSyncService**
-  - **Problema**: AutoSync rodando antes da autenticação
-  - **Impacto**: Background sync desnecessário
-  - **Ação**: Mover inicialização para APÓS autenticação confirmada
-  - **Prioridade**: 🟡 ALTA
+### 🔄 **Task 6** ✅
+- [x] **Implementar lazy loading para AutoSyncService**
+  - ✅ **CONCLUÍDO**: Implementado lazy loading baseado em autenticação no useMood hook. AutoSyncService agora só inicializa APÓS usuário estar autenticado, usando AuthContext como trigger. Guards implementados para evitar sync antes do login.
+  - **Impacto Alcançado**: AutoSync não roda mais desnecessariamente no startup sem autenticação, melhorando performance inicial
+  - **Evidências**: Logs mostram "pula inicialização do AutoSync (Task 6)" antes do login e "inicializando AutoSync (Task 6)" após login
+  - **Prioridade**: 🟡 ALTA ✅ COMPLETA
 
 ### 🎯 **Task 7**
 - [ ] **Otimizar PredictionContext para carregamento sob demanda**

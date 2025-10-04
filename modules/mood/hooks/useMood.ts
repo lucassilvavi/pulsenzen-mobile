@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import AuthService from '../../../services/authService';
 import { autoSyncService } from '../services/AutoSyncService';
 import { moodService } from '../services/MoodService';
@@ -62,7 +63,10 @@ interface SyncStatus {
  * - Analytics integration
  */
 export function useMood(): UseMoodReturn {
-    // Estados primários
+  // 🔒 Auth context para lazy loading baseado em autenticação
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // Estados primários
   const [currentPeriod, setCurrentPeriod] = useState<MoodPeriod>('manha');
   const [hasAnsweredCurrentPeriod, setHasAnsweredCurrentPeriod] = useState<boolean>(false);
   const [todayEntries, setTodayEntries] = useState<MoodEntry[]>([]);
@@ -104,6 +108,7 @@ export function useMood(): UseMoodReturn {
   // Refs para controle
   const backgroundSyncInterval = useRef<number | null>(null);
   const abortController = useRef<AbortController | null>(null);
+  const autoSyncInitialized = useRef<boolean>(false); // 🎯 Task 6: Controla se AutoSync já foi inicializado
 
   // ============ CACHE UTILITIES ============
 
@@ -873,12 +878,33 @@ export function useMood(): UseMoodReturn {
   }, [clearErrors, setErrorByType]);
 
   /**
-   * Inicializa sincronização automática
+   * Inicializa sincronização automática - APENAS se usuário estiver autenticado
+   * 🎯 Task 6: Lazy loading do AutoSyncService baseado em autenticação
    */
   const initializeAutoSync = useCallback(async (): Promise<void> => {
     try {
       setLoadingState('syncing', true);
-      console.log('[useMood] Inicializando auto sync avançado...');
+      
+      // 🔒 GUARD: Só inicializa AutoSync se usuário estiver autenticado
+      if (!isAuthenticated) {
+        console.log('[useMood] ⚠️ Usuário não autenticado - pula inicialização do AutoSync (Task 6)');
+        setSyncStatus(prev => ({
+          ...prev,
+          lastSync: null,
+          isOnline: false,
+          pendingOperations: 0,
+          syncInProgress: false
+        }));
+        return;
+      }
+
+      // 🚫 GUARD: Evita inicialização múltipla 
+      if (autoSyncInitialized.current) {
+        console.log('[useMood] ⚠️ AutoSync já foi inicializado - pulando (Task 6)');
+        return;
+      }
+      
+      console.log('[useMood] ✅ Usuário autenticado - inicializando auto sync avançado... (Task 6)');
       
       // Recupera status do cache
       const lastSyncStr = await AsyncStorage.getItem(CACHE_KEYS.LAST_SYNC);
@@ -908,7 +934,9 @@ export function useMood(): UseMoodReturn {
         syncInProgress: autoSyncService.syncInProgress
       }));
       
-      console.log(`[useMood] Auto sync inicializado: ${autoSyncStats.pendingItems} itens pendentes`);
+      // 🎯 Task 6: Marca como inicializado para evitar execução múltipla
+      autoSyncInitialized.current = true;
+      console.log(`[useMood] ✅ Auto sync inicializado: ${autoSyncStats.pendingItems} itens pendentes`);
       
     } catch (err) {
       console.error('Erro ao inicializar auto sync:', err);
@@ -916,12 +944,13 @@ export function useMood(): UseMoodReturn {
     } finally {
       setLoadingState('syncing', false);
     }
-  }, [setLoadingState]);
+  }, [setLoadingState, isAuthenticated]); // 🎯 Task 6: Dependência de autenticação adicionada
 
   // ============ EFFECTS ============
 
   /**
-   * Inicialização do hook
+   * Inicialização do hook - aguarda autenticação antes de inicializar AutoSync
+   * 🎯 Task 6: Lazy loading baseado em estado de autenticação
    */
   useEffect(() => {
     const initialize = async () => {
@@ -929,11 +958,19 @@ export function useMood(): UseMoodReturn {
         setLoadingState('initializing', true);
         clearErrors();
         
+        // 🔒 GUARD: Aguarda resolução da autenticação antes de prosseguir
+        if (authLoading) {
+          console.log('[useMood] ⏳ Aguardando resolução da autenticação... (Task 6)');
+          return;
+        }
+        
+        console.log('[useMood] 🚀 Inicializando useMood com auth resolvida:', { isAuthenticated });
+        
         // Define período atual
         const period = moodService.getCurrentPeriod();
         setCurrentPeriod(period);
         
-        // Inicializa auto sync
+        // Inicializa auto sync (só se autenticado - verificação interna)
         await initializeAutoSync();
         
         // Carrega dados iniciais (cache-first)
@@ -952,7 +989,7 @@ export function useMood(): UseMoodReturn {
     };
     
     initialize();
-  }, [clearErrors, setErrorByType, setLoadingState, initializeAutoSync, loadEntries, loadStats, checkCurrentPeriodResponse]);
+  }, [clearErrors, setErrorByType, setLoadingState, loadEntries, loadStats, checkCurrentPeriodResponse, authLoading, isAuthenticated]); // 🎯 Task 6: Dependências de auth, removido initializeAutoSync para evitar loop
 
   /**
    * Verifica mudança de período a cada minuto
@@ -995,6 +1032,16 @@ export function useMood(): UseMoodReturn {
       }
     };
   }, [syncStatus.isOnline, syncStatus.syncInProgress, loadEntries, loadStats]);
+
+  /**
+   * 🎯 Task 6: Reset AutoSync flag quando usuário faz logout
+   */
+  useEffect(() => {
+    if (!isAuthenticated && autoSyncInitialized.current) {
+      console.log('[useMood] 🔄 Usuário fez logout - resetando flag do AutoSync (Task 6)');
+      autoSyncInitialized.current = false;
+    }
+  }, [isAuthenticated]);
 
   /**
    * Cleanup quando componente é desmontado
