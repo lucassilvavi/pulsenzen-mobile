@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import AuthService from '../../../services/authService';
 import { autoSyncService } from '../services/AutoSyncService';
 import { moodService } from '../services/MoodService';
 import { MoodEntry, MoodLevel, MoodPeriod, MoodResponse, MoodStats, UseMoodReturn } from '../types';
@@ -208,6 +209,24 @@ export function useMood(): UseMoodReturn {
       setLoadingState('loadingEntries', true);
       clearErrors();
 
+      // ✅ GUARD: Verificar autenticação antes da API
+      const isAuthenticated = await AuthService.isAuthenticated();
+      if (!isAuthenticated) {
+        console.log('[useMood] loadEntries: Usuário não autenticado, usando apenas cache');
+        
+        // Tenta cache mesmo sem auth
+        const cached = await getFromCache<MoodEntry[]>(CACHE_KEYS.ENTRIES);
+        if (cached) {
+          const today = new Date().toISOString().split('T')[0];
+          const todaysEntries = cached.filter(entry => entry.date === today);
+          setTodayEntries(todaysEntries);
+          return cached;
+        }
+        
+        // Retorna array vazio se sem cache e sem auth
+        return [];
+      }
+
       // Tente cache primeiro se solicitado
       if (useCache) {
         const cached = await getFromCache<MoodEntry[]>(CACHE_KEYS.ENTRIES);
@@ -264,6 +283,40 @@ export function useMood(): UseMoodReturn {
     try {
       setLoadingState('loadingStats', true);
       clearErrors();
+
+      // ✅ GUARD: Verificar autenticação antes da API
+      const isAuthenticated = await AuthService.isAuthenticated();
+      if (!isAuthenticated) {
+        console.log('[useMood] loadStats: Usuário não autenticado, usando apenas cache');
+        
+        // Cache key específico para período
+        const cacheKey = `${CACHE_KEYS.STATS}_${days}`;
+        
+        // Tenta cache mesmo sem auth
+        const cached = await getFromCache<MoodStats>(cacheKey);
+        if (cached) {
+          setRecentStats({
+            averageMood: cached.averageMood,
+            totalEntries: cached.totalEntries,
+            moodDistribution: cached.moodDistribution
+          });
+          return cached;
+        }
+        
+        // Retorna estatísticas vazias se sem cache e sem auth
+        return {
+          averageMood: 0,
+          totalEntries: 0,
+          moodDistribution: {
+            'excelente': 0,
+            'bem': 0,
+            'neutro': 0,
+            'mal': 0,
+            'pessimo': 0
+          },
+          streak: 0
+        };
+      }
 
       // Cache key específico para período
       const cacheKey = `${CACHE_KEYS.STATS}_${days}`;
@@ -343,6 +396,14 @@ export function useMood(): UseMoodReturn {
    */
   const checkCurrentPeriodResponse = useCallback(async (): Promise<boolean> => {
     try {
+      // ✅ GUARD: Verificar autenticação antes da API
+      const isAuthenticated = await AuthService.isAuthenticated();
+      if (!isAuthenticated) {
+        console.log('[useMood] checkCurrentPeriodResponse: Usuário não autenticado, retornando false');
+        setHasAnsweredCurrentPeriod(false);
+        return false;
+      }
+
       const answered = await moodService.hasAnsweredCurrentPeriod();
       setHasAnsweredCurrentPeriod(answered);
       return answered;
