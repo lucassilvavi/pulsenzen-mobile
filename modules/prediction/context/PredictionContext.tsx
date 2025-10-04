@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import AuthService from '../../../services/authService';
 import { useToast } from '../../ui/toast/ToastContext';
 import { CrisisPredictionApiClient } from '../services/CrisisPredictionApiClient';
 import { PredictionDataSource } from '../services/PredictionDataSource';
@@ -44,6 +45,22 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     await new Promise(r => setTimeout(r, 400));
     
     try {
+      // 🔒 Guard: Verifica autenticação ANTES de fazer request
+      const isAuth = await AuthService.isAuthenticated();
+      if (!isAuth) {
+        console.log('[PredictionContext] ⚠️ Usuário não autenticado, aguardando login');
+        setState(s => ({
+          ...s,
+          loading: false,
+          current: null,
+          factors: [],
+          interventions: [],
+          insufficientData: undefined,
+          lastUpdated: null
+        }));
+        return;
+      }
+
       console.log('[PredictionContext] 📡 Fazendo fetch com dataSource...');
       const result = await dataSource.fetchLatest();
       console.log('[PredictionContext] ✅ Resultado recebido:', result);
@@ -103,6 +120,13 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     console.log('[PredictionContext] 🏁 Inicializando PredictionProvider...');
     (async () => {
       try {
+        // 🔒 Guard: Verifica autenticação ANTES de carregar dados
+        const isAuth = await AuthService.isAuthenticated();
+        if (!isAuth) {
+          console.log('[PredictionContext] ⚠️ Usuário não autenticado, aguardando login para carregar predições');
+          return;
+        }
+
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           console.log('[PredictionContext] 💾 Dados em cache encontrados');

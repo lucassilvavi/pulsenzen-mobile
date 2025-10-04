@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuthService from '../../../services/authService';
 import { logger } from '../../../utils/secureLogger';
 import { PERIOD_HOURS, PERIOD_LABELS, STORAGE_KEYS } from '../constants';
 import { MoodEntry, MoodLevel, MoodPeriod, MoodResponse, MoodStats } from '../types';
@@ -45,15 +46,25 @@ class MoodService {
 
   /**
    * Verifica se o usuário já respondeu no período atual - INTEGRAÇÃO API
+   * ⚡ OTIMIZAÇÃO: Só faz request se usuário estiver autenticado
    */
   async hasAnsweredCurrentPeriod(): Promise<boolean> {
-    const today = new Date().toISOString().split('T')[0];
-    const currentPeriod = this.getCurrentPeriod();
     try {
+      // 🔒 Guard: Verifica autenticação ANTES de fazer request
+      const isAuth = await AuthService.isAuthenticated();
+      if (!isAuth) {
+        console.log('[MoodService] Usuário não autenticado, assumindo não respondeu');
+        return false;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const currentPeriod = this.getCurrentPeriod();
+      
       const response = await moodApiClient.validatePeriod(currentPeriod, today);
       console.log('response.data.current_period_validation', response);
       return response.success && response.data ? !response.data.can_create : false;
     } catch (error) {
+      console.warn('[MoodService] Erro ao verificar período atual:', error);
       return false;
     }
   }

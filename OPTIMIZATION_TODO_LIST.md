@@ -13,11 +13,8 @@
 ## 🔥 **FASE 1: CORREÇÕES CRÍTICAS** (1-2 dias)
 
 ### ⚠️ **CRÍTICO - Task 2**
-- [ ] **Corrigir ciclo de dependências crítico**
-  - **Problema**: `services/authService.ts -> utils/simpleNetworkManager.ts -> services/authService.ts`
-  - **Impacto**: Pode causar valores não inicializados e bugs
-  - **Ação**: Refatorar para remover dependência circular
-  - **Prioridade**: 🔴 MÁXIMA
+- [x] ✅ Corrigir ciclo de dependências crítico
+  - ✅ CONCLUÍDO: Resolvido o require cycle: services/authService.ts -> utils/simpleNetworkManager.ts -> services/authService.ts. Implementada interface AuthCallbacks e dependency injection para eliminar dependência circular. Commit: ee129bd
 
 ### ⚠️ **CRÍTICO - Task 3**
 - [ ] **Configurar Firebase corretamente**
@@ -27,11 +24,8 @@
   - **Prioridade**: 🔴 MÁXIMA
 
 ### ⚠️ **CRÍTICO - Task 8**
-- [ ] **Evitar requests de API antes da autenticação**
-  - **Problema**: Chamadas para `/api/v1/mood/validate/manha` e `/api/v1/crisis/prediction/latest` no startup
-  - **Impacto**: Requests desnecessários, 404 esperados
-  - **Ação**: Implementar guards de autenticação antes de qualquer request
-  - **Prioridade**: 🔴 MÁXIMA
+- [x] 🚀 Evitar requests de API antes da autenticação
+  - 🚀 EM ANDAMENTO: Implementados guards de autenticação em MoodService.hasAnsweredCurrentPeriod() e PredictionContext.generate(). Agora verificam AuthService.isAuthenticated() antes de fazer requests para /api/v1/mood/validate/manha e /api/v1/crisis/prediction/latest.
 
 ---
 

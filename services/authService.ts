@@ -407,7 +407,8 @@ class AuthService {
   }
 
   /**
-   * Check if user is authenticated
+   * Check if user is authenticated with token expiration validation
+   * ⚡ OTIMIZAÇÃO: Verifica expiração do token localmente sem fazer request
    */
   static async isAuthenticated(): Promise<boolean> {
     try {
@@ -424,7 +425,23 @@ class AuthService {
         logger.warn('AuthService', 'Invalid token format detected');
         return false;
       }
-      // (Token validation com API está comentado)
+
+      // 🔒 Verifica expiração do token localmente (sem fazer request)
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const currentTime = Math.floor(Date.now() / 1000);
+        console.log('AuthService.isAuthenticated: token validation', { exp: payload.exp, now: currentTime, expired: payload.exp < currentTime });
+        if (payload.exp && payload.exp < currentTime) {
+          console.log('AuthService.isAuthenticated: token expired', { exp: payload.exp, now: currentTime });
+          logger.debug('AuthService', 'Token expired locally');
+          return false;
+        }
+      } catch (jwtError) {
+        console.log('AuthService.isAuthenticated: invalid JWT format', jwtError);
+        logger.warn('AuthService', 'Invalid JWT format');
+        return false;
+      }
+
       console.log('AuthService.isAuthenticated: sucesso, token e user válidos');
       return true;
     } catch (error) {
