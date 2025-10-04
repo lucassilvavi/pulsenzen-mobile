@@ -314,6 +314,12 @@ class SecureStorageManager {
     options: StorageOptions = {}
   ): Promise<boolean> {
     try {
+      // 🔧 DEBUG: Validar chave para evitar undefined warnings
+      if (!key || typeof key !== 'string') {
+        logger.error('SecureStorage', `Invalid key provided to setItem: ${key} (type: ${typeof key})`);
+        return false;
+      }
+      
       const wrappedData = this.wrapData(value, options.expiry);
       const jsonData = JSON.stringify(wrappedData);
       
@@ -338,6 +344,12 @@ class SecureStorageManager {
     options: StorageOptions = {}
   ): Promise<T | null> {
     try {
+      // 🔧 DEBUG: Validar chave para evitar undefined warnings
+      if (!key || typeof key !== 'string') {
+        logger.error('SecureStorage', `Invalid key provided to getItem: ${key} (type: ${typeof key})`);
+        return null;
+      }
+      
       let rawData: string | null;
       
       if (options.useSecureStore) {
@@ -380,7 +392,11 @@ class SecureStorageManager {
         
         // If it looks like old JSON but corrupted, clear it
         console.warn(`Corrupted data detected for key ${key}, clearing...`);
-        await this.removeItem(key, options.useSecureStore);
+        try {
+          await this.removeItem(key, options.useSecureStore);
+        } catch (removeError) {
+          console.warn(`Failed to clear corrupted data for key ${key}:`, removeError);
+        }
         return null;
       }
     } catch (error) {

@@ -303,9 +303,19 @@ export class MoodApiClient {
    * Handles API errors with proper logging and response format
    */
   private handleError(operation: string, error: any): BaseApiResponse {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    // Handle null/undefined errors properly
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : error != null 
+        ? String(error) 
+        : 'Unknown error occurred';
     
-    logger.error('MoodApiClient', `Error in ${operation}`, error instanceof Error ? error : new Error(errorMessage));
+    // Create a proper Error object for logging
+    const errorForLogging = error instanceof Error 
+      ? error 
+      : new Error(errorMessage);
+    
+    logger.error('MoodApiClient', `Error in ${operation}`, errorForLogging);
 
     // Classify error type for better handling
     let errorType: 'network' | 'validation' | 'rate_limit' | 'server' | 'unknown' = 'unknown';

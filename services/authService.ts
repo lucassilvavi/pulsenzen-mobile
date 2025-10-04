@@ -96,9 +96,16 @@ export interface OnboardingData {
 }
 
 class AuthService {
-  private static TOKEN_KEY = APP_CONSTANTS.STORAGE_KEYS.AUTH_TOKEN;
-  private static REFRESH_TOKEN_KEY = APP_CONSTANTS.STORAGE_KEYS.REFRESH_TOKEN;
-  private static USER_KEY = APP_CONSTANTS.STORAGE_KEYS.USER_DATA;
+  // 🔧 Define keys directly to avoid any module loading issues
+  private static readonly TOKEN_KEY = '@pulsezen_auth_token';
+  private static readonly REFRESH_TOKEN_KEY = '@pulsezen_refresh_token';
+  private static readonly USER_KEY = '@pulsezen_user_data';
+  
+  // 🔧 Cache em memória para resolver race conditions
+  private static tokenCache: string | null = null;
+  private static refreshTokenCache: string | null = null;
+  private static tokenCacheTimestamp: number = 0;
+  private static readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
   /**
    * Register a new user
@@ -413,8 +420,8 @@ class AuthService {
   static async isAuthenticated(): Promise<boolean> {
     try {
       // ✅ Task 4: Removido log verbose 'início' que aparecia 6+ vezes no startup
-      const token = await this.getToken();
-      const user = await this.getCurrentUser();
+      const token = await AuthService.getToken();
+      const user = await AuthService.getCurrentUser();
       if (!token || !user) {
         // ✅ Task 4: Mantido apenas log DEBUG para debug específico (não aparece no startup normal)
         logger.debug('AuthService', 'Authentication check failed: missing credentials');
@@ -458,7 +465,7 @@ class AuthService {
     try {
       logger.info('AuthService', 'Attempting to refresh authentication token');
 
-      const refreshToken = await this.getRefreshToken();
+      const refreshToken = await AuthService.getRefreshToken();
       if (!refreshToken) {
         logger.warn('AuthService', 'No refresh token available');
         return { success: false, message: 'No refresh token available' };
@@ -480,9 +487,9 @@ class AuthService {
         
         if (apiResponse.success && apiResponse.data) {
           // Update stored tokens
-          await secureStorage.setItem(this.TOKEN_KEY, apiResponse.data.token);
+          await secureStorage.setItem(AuthService.TOKEN_KEY, apiResponse.data.token);
           if (apiResponse.data.refreshToken) {
-            await secureStorage.setItem(this.REFRESH_TOKEN_KEY, apiResponse.data.refreshToken);
+            await secureStorage.setItem(AuthService.REFRESH_TOKEN_KEY, apiResponse.data.refreshToken);
           }
 
           logger.info('AuthService', 'Token refresh successful');
@@ -498,7 +505,7 @@ class AuthService {
         return { success: false, message: 'Token refresh failed' };
       }
     } catch (error) {
-      logger.error('AuthService', 'Token refresh error', error as Error);
+      logger.error('AuthService', `Token refresh error: ${error instanceof Error ? error.message : String(error)}`);
       return { success: false, message: 'Failed to refresh token. Please login again.' };
     }
   }
@@ -539,31 +546,79 @@ class AuthService {
     }
   }
 
-  /**
-   * Get stored auth token
+    /**
+   * Get stored auth token with memory cache
    */
   static async getToken(): Promise<string | null> {
     try {
-      const token = await secureStorage.getItem<string>(this.TOKEN_KEY);
-      // ✅ Task 4: Removido log DEBUG verbose que aparecia 6+ vezes no startup
-      // Mantido apenas em caso de erro crítico
+      // 🔧 Verificar cache em memória primeiro (race condition fix)
+      const now = Date.now();
+      if (this.tokenCache && (now - this.tokenCacheTimestamp) < this.CACHE_TTL) {
+        logger.debug('AuthService', 'Token retrieved from memory cache', { 
+          hasToken: true, 
+          cacheAge: now - this.tokenCacheTimestamp 
+        });
+        return this.tokenCache;
+      }
+
+      // Se não tem cache ou expirou, buscar do storage
+      const token = await secureStorage.getItem<string>(AuthService.TOKEN_KEY);
+      
+      if (token) {
+        // Atualizar cache em memória
+        this.tokenCache = token;
+        this.tokenCacheTimestamp = now;
+        
+        logger.debug('AuthService', 'Token retrieved from storage and cached', { 
+          hasToken: true, 
+          tokenLength: token.length,
+          tokenPrefix: token.substring(0, 10) + '...' 
+        });
+      } else {
+        // Limpar cache se não há token
+        this.tokenCache = null;
+        this.tokenCacheTimestamp = 0;
+        
+        logger.debug('AuthService', 'No token found in storage', { 
+          hasToken: false,
+          storageKey: AuthService.TOKEN_KEY 
+        });
+      }
+      
       return token;
     } catch (error) {
       logger.error('AuthService', 'Failed to retrieve token', error instanceof Error ? error : new Error(String(error)));
+      // Limpar cache em caso de erro
+      this.tokenCache = null;
+      this.tokenCacheTimestamp = 0;
       return null;
     }
   }
 
   /**
-   * Get stored refresh token
+   * Get stored refresh token with memory cache
    */
   static async getRefreshToken(): Promise<string | null> {
     try {
-      const refreshToken = await secureStorage.getItem<string>(this.REFRESH_TOKEN_KEY);
-      // ✅ Task 4: Removido log DEBUG verbose 
+      // 🔧 Verificar cache em memória primeiro
+      const now = Date.now();
+      if (this.refreshTokenCache && (now - this.tokenCacheTimestamp) < this.CACHE_TTL) {
+        return this.refreshTokenCache;
+      }
+
+      const refreshToken = await secureStorage.getItem<string>(AuthService.REFRESH_TOKEN_KEY);
+      
+      if (refreshToken) {
+        // Atualizar cache em memória
+        this.refreshTokenCache = refreshToken;
+      } else {
+        this.refreshTokenCache = null;
+      }
+      
       return refreshToken;
     } catch (error) {
       logger.error('AuthService', 'Failed to retrieve refresh token', error instanceof Error ? error : new Error(String(error)));
+      this.refreshTokenCache = null;
       return null;
     }
   }
@@ -573,7 +628,7 @@ class AuthService {
    */
   static async getCurrentUser(): Promise<User | null> {
     try {
-      const userData = await secureStorage.getItem<string>(this.USER_KEY);
+      const userData = await secureStorage.getItem<string>(AuthService.USER_KEY);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
       logger.error('AuthService', 'Failed to retrieve user data', error instanceof Error ? error : new Error(String(error)));
@@ -582,15 +637,26 @@ class AuthService {
   }
 
   /**
-   * Save authentication data
+   * Save authentication data with memory cache
    */
   private static async saveAuthData(token: string, refreshToken: string | undefined, user: User): Promise<void> {
     try {
-      await secureStorage.setItem(this.TOKEN_KEY, token);
+      // 🔧 Salvar no cache em memória IMEDIATAMENTE para evitar race conditions
+      this.tokenCache = token;
+      this.refreshTokenCache = refreshToken || null;
+      this.tokenCacheTimestamp = Date.now();
+      
+      logger.debug('AuthService', 'Tokens cached in memory immediately', { 
+        hasToken: !!token, 
+        hasRefreshToken: !!refreshToken 
+      });
+
+      // Depois salvar no storage persistente
+      await secureStorage.setItem(AuthService.TOKEN_KEY, token);
       if (refreshToken) {
-        await secureStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+        await secureStorage.setItem(AuthService.REFRESH_TOKEN_KEY, refreshToken);
       }
-      await secureStorage.setItem(this.USER_KEY, JSON.stringify(user));
+      await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(user));
       
       // Save onboarding status - check multiple possible sources
       let onboardingComplete = false;
@@ -601,39 +667,52 @@ class AuthService {
         onboardingComplete = (user as any).profile.onboardingCompleted;
         // Update user object to include onboardingComplete for consistency
         user.onboardingComplete = onboardingComplete;
-        await secureStorage.setItem(this.USER_KEY, JSON.stringify(user));
+        await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(user));
       }
       
       await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, onboardingComplete ? 'true' : 'false');
-      logger.info('AuthService', 'Onboarding status saved', { 
+      logger.info('AuthService', 'Auth data saved successfully', { 
+        hasToken: !!token,
         onboardingComplete,
         source: user.onboardingComplete !== undefined ? 'user.onboardingComplete' : 'user.profile.onboardingCompleted'
       });
     } catch (error) {
       logger.error('AuthService', 'Failed to save auth data', error instanceof Error ? error : new Error(String(error)));
+      // Limpar cache em caso de erro
+      this.tokenCache = null;
+      this.refreshTokenCache = null;
+      this.tokenCacheTimestamp = 0;
+      throw error;
     }
   }
 
   /**
-   * Clear authentication data
+   * Clear authentication data and memory cache
    */
   private static async clearAuthData(): Promise<void> {
     try {
-      const tokenBefore = await secureStorage.getItem(this.TOKEN_KEY);
-      const refreshTokenBefore = await secureStorage.getItem(this.REFRESH_TOKEN_KEY);
-      const userBefore = await secureStorage.getItem(this.USER_KEY);
+      // 🔧 Limpar cache em memória IMEDIATAMENTE
+      this.tokenCache = null;
+      this.refreshTokenCache = null;
+      this.tokenCacheTimestamp = 0;
+      
+      logger.info('AuthService', 'Memory cache cleared immediately');
+
+      const tokenBefore = await secureStorage.getItem(AuthService.TOKEN_KEY);
+      const refreshTokenBefore = await secureStorage.getItem(AuthService.REFRESH_TOKEN_KEY);
+      const userBefore = await secureStorage.getItem(AuthService.USER_KEY);
       const onboardingBefore = await secureStorage.getItem('onboardingDone');
       logger.info('AuthService', 'Clearing auth data', {
-        tokenBefore,
-        refreshTokenBefore,
-        userBefore,
+        tokenBefore: !!tokenBefore,
+        refreshTokenBefore: !!refreshTokenBefore,
+        userBefore: !!userBefore,
         onboardingBefore,
       });
-      await secureStorage.removeItem(this.TOKEN_KEY);
+      await secureStorage.removeItem(AuthService.TOKEN_KEY);
       logger.info('AuthService', 'Removed access token');
-      await secureStorage.removeItem(this.REFRESH_TOKEN_KEY);
+      await secureStorage.removeItem(AuthService.REFRESH_TOKEN_KEY);
       logger.info('AuthService', 'Removed refresh token');
-      await secureStorage.removeItem(this.USER_KEY);
+      await secureStorage.removeItem(AuthService.USER_KEY);
       logger.info('AuthService', 'Removed user data');
       await secureStorage.removeItem('onboardingDone');
       logger.info('AuthService', 'Removed onboarding status');
@@ -641,16 +720,7 @@ class AuthService {
       // Note: We don't clear biometric data on logout - users should keep their biometric setup
       // Biometric data is only cleared when explicitly disabled or on account deletion
       
-      const tokenAfter = await secureStorage.getItem(this.TOKEN_KEY);
-      const refreshTokenAfter = await secureStorage.getItem(this.REFRESH_TOKEN_KEY);
-      const userAfter = await secureStorage.getItem(this.USER_KEY);
-      const onboardingAfter = await secureStorage.getItem('onboardingDone');
-      logger.info('AuthService', 'Auth data after clear', {
-        tokenAfter,
-        refreshTokenAfter,
-        userAfter,
-        onboardingAfter,
-      });
+      logger.info('AuthService', 'Auth data cleared successfully');
     } catch (error) {
       logger.error('AuthService', 'Failed to clear auth data', error instanceof Error ? error : new Error(String(error)));
     }
@@ -661,7 +731,7 @@ class AuthService {
    */
   static async getAuthHeader(): Promise<{ Authorization: string } | {}> {
     try {
-      const token = await this.getToken();
+      const token = await AuthService.getToken();
       logger.debug("AuthService", 'Token retrieved for auth header:', token ? 'Token exists' : 'No token found');
       
       if (!token) {
@@ -724,10 +794,10 @@ class AuthService {
         
         if (isSuccessful) {
           // Update local user data with onboarding completion
-          const currentUser = await this.getCurrentUser();
+          const currentUser = await AuthService.getCurrentUser();
           if (currentUser) {
             const updatedUser = { ...currentUser, onboardingComplete: true };
-            await secureStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+            await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(updatedUser));
           }
           
           // Mark onboarding as done locally using constants
@@ -783,10 +853,10 @@ class AuthService {
               
               if (retryApiResponse.success) {
                 // Update local user data with onboarding completion
-                const currentUser = await this.getCurrentUser();
+                const currentUser = await AuthService.getCurrentUser();
                 if (currentUser) {
                   const updatedUser = { ...currentUser, onboardingComplete: true };
-                  await secureStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+                  await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(updatedUser));
                 }
                 
                 // Mark onboarding as done locally
@@ -907,10 +977,10 @@ class AuthService {
       logger.debug("AuthService", 'Marking onboarding as complete for user:', userId);
       
       // Update user data locally to mark onboarding as complete
-      const currentUser = await this.getCurrentUser();
+      const currentUser = await AuthService.getCurrentUser();
       if (currentUser) {
         const updatedUser = { ...currentUser, onboardingComplete: true };
-        await secureStorage.setItem(this.USER_KEY, JSON.stringify(updatedUser));
+        await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(updatedUser));
         logger.debug("AuthService", 'Updated user data with onboarding complete');
       }
       
@@ -973,7 +1043,7 @@ class AuthService {
       logger.info('AuthService', 'Setting up biometric authentication');
 
       // Check if user is authenticated
-      if (!(await this.isAuthenticated())) {
+      if (!(await AuthService.isAuthenticated())) {
         return {
           success: false,
           error: 'User must be authenticated to setup biometric auth',
@@ -1055,7 +1125,7 @@ class AuthService {
           });
           
           // Save the new token immediately
-          await secureStorage.setItem(this.TOKEN_KEY, token);
+          await secureStorage.setItem(AuthService.TOKEN_KEY, token);
           
           // Fetch user data using direct axios call to bypass interceptors
           try {
@@ -1151,7 +1221,7 @@ class AuthService {
     try {
       logger.info('AuthService', 'Generating biometric backup codes');
 
-      if (!(await this.isAuthenticated())) {
+      if (!(await AuthService.isAuthenticated())) {
         return {
           success: false,
           error: 'Authentication required',
@@ -1189,7 +1259,7 @@ class AuthService {
     try {
       logger.info('AuthService', 'Getting biometric backup codes');
 
-      if (!(await this.isAuthenticated())) {
+      if (!(await AuthService.isAuthenticated())) {
         return {
           success: false,
           error: 'Authentication required',

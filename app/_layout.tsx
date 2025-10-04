@@ -5,7 +5,7 @@ import { ToastProvider } from '@/modules/ui/toast/ToastContext';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, memo, useCallback } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -13,8 +13,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 // Keep splash screen visible while loading resources
 SplashScreen.preventAutoHideAsync();
 
-// Navigation handler component
-function NavigationHandler({ children }: { children: React.ReactNode }) {
+// Navigation handler component with React.memo for performance
+const NavigationHandler = memo(({ children }: { children: React.ReactNode }) => {
   const navigationLogic = useNavigationLogic();
   
   // Don't render children until navigation logic is ready
@@ -28,30 +28,34 @@ function NavigationHandler({ children }: { children: React.ReactNode }) {
   }
   
   return <>{children}</>;
-}
+});
+
+NavigationHandler.displayName = 'NavigationHandler';
 
 export default function RootLayoutHybrid() {
   const [appIsReady, setAppIsReady] = useState(false);
 
-  useEffect(() => {
-    async function prepare() {
-      try {
-        console.log('🚀 Complete Layout: Starting app initialization');
-        
-        // Simple delay to simulate loading
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        console.log('✅ Complete Layout: App initialization completed');
-        setAppIsReady(true);
-      } catch (e) {
-        console.error('❌ Complete Layout: App preparation failed', e);
-        setAppIsReady(true); // Set to true anyway to prevent infinite loading
-      }
+  // Memoize the app preparation function to prevent re-creation
+  const prepareApp = useCallback(async () => {
+    try {
+      console.log('🚀 Complete Layout: Starting app initialization');
+      
+      // Simple delay to simulate loading
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('✅ Complete Layout: App initialization completed');
+      setAppIsReady(true);
+    } catch (e) {
+      console.error('❌ Complete Layout: App preparation failed', e);
+      setAppIsReady(true); // Set to true anyway to prevent infinite loading
     }
-
-    prepare();
   }, []);
 
+  useEffect(() => {
+    prepareApp();
+  }, [prepareApp]);
+
+  // Memoize the splash screen hiding effect
   useEffect(() => {
     if (appIsReady) {
       console.log('🎉 Complete Layout: Hiding splash screen');

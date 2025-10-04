@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, memo } from 'react';
 import AuthService from '../../../services/authService';
 import { useToast } from '../../ui/toast/ToastContext';
 import { CrisisPredictionApiClient } from '../services/CrisisPredictionApiClient';
@@ -16,7 +16,7 @@ interface PredictionContextValue extends PredictionState {
 
 const PredictionContext = createContext<PredictionContextValue | undefined>(undefined);
 
-export const PredictionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(({ children }) => {
   const [state, setState] = useState<PredictionState>({
     current: null,
     history: [],
@@ -165,7 +165,9 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   }, []);
 
   return <PredictionContext.Provider value={{ ...state, refresh, markInterventionCompleted, markOnboardingSeen }}>{children}</PredictionContext.Provider>;
-};
+});
+
+PredictionProvider.displayName = 'PredictionProvider';
 
 export function usePrediction() {
   const ctx = useContext(PredictionContext);

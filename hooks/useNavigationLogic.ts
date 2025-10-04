@@ -1,5 +1,5 @@
 import { usePathname, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { APP_CONSTANTS } from '../constants/appConstants';
 import { useAuth } from '../context/AuthContext';
 import { logger } from '../utils/secureLogger';
@@ -12,8 +12,8 @@ export function useNavigationLogic() {
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const navigationInProgress = useRef(false);
 
-  // Check onboarding status
-  const checkOnboardingStatus = async (): Promise<boolean> => {
+  // Check onboarding status - memoized to prevent recreation
+  const checkOnboardingStatus = useCallback(async (): Promise<boolean> => {
     try {
       let isComplete = false;
       
@@ -31,7 +31,7 @@ export function useNavigationLogic() {
       setOnboardingComplete(false);
       return false;
     }
-  };
+  }, [user?.onboardingComplete]); // Only depend on user's onboarding status
 
   // Simplified navigation logic
   useEffect(() => {

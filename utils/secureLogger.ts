@@ -65,16 +65,33 @@ class Logger {
 
   private formatMessage(level: string, context: string, message: string, data?: any): string {
     const timestamp = new Date().toISOString();
-    const sanitizedData = data ? this.sanitizeData(data) : undefined;
     
-    return JSON.stringify({
-      timestamp,
-      level,
-      context,
-      message,
-      data: sanitizedData,
-      environment: this.isDevelopment ? 'development' : 'production'
-    });
+    try {
+      const sanitizedData = data ? this.sanitizeData(data) : undefined;
+      
+      const logObject = {
+        timestamp,
+        level,
+        context,
+        message,
+        data: sanitizedData,
+        environment: this.isDevelopment ? 'development' : 'production'
+      };
+      
+      const result = JSON.stringify(logObject);
+      
+      // Debug: Check if JSON.stringify returned null or undefined
+      if (!result) {
+        console.warn(`[SecureLogger] JSON.stringify returned falsy value for level=${level}, context=${context}, message=${message}`);
+        return `[LOG] ${level} - ${context}: ${message} [STRINGIFY_FALSY]`;
+      }
+      
+      return result;
+    } catch (error) {
+      // Fallback to simple string format if JSON.stringify fails
+      console.warn(`[SecureLogger] JSON.stringify failed:`, error);
+      return `[LOG] ${level} - ${context}: ${message} [JSON_ERROR]`;
+    }
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -86,30 +103,48 @@ class Logger {
       return;
     }
 
-    const formattedMessage = this.formatMessage(levelName, context, message, data);
-
-    if (this.config.enableConsole) {
-      // Use appropriate console method
-      switch (level) {
-        case LogLevel.DEBUG:
-          console.debug(formattedMessage);
-          break;
-        case LogLevel.INFO:
-          console.info(formattedMessage);
-          break;
-        case LogLevel.WARN:
-          console.warn(formattedMessage);
-          break;
-        case LogLevel.ERROR:
-          console.error(formattedMessage);
-          break;
+    try {
+      const formattedMessage = this.formatMessage(levelName, context, message, data);
+      
+      // Ensure we never pass null or undefined to console methods
+      const safeMessage = formattedMessage || `[LOG] ${levelName} - ${context}: ${message} [FALLBACK]`;
+      
+      // Additional safety check
+      if (typeof safeMessage !== 'string') {
+        console.warn(`[SecureLogger] safeMessage is not a string:`, typeof safeMessage, safeMessage);
+        const emergencyMessage = `[LOG] ${levelName} - ${context}: ${message} [TYPE_ERROR]`;
+        
+        if (this.isDevelopment) {
+          console.error(emergencyMessage);
+        }
+        return;
       }
+
+      if (this.isDevelopment) {
+        switch (level) {
+          case LogLevel.DEBUG:
+            console.debug(safeMessage);
+            break;
+          case LogLevel.INFO:
+            console.info(safeMessage);
+            break;
+          case LogLevel.WARN:
+            console.warn(safeMessage);
+            break;
+          case LogLevel.ERROR:
+            console.error(safeMessage);
+            break;
+        }
+      }
+    } catch (logError) {
+      // Emergency fallback to prevent infinite loops
+      console.error(`[SecureLogger] Critical error in log method:`, logError);
+      console.error(`[LOG] ${levelName} - ${context}: ${message} [CRITICAL_ERROR]`);
     }
 
     // In production, you would send to monitoring service
     if (!this.isDevelopment && level >= LogLevel.ERROR) {
-      // Example: Sentry, Bugsnag, etc.
-      // this.sendToMonitoringService(formattedMessage);
+      // Send to monitoring service here
     }
   }
 
