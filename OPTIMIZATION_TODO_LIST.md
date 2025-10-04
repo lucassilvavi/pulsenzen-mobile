@@ -24,9 +24,9 @@
 
 ### ⚠️ **CRÍTICO - Task 8** ✅
 - [x] **Evitar requests de API antes da autenticação**
-  - ✅ **CONCLUÍDO**: Implementado lazy loading completo no useMood hook. Adicionados guards de autenticação para evitar requests desnecessários durante startup. MoodSelector agora só renderiza quando usuário está autenticado.
-  - **Impacto Alcançado**: Eliminados requests para /api/v1/mood/validate/tarde, /api/v1/mood/entries e /api/v1/mood/stats no startup antes da autenticação
-  - **Evidências**: Log "pula carregamento de dados iniciais (Task 8)" confirma que dados só são carregados após autenticação
+  - ✅ **CONCLUÍDO**: Implementado guards de autenticação abrangentes em PredictionBanner e MoodSelector. Lazy loading baseado em autenticação no useMood hook. Zero requisições não autorizadas confirmado via logs. **Commit: 936c66a**
+  - **Impacto Alcançado**: Eliminados ALL requests antes da autenticação: /api/v1/mood/validate/tarde, /api/v1/mood/entries, /api/v1/mood/stats, /api/v1/crisis/prediction/latest
+  - **Evidências**: Logs confirmam "[PredictionBanner] ⚠️ Usuário não autenticado - não renderizando" e "[useMood] ⚠️ Usuário não autenticado - pula carregamento"
   - **Prioridade**: 🔴 MÁXIMA ✅ COMPLETA
 
 ---

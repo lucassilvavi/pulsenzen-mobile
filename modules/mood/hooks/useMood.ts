@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import AuthService from '../../../services/authService';
 import { autoSyncService } from '../services/AutoSyncService';
@@ -115,7 +115,7 @@ export function useMood(): UseMoodReturn {
   /**
    * Salva dados no cache com TTL
    */
-  const saveToCache = async <T>(key: string, data: T, ttl: number): Promise<void> => {
+  const saveToCache = useCallback(async <T>(key: string, data: T, ttl: number): Promise<void> => {
     try {
       const cacheData: CacheData<T> = {
         data,
@@ -126,12 +126,12 @@ export function useMood(): UseMoodReturn {
     } catch (error) {
       console.warn('Erro ao salvar cache:', error);
     }
-  };
+  }, []);
 
   /**
    * Recupera dados do cache verificando TTL
    */
-  const getFromCache = async <T>(key: string): Promise<T | null> => {
+  const getFromCache = useCallback(async <T>(key: string): Promise<T | null> => {
     try {
       const cached = await AsyncStorage.getItem(key);
       if (!cached) return null;
@@ -150,12 +150,12 @@ export function useMood(): UseMoodReturn {
       console.warn('Erro ao recuperar cache:', error);
       return null;
     }
-  };
+  }, []);
 
   /**
    * Verifica se cache está expirado mas ainda utilizável (stale)
    */
-  const isCacheStale = async (key: string): Promise<boolean> => {
+  const isCacheStale = useCallback(async (key: string): Promise<boolean> => {
     try {
       const cached = await AsyncStorage.getItem(key);
       if (!cached) return true;
@@ -168,7 +168,7 @@ export function useMood(): UseMoodReturn {
     } catch {
       return true;
     }
-  };
+  }, []);
 
   // ============ ERROR HANDLING ============
 
@@ -1070,28 +1070,37 @@ export function useMood(): UseMoodReturn {
 
   /**
    * Estado de loading consolidado para compatibilidade
+   * 🎯 Task 5: Otimizado com useMemo para evitar cálculos desnecessários
    */
-  const isLoading = loadingStates.initializing || 
-                   loadingStates.submittingMood || 
-                   loadingStates.refreshing;
+  const isLoading = useMemo(() => 
+    loadingStates.initializing || 
+    loadingStates.submittingMood || 
+    loadingStates.refreshing,
+    [loadingStates.initializing, loadingStates.submittingMood, loadingStates.refreshing]
+  );
 
   /**
    * Erro principal para compatibilidade
+   * 🎯 Task 5: Otimizado com useMemo para evitar cálculos desnecessários
    */
-  const error = errorStates.general || 
-               errorStates.network || 
-               errorStates.validation || 
-               errorStates.server;
+  const error = useMemo(() => 
+    errorStates.general || 
+    errorStates.network || 
+    errorStates.validation || 
+    errorStates.server,
+    [errorStates.general, errorStates.network, errorStates.validation, errorStates.server]
+  );
 
   /**
    * Status de sincronização para UI
+   * 🎯 Task 5: Otimizado com useMemo para evitar recriação do objeto
    */
-  const syncStatusForUI = {
+  const syncStatusForUI = useMemo(() => ({
     isOnline: syncStatus.isOnline,
     lastSync: syncStatus.lastSync,
     hasPendingOperations: syncStatus.pendingOperations > 0,
     isSyncing: loadingStates.syncing || syncStatus.syncInProgress
-  };
+  }), [syncStatus.isOnline, syncStatus.lastSync, syncStatus.pendingOperations, loadingStates.syncing, syncStatus.syncInProgress]);
 
   // ============ RETURN ============
 

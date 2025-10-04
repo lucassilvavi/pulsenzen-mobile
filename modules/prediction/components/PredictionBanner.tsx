@@ -3,7 +3,7 @@ import { colors, getRiskPalette } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { usePrediction } from '../context/PredictionContext';
 import { track } from '../services/Telemetry';

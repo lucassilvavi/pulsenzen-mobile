@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemoizedContextValue } from '../../../hooks/usePerformanceOptimization';
 import AuthService from '../../../services/authService';
 import { useToast } from '../../ui/toast/ToastContext';
 import { CrisisPredictionApiClient } from '../services/CrisisPredictionApiClient';
@@ -213,7 +214,16 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
     setState(s => { const newState = { ...s, onboardingSeen: true }; AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newState)).catch(()=>{}); return newState; });
   }, []);
 
-  return <PredictionContext.Provider value={{ ...state, refresh, initializeIfNeeded, markInterventionCompleted, markOnboardingSeen }}>{children}</PredictionContext.Provider>;
+  // 🎯 Task 5: Memoizar valor do contexto para otimizar re-renders
+  const contextValue = useMemoizedContextValue({ 
+    ...state, 
+    refresh, 
+    initializeIfNeeded, 
+    markInterventionCompleted, 
+    markOnboardingSeen 
+  });
+
+  return <PredictionContext.Provider value={contextValue}>{children}</PredictionContext.Provider>;
 });
 
 PredictionProvider.displayName = 'PredictionProvider';
