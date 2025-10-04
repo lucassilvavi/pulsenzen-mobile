@@ -4,9 +4,9 @@
 
 ## 📊 **Status Geral**
 - **Total de Tarefas**: 16
-- **Concluídas**: 7 ✅
+- **Concluídas**: 8 ✅
 - **Em Progresso**: 1 🎯
-- **Pendentes**: 8
+- **Pendentes**: 7
 
 ---
 
@@ -43,12 +43,12 @@
   - **Evidências**: Logs mostram "pula inicialização do AutoSync (Task 6)" antes do login e "inicializando AutoSync (Task 6)" após login
   - **Prioridade**: 🟡 ALTA ✅ COMPLETA
 
-### 🎯 **Task 7**
-- [ ] **Otimizar PredictionContext para carregamento sob demanda**
-  - **Problema**: Fetch de predições no startup
-  - **Impacto**: Requests desnecessários, 404 esperados
-  - **Ação**: Lazy loading, só carregar quando usuário acessar tela relevante
-  - **Prioridade**: 🟡 ALTA
+### 🎯 **Task 7** ✅
+- [x] **Otimizar PredictionContext para carregamento sob demanda**
+  - ✅ **CONCLUÍDO**: Implementado lazy loading completo no PredictionContext. Removido auto-fetch do useEffect e criada função initializeIfNeeded() para carregar dados apenas quando necessário. PredictionBanner agora usa lazy loading, eliminando requests desnecessários durante startup.
+  - **Impacto Alcançado**: PredictionContext não faz mais requests para /api/v1/crisis/prediction/latest no startup, só carrega quando usuário vê o banner na home
+  - **Evidências**: useEffect modificado para carregar apenas cache, initializeIfNeeded() implementada com guards de autenticação e TTL
+  - **Prioridade**: 🟡 ALTA ✅ COMPLETA
 
 ---
 

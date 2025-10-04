@@ -2,7 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { colors, getRiskPalette } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { usePrediction } from '../context/PredictionContext';
 import { track } from '../services/Telemetry';
@@ -14,8 +14,19 @@ function levelColors(level: string) {
 }
 
 export const PredictionBanner: React.FC = () => {
-  const { current, loading, insufficientData } = usePrediction();
+  const { current, loading, insufficientData, initializeIfNeeded } = usePrediction();
   const [modalVisible, setModalVisible] = React.useState(false);
+  const [hasInitialized, setHasInitialized] = React.useState(false);
+  
+  // 🎯 Task 7: Lazy loading - só inicializa uma vez quando o banner é montado
+  useEffect(() => {
+    if (!hasInitialized) {
+      console.log('[PredictionBanner] 🚀 Banner renderizado, iniciando lazy loading (Task 7)');
+      initializeIfNeeded();
+      track('prediction_banner_view');
+      setHasInitialized(true);
+    }
+  }, []); // Array vazio para executar apenas na montagem
   
   // Se há dados insuficientes, usar cor neutra
   const palette = useMemo(() => {
@@ -29,8 +40,6 @@ export const PredictionBanner: React.FC = () => {
   }, [current, insufficientData]);
   
   const gradientColors = [palette.bg[0], palette.bg[1]] as const;
-
-  React.useEffect(()=>{ track('prediction_banner_view'); },[]);
 
   return (
     <>

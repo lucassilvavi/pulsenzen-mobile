@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AuthService from '../../../services/authService';
 import { useToast } from '../../ui/toast/ToastContext';
 import { CrisisPredictionApiClient } from '../services/CrisisPredictionApiClient';
@@ -12,6 +12,7 @@ interface PredictionContextValue extends PredictionState {
   refresh: () => Promise<void>;
   markInterventionCompleted: (id: string) => void;
   markOnboardingSeen: () => void;
+  initializeIfNeeded: () => Promise<void>; // 🎯 Task 7: Nova função para lazy loading
 }
 
 const PredictionContext = createContext<PredictionContextValue | undefined>(undefined);
@@ -27,6 +28,7 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
     onboardingSeen: false,
     insufficientData: undefined,
   });
+  const isInitializingRef = useRef(false); // 🎯 Task 7: Flag para evitar múltiplas inicializações
 
   const STORAGE_KEY = 'prediction_state_v2';
   const TTL_MS = 3 * 60 * 60 * 1000; // 3h
@@ -127,28 +129,75 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
           return;
         }
 
+        // 🎯 Task 7: Só carrega cache, NÃO faz fetch automático
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
-          console.log('[PredictionContext] 💾 Dados em cache encontrados');
+          console.log('[PredictionContext] 💾 Dados em cache encontrados, carregando sem fetch automático (Task 7)');
           const persisted: PredictionState = JSON.parse(raw);
-          const isFresh = persisted.lastUpdated && (Date.now() - persisted.lastUpdated) < TTL_MS;
           setState({ ...persisted, onboardingSeen: (persisted as any).onboardingSeen || false });
-          if (!isFresh) {
-            console.log('[PredictionContext] ⏰ Cache expirado, gerando nova predição');
-            generate();
-          } else {
-            console.log('[PredictionContext] ✅ Cache válido, usando dados existentes');
-          }
         } else {
-          console.log('[PredictionContext] 🆕 Nenhum cache encontrado, gerando primeira predição');
-          generate();
+          console.log('[PredictionContext] 🆕 Nenhum cache encontrado, aguardando lazy loading (Task 7)');
         }
       } catch {
-        console.log('[PredictionContext] ❌ Erro ao carregar cache, gerando nova predição');
-        generate();
+        console.log('[PredictionContext] ❌ Erro ao carregar cache, aguardando lazy loading (Task 7)');
       }
     })();
   }, []); // Array vazio para executar apenas uma vez
+
+  // 🎯 Task 7: Nova função para inicialização sob demanda
+  const initializeIfNeeded = useCallback(async () => {
+    // Guard: Se já está inicializando, evita duplicação
+    if (isInitializingRef.current) {
+      console.log('[PredictionContext] 🚫 Já está inicializando, ignorando chamada duplicada (Task 7)');
+      return;
+    }
+
+    // Se já tem dados válidos, não precisa fazer fetch
+    if (state.current && state.lastUpdated && (Date.now() - state.lastUpdated) < TTL_MS) {
+      console.log('[PredictionContext] ✅ Dados já válidos, não precisa inicializar (Task 7)');
+      return;
+    }
+
+    // Se já está carregando, não duplicar
+    if (state.loading) {
+      console.log('[PredictionContext] ⏳ Já está carregando, aguardando... (Task 7)');
+      return;
+    }
+
+    // Marca como inicializando
+    isInitializingRef.current = true;
+    console.log('[PredictionContext] 🚀 Inicializando sob demanda (Task 7)');
+    
+    try {
+      // Verifica autenticação
+      const isAuth = await AuthService.isAuthenticated();
+      if (!isAuth) {
+        console.log('[PredictionContext] ⚠️ Não autenticado para lazy loading (Task 7)');
+        return;
+      }
+
+      // Verifica cache novamente (pode ter mudado)
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const persisted: PredictionState = JSON.parse(raw);
+        const isFresh = persisted.lastUpdated && (Date.now() - persisted.lastUpdated) < TTL_MS;
+        if (isFresh) {
+          console.log('[PredictionContext] ✅ Cache ainda válido durante lazy loading (Task 7)');
+          setState({ ...persisted, onboardingSeen: (persisted as any).onboardingSeen || false });
+          return;
+        }
+      }
+
+      // Faz fetch apenas se necessário
+      console.log('[PredictionContext] 📡 Fazendo fetch durante lazy loading (Task 7)');
+      await generate();
+    } catch (error) {
+      console.error('[PredictionContext] ❌ Erro durante lazy loading (Task 7):', error);
+    } finally {
+      // Sempre limpa o flag no final
+      isInitializingRef.current = false;
+    }
+  }, [state.current, state.lastUpdated, state.loading, generate, STORAGE_KEY, TTL_MS]);
 
   const refresh = useCallback(async () => { if(!state.loading) await generate(); }, [state.loading, generate]);
   const markInterventionCompleted = useCallback((id: string) => {
@@ -164,7 +213,7 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
     setState(s => { const newState = { ...s, onboardingSeen: true }; AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newState)).catch(()=>{}); return newState; });
   }, []);
 
-  return <PredictionContext.Provider value={{ ...state, refresh, markInterventionCompleted, markOnboardingSeen }}>{children}</PredictionContext.Provider>;
+  return <PredictionContext.Provider value={{ ...state, refresh, initializeIfNeeded, markInterventionCompleted, markOnboardingSeen }}>{children}</PredictionContext.Provider>;
 });
 
 PredictionProvider.displayName = 'PredictionProvider';
