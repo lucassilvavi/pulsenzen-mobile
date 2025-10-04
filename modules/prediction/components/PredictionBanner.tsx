@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/ThemedText';
 import { colors, getRiskPalette } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useEffect } from 'react';
@@ -14,9 +15,18 @@ function levelColors(level: string) {
 }
 
 export const PredictionBanner: React.FC = () => {
+  // 🎯 Task 8: Guard de autenticação - só renderiza se usuário estiver autenticado
+  const { isAuthenticated } = useAuth();
+  
   const { current, loading, insufficientData, initializeIfNeeded } = usePrediction();
   const [modalVisible, setModalVisible] = React.useState(false);
   const [hasInitialized, setHasInitialized] = React.useState(false);
+  
+  // 🔒 GUARD: Não renderiza se usuário não estiver autenticado
+  if (!isAuthenticated) {
+    console.log('[PredictionBanner] ⚠️ Usuário não autenticado - não renderizando PredictionBanner (Task 8)');
+    return null;
+  }
   
   // 🎯 Task 7: Lazy loading - só inicializa uma vez quando o banner é montado
   useEffect(() => {

@@ -22,9 +22,12 @@
   - **Impacto Alcançado**: Eliminado erro "Failed to parse Firebase config" do startup
   - **Prioridade**: 🔴 MÁXIMA ✅ COMPLETA
 
-### ⚠️ **CRÍTICO - Task 8**
-- [x] 🚀 Evitar requests de API antes da autenticação
-  - 🚀 EM ANDAMENTO: Implementados guards de autenticação em MoodService.hasAnsweredCurrentPeriod() e PredictionContext.generate(). Agora verificam AuthService.isAuthenticated() antes de fazer requests para /api/v1/mood/validate/manha e /api/v1/crisis/prediction/latest.
+### ⚠️ **CRÍTICO - Task 8** ✅
+- [x] **Evitar requests de API antes da autenticação**
+  - ✅ **CONCLUÍDO**: Implementado lazy loading completo no useMood hook. Adicionados guards de autenticação para evitar requests desnecessários durante startup. MoodSelector agora só renderiza quando usuário está autenticado.
+  - **Impacto Alcançado**: Eliminados requests para /api/v1/mood/validate/tarde, /api/v1/mood/entries e /api/v1/mood/stats no startup antes da autenticação
+  - **Evidências**: Log "pula carregamento de dados iniciais (Task 8)" confirma que dados só são carregados após autenticação
+  - **Prioridade**: 🔴 MÁXIMA ✅ COMPLETA
 
 ---
 

@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { MoodLevel, useMood } from '@/modules/mood';
 import { CelebrationEffect, WellnessTip } from '@/modules/mood/components';
 import { fontSize, spacing } from '@/utils/responsive';
@@ -55,12 +56,21 @@ const moods: Mood[] = [
 ];
 
 export default function MoodSelector() {
+  // 🎯 Task 8: Guard de autenticação - só renderiza se usuário estiver autenticado
+  const { isAuthenticated } = useAuth();
+  
   const { 
     currentPeriod, 
     hasAnsweredCurrentPeriod, 
     isLoading, 
     submitMood 
   } = useMood();
+  
+  // 🔒 GUARD: Não renderiza se usuário não estiver autenticado
+  if (!isAuthenticated) {
+    console.log('[MoodSelector] ⚠️ Usuário não autenticado - não renderizando MoodSelector (Task 8)');
+    return null;
+  }
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedMood, setSelectedMood] = useState<MoodLevel | null>(null);

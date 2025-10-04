@@ -973,12 +973,18 @@ export function useMood(): UseMoodReturn {
         // Inicializa auto sync (só se autenticado - verificação interna)
         await initializeAutoSync();
         
-        // Carrega dados iniciais (cache-first)
-        await Promise.all([
-          loadEntries(true),
-          loadStats(30, true),
-          checkCurrentPeriodResponse()
-        ]);
+        // 🎯 Task 8: Lazy loading - só carrega dados se usuário estiver autenticado
+        if (isAuthenticated) {
+          console.log('[useMood] ✅ Usuário autenticado - carregando dados iniciais (Task 8)');
+          // Carrega dados iniciais (cache-first)
+          await Promise.all([
+            loadEntries(true),
+            loadStats(30, true),
+            checkCurrentPeriodResponse()
+          ]);
+        } else {
+          console.log('[useMood] ⚠️ Usuário não autenticado - pula carregamento de dados iniciais (Task 8)');
+        }
         
       } catch (err) {
         console.error('[useMood] ❌ Erro na inicialização:', err);
