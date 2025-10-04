@@ -1227,4 +1227,12 @@ class AuthService {
   }
 }
 
+// Configure network manager callbacks to break circular dependency
+networkManager.setAuthCallbacks({
+  getToken: AuthService.getToken,
+  getAuthHeader: AuthService.getAuthHeader,
+  refreshAuthToken: AuthService.refreshAuthToken,
+  logout: AuthService.logout,
+});
+
 export default AuthService;

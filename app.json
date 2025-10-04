@@ -7,12 +7,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "pulsezenapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.lucassilvavi.pulsezenapp",
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
           "audio"
         ],
         "NSAppleMusicUsageDescription": "Este app reproduz música de relaxamento para você.",
@@ -27,6 +28,10 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.USE_BIOMETRIC",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.USE_FINGERPRINT",
@@ -66,7 +71,8 @@
     },
     "updates": {
       "enabled": false,
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/bc440f0b-15bf-4a15-b1fc-55a31c1d68a9"
     },
     "extra": {
       "router": {},
@@ -74,6 +80,9 @@
         "projectId": "bc440f0b-15bf-4a15-b1fc-55a31c1d68a9"
       }
     },
-    "owner": "lucassilvavi"
+    "owner": "lucassilvavi",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

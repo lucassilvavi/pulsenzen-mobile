@@ -2,15 +2,23 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import axiosRetry from 'axios-retry';
 import { router } from 'expo-router';
 import { APP_CONSTANTS, ERROR_CODES } from '../constants/appConstants';
-import AuthService from '../services/authService';
 import { NetworkRequestConfig, NetworkResponse } from '../types/api';
 import { cacheManager } from './cacheManager';
 import { performanceMonitor } from './performanceMonitor';
 import { logger } from './secureLogger';
 
+// Auth callbacks interface to break circular dependency
+interface AuthCallbacks {
+  getToken: () => Promise<string | null>;
+  getAuthHeader: () => Promise<Record<string, string>>;
+  refreshAuthToken: () => Promise<{ success: boolean }>;
+  logout: () => Promise<void>;
+}
+
 class SimpleNetworkManager {
   private client: AxiosInstance;
   private pendingRequests: Map<string, Promise<any>> = new Map();
+  private authCallbacks: AuthCallbacks | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -37,6 +45,16 @@ class SimpleNetworkManager {
       },
     });
 
+    this.setupInterceptors();
+  }
+
+  // Method to configure auth callbacks - breaks circular dependency
+  setAuthCallbacks(callbacks: AuthCallbacks): void {
+    this.authCallbacks = callbacks;
+  }
+
+  private setupInterceptors(): void {
+
     // Request interceptor
     this.client.interceptors.request.use(
       async (config) => {
@@ -44,17 +62,19 @@ class SimpleNetworkManager {
         (config as any).startTime = startTime;
         // Adiciona o token globalmente
         try {
-          const token = await AuthService.getToken();
-          if (token) {
-            if (config.headers && typeof config.headers.set === 'function') {
-              // AxiosHeaders instance
-              config.headers.set('Authorization', `Bearer ${token}`);
-            } else if (!config.headers) {
-              // undefined
-              config.headers = { Authorization: `Bearer ${token}` } as any;
-            } else {
-              // plain object
-              (config.headers as any)['Authorization'] = `Bearer ${token}`;
+          if (this.authCallbacks) {
+            const token = await this.authCallbacks.getToken();
+            if (token) {
+              if (config.headers && typeof config.headers.set === 'function') {
+                // AxiosHeaders instance
+                config.headers.set('Authorization', `Bearer ${token}`);
+              } else if (!config.headers) {
+                // undefined
+                config.headers = { Authorization: `Bearer ${token}` } as any;
+              } else {
+                // plain object
+                (config.headers as any)['Authorization'] = `Bearer ${token}`;
+              }
             }
           }
         } catch (e) {
@@ -119,13 +139,13 @@ class SimpleNetworkManager {
             responseData: errorData,
           });
         }        // --- REFRESH TOKEN LOGIC START ---
-        if (status === 401 && !error.config?._retry) {
+        if (status === 401 && !error.config?._retry && this.authCallbacks) {
           error.config._retry = true;
           try {
-            const refreshResult = await AuthService.refreshAuthToken();
+            const refreshResult = await this.authCallbacks.refreshAuthToken();
             if (refreshResult.success) {
               // Pega novo token e atualiza header Authorization
-              const newAuthHeader = await AuthService.getAuthHeader();
+              const newAuthHeader = await this.authCallbacks.getAuthHeader();
               error.config.headers = {
                 ...error.config.headers,
                 ...newAuthHeader,
@@ -134,14 +154,14 @@ class SimpleNetworkManager {
               return this.client.request(error.config);
             } else {
               logger.info('NetworkManager', 'Refresh token failed, logging out and redirecting to login');
-              await AuthService.logout();
+              await this.authCallbacks.logout();
               logger.info('NetworkManager', 'Logout completed, redirecting to /onboarding/auth');
               router.replace('/onboarding/auth');
               return Promise.reject(error);
             }
           } catch (refreshError) {
             logger.info('NetworkManager', 'Exception during refresh, logging out and redirecting to login', refreshError);
-            await AuthService.logout();
+            await this.authCallbacks.logout();
             logger.info('NetworkManager', 'Logout completed, redirecting to /onboarding/auth');
             router.replace('/onboarding/auth');
             return Promise.reject(error);
