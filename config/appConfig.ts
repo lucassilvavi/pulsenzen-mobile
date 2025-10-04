@@ -98,6 +98,7 @@ class ConfigManager {
       if (!configString || 
           configString.trim() === '' || 
           configString === 'your-firebase-config' ||
+          configString === 'disabled' ||
           configString.startsWith('your-')) {
         console.log('Firebase config not configured or using placeholder value, skipping');
         return null;

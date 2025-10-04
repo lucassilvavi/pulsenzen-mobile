@@ -1,5 +1,5 @@
 import { usePathname, useRouter } from 'expo-router';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { APP_CONSTANTS } from '../constants/appConstants';
 import { useAuth } from '../context/AuthContext';
 import { logger } from '../utils/secureLogger';
