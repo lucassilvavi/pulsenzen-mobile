@@ -29,6 +29,12 @@ class SuggestionApiService {
     options: RequestInit = {}
   ): Promise<T> {
     try {
+      // ✅ GUARD: Verificar autenticação completa antes da API
+      const isAuthenticated = await AuthService.isAuthenticated()
+      if (!isAuthenticated) {
+        throw new Error('User not authenticated or token expired')
+      }
+
       const token = await AuthService.getToken()
       
       if (!token) {
@@ -51,6 +57,14 @@ class SuggestionApiService {
 
       return await response.json()
     } catch (error) {
+      // ✅ Não logar erro se for questão de autenticação
+      if (error instanceof Error && 
+          (error.message.includes('not authenticated') || 
+           error.message.includes('token expired'))) {
+        // Propagar o erro silenciosamente para tratamento específico
+        throw error
+      }
+      
       logger.error('SuggestionApiService', `Request failed for ${endpoint}`, error instanceof Error ? error : new Error(String(error)))
       throw error
     }
@@ -75,6 +89,14 @@ class SuggestionApiService {
         date: response.data.date
       }
     } catch (error) {
+      // ✅ Não logar erro se for questão de autenticação
+      if (error instanceof Error && 
+          (error.message.includes('not authenticated') || 
+           error.message.includes('token expired'))) {
+        // Silenciosamente usar fallback quando não autenticado
+        return this.getFallbackSuggestions()
+      }
+      
       logger.error('SuggestionApiService', 'Failed to fetch daily suggestions', error instanceof Error ? error : new Error(String(error)))
       
       // Return fallback mock data for development
