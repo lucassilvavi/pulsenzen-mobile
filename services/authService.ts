@@ -412,16 +412,16 @@ class AuthService {
    */
   static async isAuthenticated(): Promise<boolean> {
     try {
-      console.log('AuthService.isAuthenticated: início');
+      // ✅ Task 4: Removido log verbose 'início' que aparecia 6+ vezes no startup
       const token = await this.getToken();
       const user = await this.getCurrentUser();
       if (!token || !user) {
-        console.log('AuthService.isAuthenticated: missing credentials', { token, user });
+        // ✅ Task 4: Mantido apenas log DEBUG para debug específico (não aparece no startup normal)
         logger.debug('AuthService', 'Authentication check failed: missing credentials');
         return false;
       }
       if (token.split('.').length !== 3) {
-        console.log('AuthService.isAuthenticated: invalid token format', token);
+        // ✅ Task 4: Mantido log de erro crítico
         logger.warn('AuthService', 'Invalid token format detected');
         return false;
       }
@@ -430,22 +430,22 @@ class AuthService {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const currentTime = Math.floor(Date.now() / 1000);
-        console.log('AuthService.isAuthenticated: token validation', { exp: payload.exp, now: currentTime, expired: payload.exp < currentTime });
+        // ✅ Task 4: Removido log verbose de token validation que aparecia 6+ vezes
         if (payload.exp && payload.exp < currentTime) {
-          console.log('AuthService.isAuthenticated: token expired', { exp: payload.exp, now: currentTime });
+          // ✅ Task 4: Simplificado log de token expirado - apenas DEBUG
           logger.debug('AuthService', 'Token expired locally');
           return false;
         }
       } catch (jwtError) {
-        console.log('AuthService.isAuthenticated: invalid JWT format', jwtError);
+        // ✅ Task 4: Mantido log de erro crítico
         logger.warn('AuthService', 'Invalid JWT format');
         return false;
       }
 
-      console.log('AuthService.isAuthenticated: sucesso, token e user válidos');
+      // ✅ Task 4: Removido log de sucesso verbose - não é necessário logar sucesso toda vez
       return true;
     } catch (error) {
-      console.error('AuthService.isAuthenticated: erro', error);
+      // ✅ Task 4: Mantido log de erro crítico
       logger.error('AuthService', 'Check auth error', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
@@ -545,7 +545,8 @@ class AuthService {
   static async getToken(): Promise<string | null> {
     try {
       const token = await secureStorage.getItem<string>(this.TOKEN_KEY);
-      logger.debug("AuthService", 'Token retrieval attempt:', token ? `Token found (length: ${token.length})` : 'No token found');
+      // ✅ Task 4: Removido log DEBUG verbose que aparecia 6+ vezes no startup
+      // Mantido apenas em caso de erro crítico
       return token;
     } catch (error) {
       logger.error('AuthService', 'Failed to retrieve token', error instanceof Error ? error : new Error(String(error)));
@@ -559,7 +560,7 @@ class AuthService {
   static async getRefreshToken(): Promise<string | null> {
     try {
       const refreshToken = await secureStorage.getItem<string>(this.REFRESH_TOKEN_KEY);
-      logger.debug("AuthService", 'Refresh token retrieval attempt:', refreshToken ? `Refresh token found (length: ${refreshToken.length})` : 'No refresh token found');
+      // ✅ Task 4: Removido log DEBUG verbose 
       return refreshToken;
     } catch (error) {
       logger.error('AuthService', 'Failed to retrieve refresh token', error instanceof Error ? error : new Error(String(error)));

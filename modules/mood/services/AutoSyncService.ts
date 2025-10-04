@@ -114,7 +114,10 @@ class AutoSyncService {
       const wasOnline = this.isOnline;
       this.isOnline = state.isConnected ?? false;
 
-      console.log(`[AutoSyncService] Mudança de rede detectada: ${wasOnline ? 'online' : 'offline'} -> ${this.isOnline ? 'online' : 'offline'}`);
+      // ✅ Task 4: Reduzido log verbose - só loga quando há mudança real de estado
+      if (wasOnline !== this.isOnline) {
+        console.log(`[AutoSyncService] Mudança de rede detectada: ${wasOnline ? 'online' : 'offline'} -> ${this.isOnline ? 'online' : 'offline'}`);
+      }
 
       if (!wasOnline && this.isOnline) {
         // Acabou de voltar online - inicia sync automático
@@ -222,25 +225,26 @@ class AutoSyncService {
    */
   async performSync(): Promise<{ success: number; failed: number; errors: string[] }> {
     if (this.isSyncing) {
-      console.log('[AutoSyncService] Sync já em andamento, pulando...');
+      // ✅ Task 4: Removido log verbose - só loga em caso de debug específico
       return { success: 0, failed: 0, errors: [] };
     }
 
     if (!this.isOnline) {
-      console.log('[AutoSyncService] Dispositivo offline, pulando sync...');
+      // ✅ Task 4: Removido log verbose - estado offline é comum
       return { success: 0, failed: 0, errors: [] };
     }
 
     this.isSyncing = true;
-    console.log('[AutoSyncService] Iniciando sincronização...');
+    // ✅ Task 4: Removido log de "Iniciando sincronização" - muito verbose
 
     try {
       const queue = await this.getSyncQueue();
       if (queue.length === 0) {
-        console.log('[AutoSyncService] Fila de sync vazia');
+        // ✅ Task 4: Removido log "Fila de sync vazia" - muito verbose no startup
         return { success: 0, failed: 0, errors: [] };
       }
 
+      // ✅ Task 4: Só loga quando há itens reais para sincronizar
       console.log(`[AutoSyncService] Sincronizando ${queue.length} itens...`);
 
       let successCount = 0;
