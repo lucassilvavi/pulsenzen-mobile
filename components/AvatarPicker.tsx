@@ -12,15 +12,27 @@ interface AvatarPickerProps {
   onImageSelected: (imageUri: string | null) => void;
   size?: number;
   showEditButton?: boolean;
+  userGender?: 'MENINO' | 'MENINA' | 'MASCULINO' | 'FEMININO'; // Support for different gender formats
 }
 
 export function AvatarPicker({ 
   currentImage, 
   onImageSelected, 
   size = 100, 
-  showEditButton = true 
+  showEditButton = true,
+  userGender 
 }: AvatarPickerProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  const getDefaultAvatarImage = () => {
+    if (userGender === 'MENINO' || userGender === 'MASCULINO') {
+      return require('@/assets/images/man.png');
+    } else if (userGender === 'MENINA' || userGender === 'FEMININO') {
+      return require('@/assets/images/woman.png');
+    }
+    // Fallback para ícone genérico se não houver gênero definido
+    return null;
+  };
 
   const requestPermissions = async () => {
     const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -111,11 +123,32 @@ export function AvatarPicker({
         onPress={showImageOptions}
         disabled={isLoading}
       >
-        <Image
-          source={currentImage || require('@/assets/images/profile-placeholder.png')}
-          style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}
-          contentFit="cover"
-        />
+        {currentImage ? (
+          <Image
+            source={{ uri: currentImage }}
+            style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}
+            contentFit="cover"
+          />
+        ) : (
+          (() => {
+            const defaultImage = getDefaultAvatarImage();
+            return defaultImage ? (
+              <Image
+                source={defaultImage}
+                style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.defaultAvatarContainer, { width: size, height: size, borderRadius: size / 2 }]}>
+                <Ionicons 
+                  name="person" 
+                  size={size * 0.4} 
+                  color={colors.primary.main} 
+                />
+              </View>
+            );
+          })()
+        )}
         
         {isLoading && (
           <View style={styles.loadingOverlay}>
@@ -152,6 +185,13 @@ const styles = StyleSheet.create({
   avatar: {
     width: '100%',
     height: '100%',
+  },
+  defaultAvatarContainer: {
+    backgroundColor: colors.neutral.light,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary.light,
   },
   editButton: {
     position: 'absolute',

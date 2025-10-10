@@ -74,8 +74,13 @@ export const STORAGE_KEYS = {
   USER_STATS: 'user_stats',
   USER_ACHIEVEMENTS: 'user_achievements', 
   USER_SETTINGS: 'user_settings',
-  USER_AVATAR: 'user_avatar',
+  USER_AVATAR: 'user_avatar', // Will be used with user ID: user_avatar_{userId}
 } as const;
+
+// Helper function to create user-specific storage keys
+export const getUserSpecificKey = (baseKey: string, userId: string) => {
+  return `${baseKey}_${userId}`;
+};
 
 export const PROFILE_COLORS = {
   primary: '#2196F3',

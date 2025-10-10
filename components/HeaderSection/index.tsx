@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
+import { useUserData } from '@/hooks/useUserData';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -13,9 +14,20 @@ interface HeaderSectionProps {
 
 export default function HeaderSection({ userName }: HeaderSectionProps) {
   const { userAvatar } = useUserAvatar();
+  const { rawProfile } = useUserData();
 
   const handleProfilePress = () => {
     router.push('/profile');
+  };
+
+  const getDefaultAvatarImage = () => {
+    const userGender = (rawProfile as any)?.sex;
+    if (userGender === 'MENINO' || userGender === 'MASCULINO') {
+      return require('@/assets/images/man.png');
+    } else if (userGender === 'MENINA' || userGender === 'FEMININO') {
+      return require('@/assets/images/woman.png');
+    }
+    return null;
   };
 
   const renderProfileImage = () => {
@@ -23,6 +35,18 @@ export default function HeaderSection({ userName }: HeaderSectionProps) {
       return (
         <Image
           source={{ uri: userAvatar }}
+          style={styles.profileImage}
+          contentFit="cover"
+        />
+      );
+    }
+
+    // Verificar se há imagem padrão baseada no gênero
+    const defaultImage = getDefaultAvatarImage();
+    if (defaultImage) {
+      return (
+        <Image
+          source={defaultImage}
           style={styles.profileImage}
           contentFit="cover"
         />

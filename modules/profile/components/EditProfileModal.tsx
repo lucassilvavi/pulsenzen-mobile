@@ -39,7 +39,7 @@ export function EditProfileModal({
   currentProfile,
   onProfileUpdated,
 }: EditProfileModalProps) {
-  const { updateProfile: updateAuthProfile } = useAuth();
+  const { updateProfile: updateAuthProfile, user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -82,7 +82,7 @@ export function EditProfileModal({
 
   const loadUserAvatar = async () => {
     try {
-      const savedAvatar = await ProfileService.getUserAvatar();
+      const savedAvatar = await ProfileService.getUserAvatar(user?.id);
       setAvatarUri(savedAvatar);
     } catch (error) {
       console.error('Erro ao carregar avatar:', error);
@@ -164,8 +164,8 @@ export function EditProfileModal({
 
     setIsLoading(true);
     try {
-      // Save avatar separately
-      await ProfileService.saveUserAvatar(avatarUri);
+      // Save avatar separately (user-specific)
+      await ProfileService.saveUserAvatar(avatarUri, user?.id);
 
       // Prepare profile data for API
       const profileData = {

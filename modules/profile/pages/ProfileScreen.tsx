@@ -176,6 +176,7 @@ export default function ProfileScreen() {
             onImageSelected={handleAvatarChange}
             size={100}
             showEditButton={true}
+            userGender={(rawProfile as any)?.sex}
           />
           <ThemedText style={styles.userName}>
             {userProfile?.name || displayName}

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ACHIEVEMENTS, DEFAULT_SETTINGS, STORAGE_KEYS } from '../constants';
+import { ACHIEVEMENTS, DEFAULT_SETTINGS, STORAGE_KEYS, getUserSpecificKey } from '../constants';
 import { Achievement, UserProfile, UserSettings, UserStats } from '../types';
 
 export class ProfileService {
@@ -43,9 +43,13 @@ export class ProfileService {
   }
 
   // Avatar Methods
-  static async getUserAvatar(): Promise<string | null> {
+  static async getUserAvatar(userId?: string): Promise<string | null> {
     try {
-      const avatarUri = await AsyncStorage.getItem(STORAGE_KEYS.USER_AVATAR);
+      const storageKey = userId 
+        ? getUserSpecificKey(STORAGE_KEYS.USER_AVATAR, userId)
+        : STORAGE_KEYS.USER_AVATAR; // Fallback for backward compatibility
+      
+      const avatarUri = await AsyncStorage.getItem(storageKey);
       return avatarUri;
     } catch (error) {
       console.error('Error getting user avatar:', error);
@@ -53,17 +57,32 @@ export class ProfileService {
     }
   }
 
-  static async saveUserAvatar(avatarUri: string | null): Promise<boolean> {
+  static async saveUserAvatar(avatarUri: string | null, userId?: string): Promise<boolean> {
     try {
+      const storageKey = userId 
+        ? getUserSpecificKey(STORAGE_KEYS.USER_AVATAR, userId)
+        : STORAGE_KEYS.USER_AVATAR; // Fallback for backward compatibility
+      
       if (avatarUri) {
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_AVATAR, avatarUri);
+        await AsyncStorage.setItem(storageKey, avatarUri);
       } else {
-        await AsyncStorage.removeItem(STORAGE_KEYS.USER_AVATAR);
+        await AsyncStorage.removeItem(storageKey);
       }
       return true;
     } catch (error) {
       console.error('Error saving user avatar:', error);
       return false;
+    }
+  }
+
+  // Helper method to get all stored avatar keys (useful for debugging)
+  static async getAllAvatarKeys(): Promise<string[]> {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      return allKeys.filter(key => key.includes(STORAGE_KEYS.USER_AVATAR));
+    } catch (error) {
+      console.error('Error getting avatar keys:', error);
+      return [];
     }
   }
 
@@ -255,6 +274,7 @@ export class ProfileService {
   // Utility Methods
   static async clearUserData(): Promise<boolean> {
     try {
+      // Remove dados gerais, mas mantém avatares dos usuários para reutilização
       await AsyncStorage.multiRemove([
         STORAGE_KEYS.USER_PROFILE,
         STORAGE_KEYS.USER_STATS,
