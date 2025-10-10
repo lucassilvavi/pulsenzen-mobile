@@ -9,6 +9,8 @@ export function useUserData() {
   const { user, userProfile, isAuthenticated, isLoading } = useAuth();
 
   const userData = useMemo(() => {
+    console.log('🔧 useUserData - Dados do AuthContext:', { user, userProfile, isAuthenticated });
+    
     // Nome do usuário com fallbacks
     const firstName = user?.profile?.firstName;
     const lastName = user?.profile?.lastName;
@@ -30,7 +32,7 @@ export function useUserData() {
     // Avatar (placeholder por enquanto)
     const avatarUrl = null; // TODO: Implementar avatar quando necessário
 
-    return {
+    const result = {
       displayName,
       firstName,
       lastName,
@@ -41,8 +43,10 @@ export function useUserData() {
       isLoading,
       // Dados brutos para casos específicos
       rawUser: user,
-      rawProfile: userProfile,
+      rawProfile: user?.profile || userProfile, // Use user.profile first, fallback to userProfile
     };
+    
+    return result;
   }, [user, userProfile, isAuthenticated, isLoading]);
 
   return userData;

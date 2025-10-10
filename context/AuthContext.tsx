@@ -39,7 +39,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuthStatus = useStableCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('AuthContext: checkAuthStatus iniciado');
       const isAuth = await AuthService.isAuthenticated();
       
       if (isAuth) {
@@ -53,7 +52,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         setUser(null);
         setUserProfile(null);
-        console.log('AuthContext: user set to null, should trigger navigation');
       }
     } catch (error) {
       console.error('Check auth status error:', error);
@@ -61,7 +59,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUserProfile(null);
     } finally {
       setIsLoading(false);
-      console.log('AuthContext: checkAuthStatus finalizado, isLoading false');
     }
   });
 
@@ -169,6 +166,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateProfile = useStableCallback(async (profileData: any) => {
     try {
       setIsLoading(true);
+      
       const result = await AuthService.updateProfile(profileData);
       
       if (result.success && result.data) {
@@ -178,7 +176,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { success: false, message: result.message || 'Erro ao atualizar perfil' };
       }
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('❌ AuthContext.updateProfile - Exception:', error);
       return { success: false, message: 'Erro de conexão' };
     } finally {
       setIsLoading(false);

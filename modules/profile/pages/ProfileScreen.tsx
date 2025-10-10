@@ -52,8 +52,9 @@ export default function ProfileScreen() {
         id: user?.id || localProfile?.id,
         name: displayName || localProfile?.name || 'Usuário',
         email: email || localProfile?.email || '',
-        sex: localProfile?.sex, // API doesn't have sex field yet, use local
-        age: localProfile?.age, // API doesn't have age field yet, use local
+        sex: (rawProfile as any)?.sex || localProfile?.sex, // Get sex directly from rawProfile 
+        age: (rawProfile as any)?.age || localProfile?.age, // Get age directly from rawProfile
+        dateOfBirth: (rawProfile as any)?.dateOfBirth || localProfile?.dateOfBirth, // Get dateOfBirth directly from rawProfile
         // Add more fields from API profile data
         createdAt: localProfile?.createdAt || new Date().toISOString(),
         updatedAt: localProfile?.updatedAt,
@@ -61,15 +62,6 @@ export default function ProfileScreen() {
 
       setUserProfile(combinedProfile);
       
-      console.log('📱 Profile carregado:', {
-        displayName,
-        email,
-        firstName,
-        lastName,
-        rawProfile: rawProfile?.profile,
-        combinedProfile
-      });
-      console.log('📱 Avatar carregado:', userAvatar ? 'Foto encontrada' : 'Nenhuma foto salva');
     } catch (error) {
       console.error('Erro ao carregar dados locais:', error);
       // Set default values in case of error
@@ -92,7 +84,6 @@ export default function ProfileScreen() {
   };
 
   const handleProfileUpdated = (updatedProfile: UserProfile) => {
-    console.log('🔄 Profile atualizado:', updatedProfile);
     setUserProfile(updatedProfile);
     // Recarregar dados para garantir sincronização
     setTimeout(() => {
@@ -107,11 +98,8 @@ export default function ProfileScreen() {
 
   const handleAvatarChange = async (newAvatarUri: string | null) => {
     try {
-      console.log('📷 Salvando nova foto do avatar:', newAvatarUri);
       const success = await updateUserAvatar(newAvatarUri);
-      if (success) {
-        console.log('✅ Avatar salvo com sucesso!');
-      } else {
+      if (!success) {
         throw new Error('Falha ao salvar avatar');
       }
     } catch (error) {

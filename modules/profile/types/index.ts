@@ -6,6 +6,7 @@ export interface UserProfile {
   avatar?: string;
   sex?: string;
   age?: number;
+  dateOfBirth?: string; // Add dateOfBirth field
   goals?: string[];
   experience?: string;
   joinDate?: string;

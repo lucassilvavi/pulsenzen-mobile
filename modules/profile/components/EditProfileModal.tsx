@@ -53,8 +53,6 @@ export function EditProfileModal({
 
   useEffect(() => {
     if (visible && currentProfile) {
-      console.log('🔧 EditProfileModal - Carregando dados:', currentProfile);
-      
       setName(currentProfile.name || '');
       setEmail(currentProfile.email || '');
       
@@ -66,14 +64,16 @@ export function EditProfileModal({
       // Set sex if available
       setSex((currentProfile.sex as 'MENINO' | 'MENINA') || '');
       
-      // Handle date of birth - if available in profile
-      if (currentProfile.age) {
+      // Handle date of birth - priority: actual dateOfBirth from API, then calculate from age
+      if (currentProfile.dateOfBirth) {
+        // Use actual dateOfBirth from API
+        const birthDate = new Date(currentProfile.dateOfBirth);
+        setDateOfBirth(birthDate);
+      } else if (currentProfile.age) {
+        // Fallback: calculate from age
         const currentYear = new Date().getFullYear();
         const birthYear = currentYear - currentProfile.age;
         setDateOfBirth(new Date(birthYear, 0, 1));
-        console.log('🔧 Calculando data de nascimento baseada na idade:', currentProfile.age, 'anos');
-      } else {
-        console.log('🔧 Idade não disponível, usando data padrão');
       }
       
       loadUserAvatar();
@@ -168,24 +168,19 @@ export function EditProfileModal({
       await ProfileService.saveUserAvatar(avatarUri);
 
       // Prepare profile data for API
-      const age = calculateAge(dateOfBirth);
       const profileData = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         dateOfBirth: dateOfBirth.toISOString().split('T')[0], // YYYY-MM-DD format
         sex: sex, // MENINO or MENINA
-        age, // Calculate and send age for convenience
       };
-
-      console.log('💾 Salvando perfil:', profileData);
 
       // Update profile via AuthContext (this will sync with API and update global state)
       const result = await updateAuthProfile(profileData);
       
       if (result.success) {
-        console.log('✅ Perfil atualizado na API com sucesso');
-        
         // Create updated profile for local state
+        const age = calculateAge(dateOfBirth);
         const updatedProfile: UserProfile = {
           ...currentProfile,
           name: `${firstName.trim()} ${lastName.trim()}`.trim(),
@@ -198,26 +193,25 @@ export function EditProfileModal({
 
         // Save profile locally for persistence
         const localSaveSuccess = await ProfileService.saveUserProfile(updatedProfile);
-        console.log('💾 Dados salvos localmente:', localSaveSuccess ? 'Sucesso' : 'Falha');
         
         // Update parent component
         onProfileUpdated(updatedProfile);
         onClose();
       } else {
-        console.error('❌ Erro na API:', result.message);
         throw new Error(result.message || 'Falha ao salvar perfil');
       }
     } catch (error) {
-      console.error('💥 Erro ao salvar perfil:', error);
+      console.error('Erro ao salvar perfil:', error);
       
       // Even if API fails, save locally
       try {
+        const age = calculateAge(dateOfBirth);
         const localProfile: UserProfile = {
           ...currentProfile,
           name: `${firstName.trim()} ${lastName.trim()}`.trim(),
           email: email.trim(),
           sex: sex || undefined,
-          age: calculateAge(dateOfBirth),
+          age: age,
           avatar: avatarUri || undefined,
           updatedAt: new Date().toISOString(),
         };

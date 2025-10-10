@@ -55,6 +55,8 @@ export interface UserProfile {
     lastName: string;
     onboardingCompleted: boolean;
     dateOfBirth?: string;
+    sex?: string; // Add sex field
+    age?: number; // Add age field
     goals?: string[];
     mentalHealthConcerns?: string[];
     preferredActivities?: string[];

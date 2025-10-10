@@ -917,25 +917,18 @@ class AuthService {
   static async updateProfile(profileData: Partial<{
     firstName: string;
     lastName: string;
+    displayName: string;
     dateOfBirth: string;
-    goals: string[];
-    mentalHealthConcerns: string[];
-    preferredActivities: string[];
-    currentStressLevel: number;
-    sleepHours: number;
-    exerciseFrequency: string;
-    preferredContactMethod: string;
-    notificationPreferences: {
-      reminders: boolean;
-      progress: boolean;
-      tips: boolean;
-    };
+    sex: string; // MENINO, MENINA, OTHER
+    avatarUrl: string;
   }>): Promise<{ success: boolean; message: string; data?: UserProfile }> {
     try {
       logger.info('AuthService', 'Updating user profile');
+      console.log('🔧 AuthService.updateProfile - Dados recebidos:', profileData);
 
       // Get auth header for authenticated request
       const authHeader = await this.getAuthHeader();
+      console.log('🔧 AuthService.updateProfile - Auth header:', authHeader);
 
       const response = await networkManager.put<UserProfile>(
         appConfig.getApiUrl('/auth/profile'),
@@ -949,8 +942,11 @@ class AuthService {
         }
       );
 
+      console.log('🔧 AuthService.updateProfile - Resposta da API:', response);
+
       if (response.success && response.data) {
         logger.info('AuthService', 'Profile updated successfully');
+        console.log('✅ AuthService.updateProfile - Sucesso:', response.data);
 
         return {
           success: true,
@@ -961,6 +957,7 @@ class AuthService {
         logger.warn('AuthService', 'Profile update failed', { 
           error: response.error 
         });
+        console.log('❌ AuthService.updateProfile - Falha:', response.error);
 
         return {
           success: false,
