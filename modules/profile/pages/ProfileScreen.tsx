@@ -2,6 +2,8 @@ import { AvatarPicker } from '@/components/AvatarPicker';
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
 import { BiometricSettings } from '@/components/biometric';
+import { PrivacySettingsModal } from '@/components/modals/PrivacySettingsModal';
+import { SupportModal } from '@/components/modals/SupportModal';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
@@ -21,46 +23,67 @@ import { Achievement, UserProfile, UserStats } from '../types';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { logout } = useAuth();
-  const { displayName, email } = useUserData();
+  const { logout, user, userProfile: authUserProfile } = useAuth();
+  const { displayName, email, firstName, lastName, rawUser, rawProfile } = useUserData();
   const { userAvatar, updateUserAvatar } = useUserAvatar();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isPrivacyModalVisible, setIsPrivacyModalVisible] = useState(false);
+  const [isSupportModalVisible, setIsSupportModalVisible] = useState(false);
 
   useEffect(() => {
     loadLocalData();
-  }, [displayName, email]); // Add dependencies to reload when user data changes
+  }, [displayName, email, user, authUserProfile]); // Add more dependencies to reload when user data changes
 
   const loadLocalData = async () => {
     try {
       // Load local data (stats, achievements, profile)
       const stats = await ProfileService.getUserStats();
       const userAchievements = await ProfileService.getUserAchievements();
-      const profile = await ProfileService.getUserProfile();
+      const localProfile = await ProfileService.getUserProfile();
 
       setUserStats(stats);
       setAchievements(Array.isArray(userAchievements) ? userAchievements : []); // Ensure achievements is always an array
       
-      // Set profile with current user data if no saved profile exists
-      if (profile) {
-        setUserProfile(profile);
-      } else {
-        // Create default profile from current user data
-        const defaultProfile: UserProfile = {
-          name: displayName || 'Usuário',
-          email: email || '',
-          createdAt: new Date().toISOString(),
-        };
-        setUserProfile(defaultProfile);
-      }
+      // Create profile combining API data (AuthContext) with local data
+      const combinedProfile: UserProfile = {
+        id: user?.id || localProfile?.id,
+        name: displayName || localProfile?.name || 'Usuário',
+        email: email || localProfile?.email || '',
+        sex: localProfile?.sex, // API doesn't have sex field yet, use local
+        age: localProfile?.age, // API doesn't have age field yet, use local
+        // Add more fields from API profile data
+        createdAt: localProfile?.createdAt || new Date().toISOString(),
+        updatedAt: localProfile?.updatedAt,
+      };
+
+      setUserProfile(combinedProfile);
       
+      console.log('📱 Profile carregado:', {
+        displayName,
+        email,
+        firstName,
+        lastName,
+        rawProfile: rawProfile?.profile,
+        combinedProfile
+      });
       console.log('📱 Avatar carregado:', userAvatar ? 'Foto encontrada' : 'Nenhuma foto salva');
     } catch (error) {
       console.error('Erro ao carregar dados locais:', error);
       // Set default values in case of error
       setAchievements([]);
+      
+      // Create fallback profile from AuthContext data
+      const fallbackProfile: UserProfile = {
+        name: displayName || 'Usuário',
+        email: email || '',
+        sex: undefined, // API doesn't have sex field yet
+        age: undefined, // API doesn't have age field yet
+        createdAt: new Date().toISOString(),
+      };
+      setUserProfile(fallbackProfile);
     }
   };
 
@@ -69,8 +92,12 @@ export default function ProfileScreen() {
   };
 
   const handleProfileUpdated = (updatedProfile: UserProfile) => {
+    console.log('🔄 Profile atualizado:', updatedProfile);
     setUserProfile(updatedProfile);
-    // Avatar é automaticamente sincronizado pelo hook useUserAvatar
+    // Recarregar dados para garantir sincronização
+    setTimeout(() => {
+      loadLocalData();
+    }, 500); // Small delay to ensure data is saved
   };
 
   const loadUserAvatar = async () => {
@@ -98,11 +125,11 @@ export default function ProfileScreen() {
   };
 
   const handlePrivacy = () => {
-    Alert.alert('Em desenvolvimento', 'Esta funcionalidade estará disponível em breve!');
+    setIsPrivacyModalVisible(true);
   };
 
   const handleSupport = () => {
-    Alert.alert('Em desenvolvimento', 'Esta funcionalidade estará disponível em breve!');
+    setIsSupportModalVisible(true);
   };
 
   const handleLogout = () => {
@@ -268,6 +295,18 @@ export default function ProfileScreen() {
         onClose={() => setIsEditModalVisible(false)}
         currentProfile={userProfile}
         onProfileUpdated={handleProfileUpdated}
+      />
+
+      {/* Privacy Settings Modal */}
+      <PrivacySettingsModal
+        visible={isPrivacyModalVisible}
+        onClose={() => setIsPrivacyModalVisible(false)}
+      />
+
+      {/* Support Modal */}
+      <SupportModal
+        visible={isSupportModalVisible}
+        onClose={() => setIsSupportModalVisible(false)}
       />
     </ThemedView>
   );
