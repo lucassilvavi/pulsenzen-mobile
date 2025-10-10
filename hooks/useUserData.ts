@@ -43,7 +43,7 @@ export function useUserData() {
       isLoading,
       // Dados brutos para casos específicos
       rawUser: user,
-      rawProfile: user?.profile || userProfile, // Use user.profile first, fallback to userProfile
+      rawProfile: userProfile?.profile || user?.profile || userProfile, // Use userProfile.profile first (API data), then fallback
     };
     
     return result;
