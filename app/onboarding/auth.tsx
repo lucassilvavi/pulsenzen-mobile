@@ -8,8 +8,10 @@ import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import TermsModal from '@/components/modals/TermsModal';
+import PrivacyModal from '@/components/modals/PrivacyModal';
 import {
   Alert,
   Dimensions,
@@ -23,11 +25,14 @@ const { height } = Dimensions.get('window');
 
 export default function AuthScreen() {
   const router = useRouter();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   const { register, login, isLoading, checkAuthStatus } = useAuth();
   
-  const [isLoginMode, setIsLoginMode] = useState(false);
+  const [isLoginMode, setIsLoginMode] = useState(mode === 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -132,8 +137,8 @@ export default function AuthScreen() {
           // For login, let NavigationHandler decide where to go based on onboarding status
           // Don't navigate manually - let the NavigationHandler in _layout handle it
         } else {
-          // For registration, always go to setup (new users need onboarding)
-          router.replace('/onboarding/benefits');
+          // For registration, go to personal info collection (new users need onboarding)
+          (router as any).replace('/onboarding/personal-info');
         }
       } else {
         // Use different alert types based on whether it's informational or an error
@@ -347,9 +352,17 @@ export default function AuthScreen() {
 
         <View style={styles.footer}>
           <ThemedText style={styles.footerText}>
-            Ao continuar, você concorda com nossos{'\n'}
-            Termos de Uso e Política de Privacidade
+            Ao continuar, você concorda com nossos
           </ThemedText>
+          <View style={styles.linksRow}>
+            <TouchableOpacity onPress={() => setShowTermsModal(true)}>
+              <ThemedText style={styles.linkText}>Termos de Uso</ThemedText>
+            </TouchableOpacity>
+            <ThemedText style={styles.footerText}> e </ThemedText>
+            <TouchableOpacity onPress={() => setShowPrivacyModal(true)}>
+              <ThemedText style={styles.linkText}>Política de Privacidade</ThemedText>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Biometric Setup Modal */}
@@ -359,6 +372,16 @@ export default function AuthScreen() {
           onSetupComplete={handleBiometricSetupComplete}
         />
       </ScrollView>
+      
+      <TermsModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+      />
+      
+      <PrivacyModal
+        visible={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </ScreenContainer>
   );
 }
@@ -452,5 +475,16 @@ const styles = StyleSheet.create({
     color: colors.neutral.text.disabled,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  linksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  linkText: {
+    fontSize: fontSize.sm,
+    color: colors.primary.main,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

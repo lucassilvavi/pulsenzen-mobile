@@ -68,11 +68,11 @@ export function useNavigationLogic() {
         } else {
           // Onboarding não completo - vai para setup
           if (pathname === '/onboarding/auth') {
-            console.log('NavigationLogic: Login feito, indo para benefits');
-            await router.replace('/onboarding/benefits');
+            console.log('NavigationLogic: Login feito, indo para personal-info');
+            await router.replace('/onboarding/personal-info');
           } else if (!pathname.includes('/onboarding') || pathname === '/onboarding/welcome') {
-            console.log('NavigationLogic: Onboarding não completo, indo para benefits');
-            await router.replace('/onboarding/benefits');
+            console.log('NavigationLogic: Onboarding não completo, indo para personal-info');
+            await router.replace('/onboarding/personal-info');
           }
         }
       }

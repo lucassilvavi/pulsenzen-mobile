@@ -50,6 +50,7 @@ export interface AuthResponse {
   data?: {
     user: User;
     token: string;
+    refreshToken?: string;
   };
   error?: string;
   message: string;
@@ -129,24 +130,30 @@ class AuthService {
         // The API response is nested: response.data contains the actual API response
         const apiResponse = response.data;
         
-        if (apiResponse.success && apiResponse.data && apiResponse.data.user && apiResponse.data.token) {
+        // Check if the token and user are at the root level or nested in data
+        const userData = apiResponse.data?.user || apiResponse.user;
+        const token = apiResponse.data?.token || apiResponse.token;
+        const refreshToken = apiResponse.data?.refreshToken || apiResponse.refreshToken;
+        
+        // Use parent success flag since apiResponse.success doesn't exist
+        if (response.success && userData && token) {
           // Save token, refresh token, and user data for persistent login
           await this.saveAuthData(
-            apiResponse.data.token, 
-            apiResponse.data.refreshToken, 
-            apiResponse.data.user
+            token, 
+            refreshToken, 
+            userData
           );
           
           // Clear onboarding status for new users (they need to complete onboarding)
           await secureStorage.removeItem('onboarding_done');
 
           logger.info('AuthService', 'User registration successful', { 
-            userId: apiResponse.data.user.id 
+            userId: userData.id 
           });
 
           return {
             success: true,
-            data: apiResponse.data,
+            data: { user: userData, token, refreshToken },
             message: apiResponse.message || 'Registration successful',
           };
         } else {

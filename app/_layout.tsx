@@ -92,6 +92,11 @@ export default function RootLayoutHybrid() {
                     <Stack.Screen name="index" options={{ headerShown: false }} />
                     <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
                     <Stack.Screen name="onboarding/auth" options={{ headerShown: false, gestureEnabled: false }} />
+                    <Stack.Screen name="onboarding/personal-info" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding/terms" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding/privacy" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding/user-info" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding/permissions" options={{ headerShown: false }} />
                     <Stack.Screen name="onboarding/setup" options={{ headerShown: false }} />
                     <Stack.Screen name="onboarding/benefits" options={{ headerShown: false }} />
                     <Stack.Screen name="breathing" options={{ headerShown: false }} />

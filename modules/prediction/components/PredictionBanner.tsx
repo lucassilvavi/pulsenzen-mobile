@@ -15,28 +15,22 @@ function levelColors(level: string) {
 }
 
 export const PredictionBanner: React.FC = () => {
-  // 🎯 Task 8: Guard de autenticação - só renderiza se usuário estiver autenticado
+  // 🎯 Todos os hooks devem ser executados ANTES de qualquer return condicional
   const { isAuthenticated } = useAuth();
-  
   const { current, loading, insufficientData, initializeIfNeeded } = usePrediction();
   const [modalVisible, setModalVisible] = React.useState(false);
   const [hasInitialized, setHasInitialized] = React.useState(false);
   
-  // 🔒 GUARD: Não renderiza se usuário não estiver autenticado
-  if (!isAuthenticated) {
-    console.log('[PredictionBanner] ⚠️ Usuário não autenticado - não renderizando PredictionBanner (Task 8)');
-    return null;
-  }
-  
   // 🎯 Task 7: Lazy loading - só inicializa uma vez quando o banner é montado
   useEffect(() => {
-    if (!hasInitialized) {
+    // Só inicializa se estiver autenticado
+    if (isAuthenticated && !hasInitialized) {
       console.log('[PredictionBanner] 🚀 Banner renderizado, iniciando lazy loading (Task 7)');
       initializeIfNeeded();
       track('prediction_banner_view');
       setHasInitialized(true);
     }
-  }, []); // Array vazio para executar apenas na montagem
+  }, [isAuthenticated, hasInitialized]); // Depende do estado de autenticação
   
   // Se há dados insuficientes, usar cor neutra
   const palette = useMemo(() => {
@@ -48,6 +42,12 @@ export const PredictionBanner: React.FC = () => {
     }
     return levelColors(current?.level || 'low');
   }, [current, insufficientData]);
+  
+  // 🔒 GUARD: Só retorna null DEPOIS de todos os hooks serem executados
+  if (!isAuthenticated) {
+    console.log('[PredictionBanner] ⚠️ Usuário não autenticado - não renderizando PredictionBanner (Task 8)');
+    return null;
+  }
   
   const gradientColors = [palette.bg[0], palette.bg[1]] as const;
 

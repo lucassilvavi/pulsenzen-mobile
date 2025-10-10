@@ -13,7 +13,7 @@ export default function WelcomeScreen() {
     const router = useRouter();
 
     const handleGetStarted = async () => {
-        router.push('/onboarding/auth');
+        router.push('/onboarding/auth?mode=login');
     };
 
     return (
