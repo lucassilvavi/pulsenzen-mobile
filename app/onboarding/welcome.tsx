@@ -4,7 +4,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
-import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 
 const { height } = Dimensions.get('window');

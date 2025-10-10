@@ -1,8 +1,8 @@
-import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface PrivacyModalProps {
   visible: boolean;

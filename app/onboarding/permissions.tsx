@@ -1,14 +1,14 @@
-import { Alert, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import * as Notifications from 'expo-notifications';
 import { ThemedText } from '@/components/ThemedText';
-import ScreenContainer from '@/components/base/ScreenContainer';
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
+import ScreenContainer from '@/components/base/ScreenContainer';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
 
 interface Permission {
   id: string;

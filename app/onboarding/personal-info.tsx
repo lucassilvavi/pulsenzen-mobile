@@ -1,15 +1,15 @@
-import { ScrollView, StyleSheet, View, TouchableOpacity, Alert, Platform, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { ThemedText } from '@/components/ThemedText';
-import ScreenContainer from '@/components/base/ScreenContainer';
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
+import ScreenContainer from '@/components/base/ScreenContainer';
 import { colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const GENDER_OPTIONS = [
   { id: 'MENINO', label: 'Ele/Dele', icon: 'male' as const },

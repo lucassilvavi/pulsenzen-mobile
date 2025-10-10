@@ -1,10 +1,10 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
-import ScreenContainer from '@/components/base/ScreenContainer';
 import Button from '@/components/base/Button';
+import ScreenContainer from '@/components/base/ScreenContainer';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
+import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();

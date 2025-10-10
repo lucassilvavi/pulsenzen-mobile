@@ -1,14 +1,14 @@
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { ThemedText } from '@/components/ThemedText';
-import ScreenContainer from '@/components/base/ScreenContainer';
 import Button from '@/components/base/Button';
 import Card from '@/components/base/Card';
 import CustomTextInput from '@/components/base/CustomTextInput';
+import ScreenContainer from '@/components/base/ScreenContainer';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 
 export default function UserInfoScreen() {
   const router = useRouter();
