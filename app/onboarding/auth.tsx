@@ -5,6 +5,7 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import { BiometricLoginButton, BiometricSetup, useBiometricAuth } from '@/components/biometric';
 import PrivacyModal from '@/components/modals/PrivacyModal';
 import TermsModal from '@/components/modals/TermsModal';
+import DebugConfigModal from '@/components/modals/DebugConfigModal';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +34,7 @@ export default function AuthScreen() {
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showDebugModal, setShowDebugModal] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -347,6 +349,17 @@ export default function AuthScreen() {
                 }
               </ThemedText>
             </TouchableOpacity>
+
+            {/* Debug Button - Only show in development */}
+            {__DEV__ && (
+              <TouchableOpacity 
+                style={styles.debugButton} 
+                onPress={() => setShowDebugModal(true)}
+              >
+                <Ionicons name="bug" size={16} color={colors.neutral.text.secondary} />
+                <ThemedText style={styles.debugText}>Debug Config</ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
         </Card>
 
@@ -381,6 +394,11 @@ export default function AuthScreen() {
       <PrivacyModal
         visible={showPrivacyModal}
         onClose={() => setShowPrivacyModal(false)}
+      />
+      
+      <DebugConfigModal
+        visible={showDebugModal}
+        onClose={() => setShowDebugModal(false)}
       />
     </ScreenContainer>
   );
@@ -465,6 +483,19 @@ const styles = StyleSheet.create({
     color: colors.primary.main,
     fontSize: fontSize.md,
     fontWeight: '600',
+  },
+  debugButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  debugText: {
+    color: colors.neutral.text.secondary,
+    fontSize: fontSize.sm,
+    fontWeight: '500',
   },
   footer: {
     alignItems: 'center',
