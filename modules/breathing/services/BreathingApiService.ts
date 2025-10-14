@@ -16,7 +16,7 @@ import {
 import { BreathingTechnique } from '../types';
 
 // Base API configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.pulsezen.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://pulsezen-api-production.up.railway.app/api';
 const API_VERSION = 'v1';
 const BREATHING_ENDPOINT = `${API_BASE_URL}/${API_VERSION}/breathing`;
 

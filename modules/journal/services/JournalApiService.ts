@@ -8,7 +8,7 @@ import { JournalEntry, JournalPrompt, JournalStats } from '../types';
  * This service handles all API communication for journal functionality
  */
 export class JournalApiService {
-  private static readonly BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3333';
+  private static readonly BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://pulsezen-api-production.up.railway.app/api';
   private static readonly API_VERSION = 'v1';
   
   // Authentication headers
