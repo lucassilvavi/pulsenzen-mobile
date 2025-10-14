@@ -350,16 +350,14 @@ export default function AuthScreen() {
               </ThemedText>
             </TouchableOpacity>
 
-            {/* Debug Button - Only show in development */}
-            {__DEV__ && (
-              <TouchableOpacity 
-                style={styles.debugButton} 
-                onPress={() => setShowDebugModal(true)}
-              >
-                <Ionicons name="bug" size={16} color={colors.neutral.text.secondary} />
-                <ThemedText style={styles.debugText}>Debug Config</ThemedText>
-              </TouchableOpacity>
-            )}
+            {/* Debug Button - Always visible for troubleshooting */}
+            <TouchableOpacity 
+              style={styles.debugButton} 
+              onPress={() => setShowDebugModal(true)}
+            >
+              <Ionicons name="bug" size={16} color={colors.neutral.text.secondary} />
+              <ThemedText style={styles.debugText}>Debug Config</ThemedText>
+            </TouchableOpacity>
           </View>
         </Card>
 
