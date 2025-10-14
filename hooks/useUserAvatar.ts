@@ -1,5 +1,5 @@
-import { ProfileService } from '@/modules/profile/services/ProfileService';
 import { useAuth } from '@/context/AuthContext';
+import { ProfileService } from '@/modules/profile/services/ProfileService';
 import { useCallback, useEffect, useState } from 'react';
 
 export function useUserAvatar() {

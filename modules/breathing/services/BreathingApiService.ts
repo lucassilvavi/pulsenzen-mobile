@@ -2,16 +2,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { breathingTechniques } from '../constants';
 import {
-    ApiResponse,
-    BreathingErrorType,
-    BreathingSessionAPI,
-    BreathingStatsAPI,
-    BreathingTechniqueAPI,
-    CustomTechniqueAPI,
-    PaginatedResponse,
-    SessionFilters,
-    TechniqueFilters,
-    UserPreferencesAPI
+  ApiResponse,
+  BreathingErrorType,
+  BreathingSessionAPI,
+  BreathingStatsAPI,
+  BreathingTechniqueAPI,
+  CustomTechniqueAPI,
+  PaginatedResponse,
+  SessionFilters,
+  TechniqueFilters,
+  UserPreferencesAPI
 } from '../models';
 import { BreathingTechnique } from '../types';
 
