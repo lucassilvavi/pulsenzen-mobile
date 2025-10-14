@@ -357,6 +357,19 @@ class SimpleNetworkManager {
   }
 
   private getErrorMessage(error: any): string {
+    // Log detalhado do erro para debug
+    logger.error('NetworkManager', 'Detailed error analysis', {
+      code: (error as any).code,
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        timeout: error.config?.timeout
+      }
+    });
+
     if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
       return ERROR_CODES.NETWORK_ERROR;
     }
@@ -375,6 +388,14 @@ class SimpleNetworkManager {
     
     if (error.response?.status >= 500) {
       return ERROR_CODES.SERVICE_UNAVAILABLE;
+    }
+    
+    // Se há dados de resposta, tenta extrair mensagem específica
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (typeof data === 'string') return data;
+      if (data.message) return data.message;
+      if (data.error) return data.error;
     }
     
     return error.message || ERROR_CODES.UNKNOWN_ERROR;
