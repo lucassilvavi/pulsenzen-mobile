@@ -3,9 +3,9 @@ import Card from '@/components/base/Card';
 import CustomTextInput from '@/components/base/CustomTextInput';
 import ScreenContainer from '@/components/base/ScreenContainer';
 import { BiometricLoginButton, BiometricSetup, useBiometricAuth } from '@/components/biometric';
+import DebugConfigModal from '@/components/modals/DebugConfigModal';
 import PrivacyModal from '@/components/modals/PrivacyModal';
 import TermsModal from '@/components/modals/TermsModal';
-import DebugConfigModal from '@/components/modals/DebugConfigModal';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -14,12 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 const { height } = Dimensions.get('window');

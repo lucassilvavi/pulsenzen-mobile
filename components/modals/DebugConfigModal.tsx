@@ -1,20 +1,18 @@
-import React from 'react';
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  Text,
-  Alert,
-  Clipboard
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Button from '@/components/base/Button';
+import Card from '@/components/base/Card';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
-import { spacing, fontSize } from '@/utils/responsive';
-import Card from '@/components/base/Card';
-import Button from '@/components/base/Button';
+import { fontSize, spacing } from '@/utils/responsive';
+import { Ionicons } from '@expo/vector-icons';
+import {
+    Alert,
+    Clipboard,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
+} from 'react-native';
 
 interface DebugConfigModalProps {
   visible: boolean;
