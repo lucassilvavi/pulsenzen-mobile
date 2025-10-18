@@ -14,7 +14,20 @@ interface HeaderSectionProps {
 
 export default function HeaderSection({ userName }: HeaderSectionProps) {
   const { userAvatar } = useUserAvatar();
-  const { rawProfile } = useUserData();
+  const { rawUser, rawProfile } = useUserData();
+  
+  // Função para determinar se o nome é longo e ajustar o estilo
+  const getNameStyle = (name: string) => {
+    const nameLength = name.length;
+    if (nameLength > 20) {
+      return [styles.userName, styles.userNameLong];
+    } else if (nameLength > 15) {
+      return [styles.userName, styles.userNameMedium];
+    }
+    return styles.userName;
+  };
+
+  const displayName = userName || 'Visitante';
 
   const handleProfilePress = () => {
     router.push('/profile');
@@ -67,8 +80,11 @@ export default function HeaderSection({ userName }: HeaderSectionProps) {
 
   return (
     <ThemedView style={styles.header}>
-      <ThemedView style={{ backgroundColor: 'transparent' }}>
-        <ThemedText type="title">Olá, {userName || 'Visitante'}</ThemedText>
+      <ThemedView style={styles.nameContainer}>
+        <ThemedText style={styles.greeting}>Olá,</ThemedText>
+        <ThemedText style={getNameStyle(displayName)} numberOfLines={1} ellipsizeMode="tail">
+          {displayName}
+        </ThemedText>
       </ThemedView>
       <TouchableOpacity onPress={handleProfilePress} style={styles.profileImageContainer}>
         {renderProfileImage()}
@@ -87,12 +103,38 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     backgroundColor: 'transparent', // fundo transparente
   },
+  nameContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    marginRight: 15, // Espaço entre nome e avatar
+  },
+  greeting: {
+    fontSize: 18,
+    fontWeight: '400',
+    color: colors.neutral.text.secondary,
+    marginBottom: 2,
+  },
+  userName: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: colors.neutral.text.primary,
+    lineHeight: 30,
+  },
+  userNameMedium: {
+    fontSize: 22,
+    lineHeight: 26,
+  },
+  userNameLong: {
+    fontSize: 20,
+    lineHeight: 24,
+  },
   profileImageContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
     overflow: 'hidden',
     backgroundColor: 'transparent', // fundo transparente
+    flexShrink: 0, // Não permite que o avatar diminua
   },
   profileImage: {
     width: '100%',

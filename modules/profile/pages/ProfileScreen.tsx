@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUserDataNew } from '@/context/UserDataContext';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import { useUserData } from '@/hooks/useUserData';
 import { fontSize, spacing } from '@/utils/responsive';
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { logout, user, userProfile: authUserProfile } = useAuth();
   const { displayName, email, firstName, lastName, rawUser, rawProfile } = useUserData();
+  const { displayName: contextDisplayName, refreshUserData } = useUserDataNew();
   const { userAvatar, updateUserAvatar } = useUserAvatar();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -85,6 +87,8 @@ export default function ProfileScreen() {
 
   const handleProfileUpdated = (updatedProfile: UserProfile) => {
     setUserProfile(updatedProfile);
+    // Refresh o contexto de dados do usuário para sincronização global
+    refreshUserData();
     // Recarregar dados para garantir sincronização
     setTimeout(() => {
       loadLocalData();
@@ -179,7 +183,7 @@ export default function ProfileScreen() {
             userGender={(rawProfile as any)?.sex}
           />
           <ThemedText style={styles.userName}>
-            {userProfile?.name || displayName}
+            {contextDisplayName}
           </ThemedText>
           <ThemedText style={styles.userEmail}>
             {userProfile?.email || email || 'usuario@pulsezen.com'}

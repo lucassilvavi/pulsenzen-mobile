@@ -1,28 +1,41 @@
 import { useAuth } from '@/context/AuthContext';
+import { useUserDataNew } from '@/context/UserDataContext';
 import { useMemo } from 'react';
 
 /**
  * Hook personalizado para facilitar o acesso aos dados do usuário
- * Combina dados do AuthContext (dados da API) com lógica de fallback
+ * Combina dados do AuthContext (dados da API) com o UserDataContext para sincronização
  */
 export function useUserData() {
   const { user, userProfile, isAuthenticated, isLoading } = useAuth();
-
-  const userData = useMemo(() => {
-    // Nome do usuário com fallbacks
-    const firstName = user?.profile?.firstName;
-    const lastName = user?.profile?.lastName;
+  
+  // Tenta usar o novo contexto primeiro, senão faz fallback para o método antigo
+  let displayName = 'Visitante';
+  let firstName: string | undefined;
+  let lastName: string | undefined;
+  
+  try {
+    const userDataContext = useUserDataNew();
+    displayName = userDataContext.displayName;
+    firstName = userDataContext.firstName || undefined;
+    lastName = userDataContext.lastName || undefined;
+  } catch {
+    // Fallback para o método antigo se o contexto não estiver disponível
+    firstName = user?.profile?.firstName;
+    lastName = user?.profile?.lastName;
     const email = user?.email;
-    let displayName = 'Visitante';
+    
     if (firstName) {
       displayName = lastName ? `${firstName} ${lastName}` : firstName;
     } else if (email) {
       // Fallback: usar parte do email como nome
       displayName = email.split('@')[0];
     }
+  }
 
+  const userData = useMemo(() => {
     // Email do usuário
-    const userEmail = email || '';
+    const userEmail = user?.email || '';
 
     // Status do onboarding
     const onboardingComplete = user?.onboardingComplete || userProfile?.profile?.onboardingCompleted || false;
@@ -45,7 +58,7 @@ export function useUserData() {
     };
     
     return result;
-  }, [user, userProfile, isAuthenticated, isLoading]);
+  }, [user, userProfile, isAuthenticated, isLoading, displayName, firstName, lastName]);
 
   return userData;
 }

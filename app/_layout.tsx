@@ -1,5 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { AvatarProvider } from '@/context/AvatarContext';
+import { UserDataProvider } from '@/context/UserDataContext';
 import { useNavigationLogic } from '@/hooks/useNavigationLogic';
 import { PredictionProvider } from '@/modules/prediction';
 import { ToastProvider } from '@/modules/ui/toast/ToastContext';
@@ -80,9 +81,10 @@ export default function RootLayoutHybrid() {
       <SafeAreaProvider>
         <AuthProvider>
           <AvatarProvider>
-            <ToastProvider>
-              <PredictionProvider>
-              <NavigationHandler>
+            <UserDataProvider>
+              <ToastProvider>
+                <PredictionProvider>
+                <NavigationHandler>
                   <View style={styles.container}>
                     <StatusBar style="auto" />
                     <Stack
@@ -114,8 +116,9 @@ export default function RootLayoutHybrid() {
               </NavigationHandler>
               </PredictionProvider>
             </ToastProvider>
-          </AvatarProvider>
-        </AuthProvider>
+          </UserDataProvider>
+        </AvatarProvider>
+      </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

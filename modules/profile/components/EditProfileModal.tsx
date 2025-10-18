@@ -4,6 +4,7 @@ import { ThemedView } from '@/components/ThemedView';
 import Button from '@/components/base/Button';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useUserDataNew } from '@/context/UserDataContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -40,6 +41,7 @@ export function EditProfileModal({
   onProfileUpdated,
 }: EditProfileModalProps) {
   const { updateProfile: updateAuthProfile, user } = useAuth();
+  const { updateUserData } = useUserDataNew();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -179,6 +181,12 @@ export function EditProfileModal({
       const result = await updateAuthProfile(profileData);
       
       if (result.success) {
+        // ✨ Update UserDataContext for immediate UI synchronization
+        await updateUserData({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        });
+
         // Create updated profile for local state
         const age = calculateAge(dateOfBirth);
         const updatedProfile: UserProfile = {
@@ -217,6 +225,13 @@ export function EditProfileModal({
         };
         
         await ProfileService.saveUserProfile(localProfile);
+        
+        // ✨ Update UserDataContext even on API failure
+        await updateUserData({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        });
+        
         console.log('💾 Dados salvos localmente como fallback');
         onProfileUpdated(localProfile);
         onClose();
