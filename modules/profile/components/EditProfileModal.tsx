@@ -60,8 +60,11 @@ export function EditProfileModal({
       
       // Split name into first and last name if available
       const nameParts = (currentProfile.name || '').split(' ');
-      setFirstName(nameParts[0] || '');
-      setLastName(nameParts.slice(1).join(' ') || '');
+      const extractedFirstName = nameParts[0] || '';
+      const extractedLastName = nameParts.slice(1).join(' ') || '';
+      
+      setFirstName(extractedFirstName);
+      setLastName(extractedLastName);
       
       // Set sex if available
       setSex((currentProfile.sex as 'MENINO' | 'MENINA') || '');
@@ -177,41 +180,45 @@ export function EditProfileModal({
         sex: sex, // MENINO or MENINA
       };
 
-      // Update profile via AuthContext (this will sync with API and update global state)
+      // Calculate age for local profile
+      const age = calculateAge(dateOfBirth);
+      const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+      // 1. Update UserDataContext FIRST for immediate UI sync
+      await updateUserData({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      });
+
+      // 2. Create updated profile for local storage
+      const updatedProfile: UserProfile = {
+        ...currentProfile,
+        name: fullName,
+        email: email.trim(),
+        sex: sex || undefined,
+        age: age,
+        avatar: avatarUri || undefined,
+        updatedAt: new Date().toISOString(),
+      };
+
+      // 3. Save locally BEFORE API call to ensure data persistence
+      await ProfileService.saveUserProfile(updatedProfile);
+
+      // 4. Update profile via AuthContext (API call)
       const result = await updateAuthProfile(profileData);
       
-      if (result.success) {
-        // ✨ Update UserDataContext for immediate UI synchronization
-        await updateUserData({
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-        });
-
-        // Create updated profile for local state
-        const age = calculateAge(dateOfBirth);
-        const updatedProfile: UserProfile = {
-          ...currentProfile,
-          name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-          email: email.trim(),
-          sex: sex || undefined,
-          age: age,
-          avatar: avatarUri || undefined,
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Save profile locally for persistence
-        const localSaveSuccess = await ProfileService.saveUserProfile(updatedProfile);
-        
-        // Update parent component
-        onProfileUpdated(updatedProfile);
-        onClose();
-      } else {
-        throw new Error(result.message || 'Falha ao salvar perfil');
+      if (!result.success) {
+        console.warn('⚠️ API update failed, but local data saved:', result.message);
       }
+
+      // 5. Always update parent component with local data
+      onProfileUpdated(updatedProfile);
+      onClose();
+
     } catch (error) {
-      console.error('Erro ao salvar perfil:', error);
+      console.error('💥 Error saving profile:', error);
       
-      // Even if API fails, save locally
+      // Fallback: ensure local data is saved even on errors
       try {
         const age = calculateAge(dateOfBirth);
         const localProfile: UserProfile = {
@@ -225,18 +232,15 @@ export function EditProfileModal({
         };
         
         await ProfileService.saveUserProfile(localProfile);
-        
-        // ✨ Update UserDataContext even on API failure
         await updateUserData({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
         });
         
-        console.log('💾 Dados salvos localmente como fallback');
         onProfileUpdated(localProfile);
         onClose();
       } catch (localError) {
-        console.error('💥 Erro ao salvar localmente:', localError);
+        console.error('💥 Critical error in fallback:', localError);
         // You might want to show an alert here
       }
     } finally {
@@ -246,14 +250,38 @@ export function EditProfileModal({
 
   const handleClose = () => {
     // Reset form when closing
-    setName(currentProfile?.name || '');
-    setEmail(currentProfile?.email || '');
-    setFirstName('');
-    setLastName('');
-    setDateOfBirth(new Date(2000, 0, 1));
-    setSex('');
+    if (currentProfile) {
+      setName(currentProfile.name || '');
+      setEmail(currentProfile.email || '');
+      
+      // Reset to original values
+      const nameParts = (currentProfile.name || '').split(' ');
+      setFirstName(nameParts[0] || '');
+      setLastName(nameParts.slice(1).join(' ') || '');
+      setSex((currentProfile.sex as 'MENINO' | 'MENINA') || '');
+      
+      if (currentProfile.dateOfBirth) {
+        setDateOfBirth(new Date(currentProfile.dateOfBirth));
+      } else if (currentProfile.age) {
+        const currentYear = new Date().getFullYear();
+        const birthYear = currentYear - currentProfile.age;
+        setDateOfBirth(new Date(birthYear, 0, 1));
+      } else {
+        setDateOfBirth(new Date(2000, 0, 1));
+      }
+    } else {
+      // Fallback defaults
+      setName('');
+      setEmail('');
+      setFirstName('');
+      setLastName('');
+      setSex('');
+      setDateOfBirth(new Date(2000, 0, 1));
+    }
+    
     setShowDatePicker(false);
     setErrors({});
+    setIsLoading(false);
     onClose();
   };
 

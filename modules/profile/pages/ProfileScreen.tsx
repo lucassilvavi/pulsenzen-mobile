@@ -50,6 +50,7 @@ export default function ProfileScreen() {
       setAchievements(Array.isArray(userAchievements) ? userAchievements : []); // Ensure achievements is always an array
       
       // Create profile combining API data (AuthContext) with local data
+      // Priority: API data, then local data, then defaults
       const combinedProfile: UserProfile = {
         id: user?.id || localProfile?.id,
         name: displayName || localProfile?.name || 'Usuário',
@@ -65,7 +66,7 @@ export default function ProfileScreen() {
       setUserProfile(combinedProfile);
       
     } catch (error) {
-      console.error('Erro ao carregar dados locais:', error);
+      console.error('Error loading local data:', error);
       // Set default values in case of error
       setAchievements([]);
       
@@ -77,6 +78,7 @@ export default function ProfileScreen() {
         age: undefined, // API doesn't have age field yet
         createdAt: new Date().toISOString(),
       };
+      
       setUserProfile(fallbackProfile);
     }
   };
@@ -85,14 +87,23 @@ export default function ProfileScreen() {
     setIsEditModalVisible(true);
   };
 
-  const handleProfileUpdated = (updatedProfile: UserProfile) => {
+  const handleProfileUpdated = async (updatedProfile: UserProfile) => {
+    // Atualiza estado local imediatamente
     setUserProfile(updatedProfile);
+    
     // Refresh o contexto de dados do usuário para sincronização global
-    refreshUserData();
-    // Recarregar dados para garantir sincronização
-    setTimeout(() => {
-      loadLocalData();
-    }, 500); // Small delay to ensure data is saved
+    try {
+      await refreshUserData();
+    } catch (error) {
+      console.error('Error updating UserDataContext:', error);
+    }
+    
+    // Recarregar dados locais sem delay para garantir sincronização
+    try {
+      await loadLocalData();
+    } catch (error) {
+      console.error('Error reloading local data:', error);
+    }
   };
 
   const loadUserAvatar = async () => {
