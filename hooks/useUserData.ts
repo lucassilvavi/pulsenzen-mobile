@@ -9,8 +9,6 @@ export function useUserData() {
   const { user, userProfile, isAuthenticated, isLoading } = useAuth();
 
   const userData = useMemo(() => {
-    console.log('🔧 useUserData - Dados do AuthContext:', { user, userProfile, isAuthenticated });
-    
     // Nome do usuário com fallbacks
     const firstName = user?.profile?.firstName;
     const lastName = user?.profile?.lastName;

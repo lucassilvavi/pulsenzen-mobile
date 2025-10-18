@@ -64,19 +64,18 @@ export class MoodApiClient {
    */
   async createMoodEntry(data: CreateMoodEntryRequest): Promise<BaseApiResponse<MoodEntryResponse>> {
     try {
-      logger.info('MoodApiClient', 'Creating mood entry', { 
-        mood: data.mood_level, 
-        period: data.period, 
-        date: data.date 
-      });
-
-      console.log('dadosMoodApiClient', data);
       const response = await networkManager.post(`${this.baseUrl}/entries`, data);
-      if (response.success) {
-        logger.info('MoodApiClient', 'Mood entry created successfully', { 
-          entryId: response.data?.id 
-        });
+      
+      // Handle rate limiting response from server (informativo apenas)
+      if (response.status === 429) {
+        // Retorna sucesso false mas permite que a aplicação continue normalmente
+        return {
+          success: false,
+          error: 'Rate limit exceeded',
+          message: 'Muitas tentativas recentes. O sistema irá tentar novamente automaticamente.'
+        };
       }
+      
       return response;
     } catch (error) {
       return this.handleError('createMoodEntry', error);

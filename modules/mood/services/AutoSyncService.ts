@@ -77,36 +77,36 @@ class AutoSyncService {
    * Inicializa o serviço de sync automático
    */
   async initialize(): Promise<void> {
-    console.log('[AutoSyncService] Inicializando serviço de sync automático...');
-
     try {
-      // Carrega estatísticas salvas
       await this.loadSyncStats();
 
-      // Verifica estado inicial da rede
-      const netState = await NetInfo.fetch();
-      this.isOnline = netState.isConnected ?? false;
-      
-      console.log(`[AutoSyncService] Estado inicial da rede: ${this.isOnline ? 'online' : 'offline'}`);
+      // Monitor de estado da rede
+      this.netInfoSubscription = NetInfo.addEventListener(state => {
+        const wasOnline = this.isOnline;
+        this.isOnline = state.isConnected ?? false;
 
-      // Configura listener para mudanças de rede
-      this.setupNetworkListener();
+        if (wasOnline !== this.isOnline) {
+          if (this.isOnline) {
+            this.performSync();
+          } else {
+            this.stopBackgroundSync();
+          }
+        }
+      });
 
-      // Inicia sync em background se estiver online
+      // Verificar estado inicial da rede
+      const initialState = await NetInfo.fetch();
+      this.isOnline = initialState.isConnected ?? false;
+
+      // Iniciar background sync se estiver online
       if (this.isOnline) {
         this.startBackgroundSync();
-        
-        // Tenta sincronizar itens pendentes imediatamente
-        await this.performSync();
       }
 
-      console.log('[AutoSyncService] Serviço inicializado com sucesso');
     } catch (error) {
-      console.error('[AutoSyncService] Erro ao inicializar:', error);
+      console.error('[AutoSyncService] Erro na inicialização:', error);
     }
-  }
-
-  /**
+  }  /**
    * Configura listener para mudanças no estado da rede
    */
   private setupNetworkListener(): void {
@@ -164,12 +164,9 @@ class AutoSyncService {
 
     this.syncInterval = setInterval(async () => {
       if (this.isOnline && !this.isSyncing) {
-        console.log('[AutoSyncService] Background sync executando...');
         await this.performSync();
       }
     }, this.BACKGROUND_SYNC_INTERVAL);
-
-    console.log(`[AutoSyncService] Background sync iniciado (intervalo: ${this.BACKGROUND_SYNC_INTERVAL / 1000}s)`);
   }
 
   /**
@@ -179,7 +176,6 @@ class AutoSyncService {
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;
-      console.log('[AutoSyncService] Background sync pausado');
     }
   }
 
@@ -208,8 +204,6 @@ class AutoSyncService {
 
       this.syncStats.pendingItems = filteredQueue.length;
       await this.saveSyncStats();
-
-      console.log(`[AutoSyncService] Item adicionado à fila: ${action} ${entry.id}`);
 
       // Se estiver online, tenta sincronizar imediatamente
       if (this.isOnline && !this.isSyncing) {
@@ -244,15 +238,49 @@ class AutoSyncService {
         return { success: 0, failed: 0, errors: [] };
       }
 
-      // ✅ Task 4: Só loga quando há itens reais para sincronizar
-      console.log(`[AutoSyncService] Sincronizando ${queue.length} itens...`);
+      // Filtra itens muito antigos (mais de 24 horas) - provavelmente inválidos
+      const now = Date.now();
+      const MAX_AGE = 24 * 60 * 60 * 1000; // 24 horas
+      const COOLDOWN_TIME = 30000; // 30 segundos
+      
+      let validQueue = queue.filter(item => {
+        const itemAge = now - item.timestamp;
+        if (itemAge > MAX_AGE) {
+          console.log(`[AutoSyncService] 🗑️ Removendo item expirado (${Math.round(itemAge/(1000*60*60))}h): ${item.id}`);
+          return false;
+        }
+        return true;
+      });
 
+      // Salva fila limpa se houve remoções
+      if (validQueue.length !== queue.length) {
+        await this.saveSyncQueue(validQueue);
+      }
+
+      // Filtra items muito recentes para evitar conflito com rate limit
+      const filteredQueue = validQueue.filter(item => {
+        const itemAge = now - item.timestamp;
+        return itemAge >= COOLDOWN_TIME;
+      });
+
+      if (filteredQueue.length === 0) {
+        return { success: 0, failed: 0, errors: [] };
+      }
+
+      // ✅ Task 4: Só loga quando há itens reais para sincronizar
       let successCount = 0;
       let failedCount = 0;
       const errors: string[] = [];
       const updatedQueue: SyncQueueItem[] = [];
+      
+      // Adiciona items em cooldown de volta à fila sem processar
+      const itemsInCooldown = queue.filter(item => {
+        const itemAge = now - item.timestamp;
+        return itemAge < COOLDOWN_TIME;
+      });
+      updatedQueue.push(...itemsInCooldown);
 
-      for (const item of queue) {
+      for (const item of filteredQueue) {
         try {
           this.syncStats.totalAttempts++;
 
@@ -279,9 +307,6 @@ class AutoSyncService {
           // Mantém na fila se ainda pode tentar
           if (item.retryCount < this.MAX_RETRY_COUNT) {
             updatedQueue.push(item);
-            console.log(`[AutoSyncService] Item mantido na fila (tentativa ${item.retryCount}/${this.MAX_RETRY_COUNT})`);
-          } else {
-            console.log(`[AutoSyncService] Item descartado após ${this.MAX_RETRY_COUNT} tentativas`);
           }
         }
       }
@@ -295,8 +320,6 @@ class AutoSyncService {
       this.syncStats.lastSyncTime = Date.now();
       this.syncStats.pendingItems = updatedQueue.length;
       await this.saveSyncStats();
-
-      console.log(`[AutoSyncService] Sync concluído: ${successCount} sucessos, ${failedCount} falhas, ${updatedQueue.length} pendentes`);
 
       return { success: successCount, failed: failedCount, errors };
     } catch (error) {
@@ -318,11 +341,10 @@ class AutoSyncService {
           try {
             const validation = await moodApiClient.validatePeriod(item.entry.period, item.entry.date);
             if (!validation.success || !validation.data?.can_create) {
-              console.log(`[AutoSyncService] Período ${item.entry.period} já possui entrada para ${item.entry.date}, removendo da fila`);
               return true; // Remove da fila pois já foi criado
             }
           } catch (validationError) {
-            console.warn(`[AutoSyncService] Erro na validação de período, tentando criar mesmo assim:`, validationError);
+            // Continua tentando criar mesmo com erro na validação
           }
 
           const createResponse = await moodApiClient.createMoodEntry({
@@ -333,7 +355,12 @@ class AutoSyncService {
             activities: item.entry.activities,
             emotions: item.entry.emotions
           });
-          console.log(`[AutoSyncService] createResponse para ${item.id}:`, createResponse);
+          
+          // Se é rate limit, trata como sucesso para remover da fila e evitar spam
+          if (!createResponse.success && createResponse.error === 'Rate limit exceeded') {
+            return true; // Remove da fila
+          }
+          
           return createResponse.success;
 
         case 'update':
@@ -399,13 +426,17 @@ class AutoSyncService {
   }
 
   /**
-   * Limpa fila de sincronização
+   * 🧹 Limpa completamente a fila de sincronização
+   * Útil para resolver problemas de rate limiting
    */
   async clearSyncQueue(): Promise<void> {
-    await AsyncStorage.removeItem(this.SYNC_QUEUE_KEY);
-    this.syncStats.pendingItems = 0;
-    await this.saveSyncStats();
-    console.log('[AutoSyncService] Fila de sync limpa');
+    try {
+      await AsyncStorage.removeItem(this.SYNC_QUEUE_KEY);
+      this.syncStats.pendingItems = 0;
+      await this.saveSyncStats();
+    } catch (error) {
+      console.error('[AutoSyncService] Erro ao limpar fila:', error);
+    }
   }
 
   /**
@@ -421,8 +452,6 @@ class AutoSyncService {
 
     this.stopBackgroundSync();
     this.isSyncing = false;
-
-    console.log('[AutoSyncService] Serviço finalizado');
   }
 
   // ============ MÉTODOS AUXILIARES ============

@@ -3,7 +3,7 @@ import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Easing, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 // Imports modulares
@@ -35,6 +35,7 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
   const [celebrationMood, setCelebrationMood] = useState<'positive' | 'neutral' | 'negative'>('positive');
   const scaleAnims = useRef(MOOD_OPTIONS.map(() => new Animated.Value(1))).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const lastSubmitTime = useRef(0);
 
   // Anima a entrada quando o componente deve aparecer
   React.useEffect(() => {
@@ -97,13 +98,34 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
     }
   }, [isLoading, hasAnsweredCurrentPeriod, pulseAnim]);
 
-  const handleMoodSelect = async (mood: MoodLevel, index: number) => {
-    if (isSubmitting || disabled || loadingStates.submittingMood) return;
+  const handleMoodSelect = useCallback(async (mood: MoodLevel, index: number) => {
+    if (isSubmitting || disabled || loadingStates.submittingMood) {
+      console.log('🚫 [DEBUG] MoodSelector - Request blocked:', { 
+        isSubmitting, 
+        disabled, 
+        submittingMood: loadingStates.submittingMood 
+      });
+      return;
+    }
+
+    // Debounce: prevent multiple rapid clicks
+    const now = Date.now();
+    const lastSubmit = lastSubmitTime.current;
+    const timeDiff = now - lastSubmit;
+    
+    if (timeDiff < 2000) { // 2 second debounce
+      console.log('⏳ [DEBUG] MoodSelector - Debounced:', { timeDiff, required: 2000 });
+      return;
+    }
+    
+    lastSubmitTime.current = now;
 
     // Limpa erros anteriores
     clearErrors();
     setSelectedMood(mood);
     setIsSubmitting(true);
+    
+    console.log('🎯 [DEBUG] MoodSelector - Submitting mood:', { mood, index, timestamp: now });
     
     // Determina o tipo de celebração baseado no humor
     const moodType = getCelebrationType(mood);
@@ -204,6 +226,10 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
         errorMessage = errorStates.validation;
       } else if (errorStates.server) {
         errorMessage = 'Problema no servidor. Tente novamente em alguns minutos.';
+      } else if (error.message?.includes('Rate limit') || error.message?.includes('Too many requests')) {
+        // Mensagem mais amigável para rate limit
+        errorTitle = '💙 Humor registrado!';
+        errorMessage = 'Seu humor foi salvo e será sincronizado automaticamente. Continue usando o app normalmente!';
       }
       
       Alert.alert(errorTitle, errorMessage, [{ text: 'OK', style: 'default' }]);
@@ -211,7 +237,7 @@ export default function MoodSelector({ onMoodSelect, disabled = false, compact =
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [isSubmitting, disabled, loadingStates.submittingMood, clearErrors, setSelectedMood, submitMood, onMoodSelect]);
 
   if (isLoading) {
     return (

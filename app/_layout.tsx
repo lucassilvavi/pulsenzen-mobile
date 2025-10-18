@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/context/AuthContext';
+import { AvatarProvider } from '@/context/AvatarContext';
 import { useNavigationLogic } from '@/hooks/useNavigationLogic';
 import { PredictionProvider } from '@/modules/prediction';
 import { ToastProvider } from '@/modules/ui/toast/ToastContext';
@@ -78,16 +79,17 @@ export default function RootLayoutHybrid() {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <AuthProvider>
-          <ToastProvider>
-            <PredictionProvider>
-            <NavigationHandler>
-                <View style={styles.container}>
-                  <StatusBar style="auto" />
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: { backgroundColor: 'white' },
-                    }}
+          <AvatarProvider>
+            <ToastProvider>
+              <PredictionProvider>
+              <NavigationHandler>
+                  <View style={styles.container}>
+                    <StatusBar style="auto" />
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: 'white' },
+                      }}
                   >
                     <Stack.Screen name="index" options={{ headerShown: false }} />
                     <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
@@ -112,6 +114,7 @@ export default function RootLayoutHybrid() {
               </NavigationHandler>
               </PredictionProvider>
             </ToastProvider>
+          </AvatarProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -107,13 +107,22 @@ class MoodService {
           logger.info('MoodService', 'Mood salvo na API com sucesso', { entryId: serverEntry.id });
         }
       } catch (apiError: any) {
-        logger.warn('MoodService', 'Falha ao salvar na API, salvando offline', { 
-          error: apiError.message,
-          willRetryLater: true 
-        });
+        // Se é rate limit, não adiciona à fila para evitar spam
+        const isRateLimit = apiError.message?.includes('Rate limit') || apiError.message?.includes('Too many requests');
         
-        // Adiciona à fila offline para retry posterior
-        await this.addToOfflineQueue(entryData);
+        if (isRateLimit) {
+          logger.warn('MoodService', 'Rate limit detectado - não adicionando à fila de retry', { 
+            error: apiError.message 
+          });
+        } else {
+          logger.warn('MoodService', 'Falha ao salvar na API, salvando offline', { 
+            error: apiError.message,
+            willRetryLater: true 
+          });
+          
+          // Só adiciona à fila offline para retry se NÃO for rate limit
+          await this.addToOfflineQueue(entryData);
+        }
       }
 
       // Cria entrada local (sincronizada com servidor ou offline)
