@@ -133,7 +133,7 @@ export function EditProfileModal({
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    // No Android, sempre fecha o modal
+    // No Android, o DateTimePicker se fecha automaticamente
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
@@ -372,11 +372,20 @@ export function EditProfileModal({
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Data de Nascimento</ThemedText>
                 <TouchableOpacity 
-                  style={[styles.dateButton, errors.dateOfBirth && styles.inputError]}
+                  style={[
+                    styles.dateButton, 
+                    errors.dateOfBirth && styles.inputError,
+                    Platform.OS === 'android' && styles.dateButtonAndroid
+                  ]}
                   onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.7}
                 >
                   <View style={styles.dateButtonContent}>
-                    <Ionicons name="calendar-outline" size={20} color={colors.primary.main} />
+                    <Ionicons 
+                      name="calendar-outline" 
+                      size={22} 
+                      color={colors.primary.main} 
+                    />
                     <View style={styles.dateTextContainer}>
                       <ThemedText style={styles.dateButtonText}>
                         {formatDate(dateOfBirth)}
@@ -385,7 +394,11 @@ export function EditProfileModal({
                         {calculateAge(dateOfBirth)} anos
                       </ThemedText>
                     </View>
-                    <Ionicons name="chevron-down-outline" size={16} color={colors.neutral.text.secondary} />
+                    <Ionicons 
+                      name={Platform.OS === 'android' ? 'chevron-forward' : 'chevron-down-outline'} 
+                      size={18} 
+                      color={colors.neutral.text.secondary} 
+                    />
                   </View>
                 </TouchableOpacity>
                 {errors.dateOfBirth && (
@@ -445,8 +458,8 @@ export function EditProfileModal({
           </View>
         </KeyboardAvoidingView>
 
-        {/* Date Picker Modal */}
-        {showDatePicker && (
+        {/* Date Picker - Renderização específica por plataforma */}
+        {showDatePicker && Platform.OS === 'ios' && (
           <Modal
             visible={showDatePicker}
             transparent={true}
@@ -464,7 +477,7 @@ export function EditProfileModal({
                   </TouchableOpacity>
                   <View style={styles.modalTitleContainer}>
                     <ThemedText style={styles.modalTitle}>Data de Nascimento</ThemedText>
-                    <ThemedText style={styles.modalSubtitle}>Selecione quando você nasceu</ThemedText>
+                    <ThemedText style={styles.modalSubtitle}>Quando você nasceu?</ThemedText>
                   </View>
                   <TouchableOpacity
                     onPress={() => setShowDatePicker(false)}
@@ -478,7 +491,7 @@ export function EditProfileModal({
                   <DateTimePicker
                     value={dateOfBirth}
                     mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    display="spinner"
                     onChange={onDateChange}
                     maximumDate={new Date()}
                     minimumDate={new Date(1900, 0, 1)}
@@ -489,12 +502,25 @@ export function EditProfileModal({
                 
                 <View style={styles.modalFooter}>
                   <ThemedText style={styles.modalFooterText}>
-                    Idade calculada: <ThemedText style={styles.modalFooterAge}>{calculateAge(dateOfBirth)} anos</ThemedText>
+                    Idade: <ThemedText style={styles.modalFooterAge}>{calculateAge(dateOfBirth)} anos</ThemedText>
                   </ThemedText>
                 </View>
               </View>
             </View>
           </Modal>
+        )}
+
+        {/* Android: DateTimePicker nativo mais limpo */}
+        {showDatePicker && Platform.OS === 'android' && (
+          <DateTimePicker
+            value={dateOfBirth}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+            maximumDate={new Date()}
+            minimumDate={new Date(1900, 0, 1)}
+            themeVariant="light"
+          />
         )}
       </ThemedView>
     </Modal>
@@ -598,6 +624,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: spacing.lg,
     backgroundColor: colors.neutral.white,
+  },
+  dateButtonAndroid: {
+    borderRadius: 8,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   dateButtonContent: {
     flexDirection: 'row',
