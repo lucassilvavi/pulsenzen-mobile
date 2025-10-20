@@ -12,6 +12,7 @@ import { useUserDataNew } from '@/context/UserDataContext';
 import { useUserAvatar } from '@/hooks/useUserAvatar';
 import { useUserData } from '@/hooks/useUserData';
 import { fontSize, spacing } from '@/utils/responsive';
+import { AppVersion } from '@/utils/AppVersion';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -291,6 +292,16 @@ export default function ProfileScreen() {
           onPress={handleLogout}
           style={styles.logoutButton}
         />
+
+        {/* App Version */}
+        <View style={styles.versionContainer}>
+          <ThemedText style={styles.versionText}>
+            PulseZen {AppVersion.getSimpleVersion()}
+          </ThemedText>
+          <ThemedText style={styles.versionSubtext}>
+            Build {AppVersion.getBuildNumber()}
+          </ThemedText>
+        </View>
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -465,5 +476,21 @@ const styles = StyleSheet.create({
   biometricSettings: {
     borderRadius: 0,
     backgroundColor: 'transparent',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  versionText: {
+    fontSize: fontSize.sm,
+    fontFamily: 'Inter-Medium',
+    color: colors.neutral.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  versionSubtext: {
+    fontSize: fontSize.xs,
+    fontFamily: 'Inter-Regular',
+    color: colors.neutral.text.disabled,
   },
 });

@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
+import { AppVersion } from '@/utils/AppVersion';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -374,6 +375,13 @@ export default function AuthScreen() {
               <ThemedText style={styles.linkText}>Política de Privacidade</ThemedText>
             </TouchableOpacity>
           </View>
+          
+          {/* App Version */}
+          <View style={styles.versionContainer}>
+            <ThemedText style={styles.versionText}>
+              PulseZen {AppVersion.getSimpleVersion()}
+            </ThemedText>
+          </View>
         </View>
 
         {/* Biometric Setup Modal */}
@@ -515,5 +523,14 @@ const styles = StyleSheet.create({
     color: colors.primary.main,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  versionContainer: {
+    marginTop: spacing.lg,
+    alignItems: 'center',
+  },
+  versionText: {
+    fontSize: fontSize.xs,
+    color: colors.neutral.text.disabled,
+    fontWeight: '500',
   },
 });
