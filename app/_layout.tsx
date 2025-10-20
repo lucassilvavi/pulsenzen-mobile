@@ -1,5 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { AvatarProvider } from '@/context/AvatarContext';
+import { SessionProvider } from '@/context/SessionContext';
 import { UserDataProvider } from '@/context/UserDataContext';
 import { useNavigationLogic } from '@/hooks/useNavigationLogic';
 import { PredictionProvider } from '@/modules/prediction';
@@ -79,20 +80,21 @@ export default function RootLayoutHybrid() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <AvatarProvider>
-            <UserDataProvider>
-              <ToastProvider>
-                <PredictionProvider>
-                <NavigationHandler>
-                  <View style={styles.container}>
-                    <StatusBar style="auto" />
-                    <Stack
-                      screenOptions={{
-                        headerShown: false,
-                        contentStyle: { backgroundColor: 'white' },
-                      }}
-                  >
+        <SessionProvider>
+          <AuthProvider>
+            <AvatarProvider>
+              <UserDataProvider>
+                <ToastProvider>
+                  <PredictionProvider>
+                  <NavigationHandler>
+                    <View style={styles.container}>
+                      <StatusBar style="auto" />
+                      <Stack
+                        screenOptions={{
+                          headerShown: false,
+                          contentStyle: { backgroundColor: 'white' },
+                        }}
+                    >
                     <Stack.Screen name="index" options={{ headerShown: false }} />
                     <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, gestureEnabled: false }} />
                     <Stack.Screen name="onboarding/auth" options={{ headerShown: false, gestureEnabled: false }} />
@@ -113,12 +115,13 @@ export default function RootLayoutHybrid() {
                     <Stack.Screen name="prediction-dashboard" options={{ headerShown: false }} />
                   </Stack>
                 </View>
-              </NavigationHandler>
-              </PredictionProvider>
-            </ToastProvider>
-          </UserDataProvider>
-        </AvatarProvider>
-      </AuthProvider>
+                  </NavigationHandler>
+                  </PredictionProvider>
+                </ToastProvider>
+              </UserDataProvider>
+            </AvatarProvider>
+          </AuthProvider>
+        </SessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

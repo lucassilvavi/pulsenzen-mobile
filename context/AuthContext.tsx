@@ -16,6 +16,7 @@ interface AuthContextType {
     lastName: string;
   }) => Promise<{ success: boolean; message: string; isInformational?: boolean }>;
   logout: () => Promise<void>;
+  forceLogoutDueToExpiredSession: () => Promise<void>;
   checkAuthStatus: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   completeOnboarding: (onboardingData: OnboardingData) => Promise<{ success: boolean; message: string }>;
@@ -123,9 +124,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUserProfile(null);
     } catch (error) {
       console.error('Logout error:', error);
+      // Force clear state even if logout fails
+      setUser(null);
+      setUserProfile(null);
     } finally {
       setIsLoading(false);
     }
+  });
+
+  const forceLogoutDueToExpiredSession = useStableCallback(async () => {
+    console.info('AuthContext: Forcing logout due to expired session');
+    try {
+      await AuthService.logout();
+    } catch (error) {
+      // Ignore logout errors in forced logout
+      console.warn('AuthContext: Error during forced logout, ignoring:', error);
+    }
+    
+    // Always clear state
+    setUser(null);
+    setUserProfile(null);
+    setIsLoading(false);
   });
 
   const refreshProfile = useStableCallback(async () => {
@@ -136,6 +155,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     } catch (error) {
       console.error('Refresh profile error:', error);
+      
+      // Se erro contém 401, força logout
+      const errorMessage = (error as any)?.message || String(error);
+      if (errorMessage.includes('401') || errorMessage.includes('Session expired')) {
+        console.info('AuthContext: Session expired during profile refresh, forcing logout');
+        await logout();
+      }
     }
   });
 
@@ -207,6 +233,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     register,
     logout,
+    forceLogoutDueToExpiredSession,
     checkAuthStatus,
     refreshProfile,
     completeOnboarding,

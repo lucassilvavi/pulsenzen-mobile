@@ -141,9 +141,16 @@ class SimpleNetworkManager {
         }        // --- REFRESH TOKEN LOGIC START ---
         if (status === 401 && !error.config?._retry && this.authCallbacks) {
           error.config._retry = true;
+          
+          logger.info('NetworkManager', '🔐 Token expired (401), attempting refresh...', {
+            url: this.sanitizeUrl(error.config?.url || ''),
+            method: error.config?.method?.toUpperCase(),
+          });
+          
           try {
             const refreshResult = await this.authCallbacks.refreshAuthToken();
             if (refreshResult.success) {
+              logger.info('NetworkManager', '✅ Token refreshed successfully, retrying request');
               // Pega novo token e atualiza header Authorization
               const newAuthHeader = await this.authCallbacks.getAuthHeader();
               error.config.headers = {
@@ -153,18 +160,28 @@ class SimpleNetworkManager {
               // Refaz a requisição original com novo token
               return this.client.request(error.config);
             } else {
-              logger.info('NetworkManager', 'Refresh token failed, logging out and redirecting to login');
+              logger.info('NetworkManager', '❌ Token refresh failed, logging out user');
               await this.authCallbacks.logout();
-              logger.info('NetworkManager', 'Logout completed, redirecting to /onboarding/auth');
-              router.replace('/onboarding/auth');
-              return Promise.reject(error);
+              
+              // Delay pequeno para garantir que logout foi processado
+              setTimeout(() => {
+                logger.info('NetworkManager', '🔄 Redirecting to auth screen');
+                router.replace('/onboarding/auth');
+              }, 100);
+              
+              return Promise.reject(new Error('Session expired. Please login again.'));
             }
           } catch (refreshError) {
-            logger.info('NetworkManager', 'Exception during refresh, logging out and redirecting to login', refreshError);
+            logger.error('NetworkManager', '💥 Exception during token refresh', refreshError as Error);
             await this.authCallbacks.logout();
-            logger.info('NetworkManager', 'Logout completed, redirecting to /onboarding/auth');
-            router.replace('/onboarding/auth');
-            return Promise.reject(error);
+            
+            // Delay pequeno para garantir que logout foi processado
+            setTimeout(() => {
+              logger.info('NetworkManager', '🔄 Redirecting to auth screen after error');
+              router.replace('/onboarding/auth');
+            }, 100);
+            
+            return Promise.reject(new Error('Session expired. Please login again.'));
           }
         }
         // --- REFRESH TOKEN LOGIC END ---
@@ -358,17 +375,7 @@ class SimpleNetworkManager {
 
   private getErrorMessage(error: any): string {
     // Log detalhado do erro para debug
-    logger.error('NetworkManager', 'Detailed error analysis', {
-      code: (error as any).code,
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        timeout: error.config?.timeout
-      }
-    });
+    logger.error('NetworkManager', 'Detailed error analysis', error);
 
     if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
       return ERROR_CODES.NETWORK_ERROR;
