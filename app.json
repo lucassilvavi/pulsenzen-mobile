@@ -10,6 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.lucassilvavi.pulsezenapp",
+      "buildNumber": "5",
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
@@ -22,6 +23,7 @@
     },
     "android": {
       "package": "com.lucassilvavi.pulsezenapp",
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
