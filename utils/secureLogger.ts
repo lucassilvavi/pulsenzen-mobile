@@ -104,15 +104,20 @@ class Logger {
     }
 
     try {
-      const formattedMessage = this.formatMessage(levelName, context, message, data);
+      // Validate inputs to prevent null/undefined errors
+      const safeContext = context || 'Unknown';
+      const safeMessage = message || 'No message provided';
+      const safeLevelName = levelName || 'UNKNOWN';
+      
+      const formattedMessage = this.formatMessage(safeLevelName, safeContext, safeMessage, data);
       
       // Ensure we never pass null or undefined to console methods
-      const safeMessage = formattedMessage || `[LOG] ${levelName} - ${context}: ${message} [FALLBACK]`;
+      const logMessage = formattedMessage || `[LOG] ${safeLevelName} - ${safeContext}: ${safeMessage} [FALLBACK]`;
       
       // Additional safety check
-      if (typeof safeMessage !== 'string') {
-        console.warn(`[SecureLogger] safeMessage is not a string:`, typeof safeMessage, safeMessage);
-        const emergencyMessage = `[LOG] ${levelName} - ${context}: ${message} [TYPE_ERROR]`;
+      if (typeof logMessage !== 'string') {
+        console.warn(`[SecureLogger] logMessage is not a string:`, typeof logMessage, logMessage);
+        const emergencyMessage = `[LOG] ${safeLevelName} - ${safeContext}: ${safeMessage} [TYPE_ERROR]`;
         
         if (this.isDevelopment) {
           console.error(emergencyMessage);
@@ -123,16 +128,16 @@ class Logger {
       if (this.isDevelopment) {
         switch (level) {
           case LogLevel.DEBUG:
-            console.debug(safeMessage);
+            console.debug(logMessage);
             break;
           case LogLevel.INFO:
-            console.info(safeMessage);
+            console.info(logMessage);
             break;
           case LogLevel.WARN:
-            console.warn(safeMessage);
+            console.warn(logMessage);
             break;
           case LogLevel.ERROR:
-            console.error(safeMessage);
+            console.error(logMessage);
             break;
         }
       }

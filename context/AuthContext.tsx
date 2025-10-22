@@ -1,6 +1,6 @@
 import { useMemoizedContextValue, useStableCallback } from '@/hooks/usePerformanceOptimization';
 import AuthService, { OnboardingData, User, UserProfile } from '@/services/authService';
-import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 interface AuthContextType {
   user: User | null;
@@ -220,9 +220,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   });
 
-  // useEffect(() => {
-  //   checkAuthStatus();
-  // }, [checkAuthStatus]);
+  // Check auth status on mount to ensure proper state initialization
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   // Optimize context value with memoization
   const contextValue = useMemoizedContextValue({

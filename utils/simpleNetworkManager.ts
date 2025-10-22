@@ -139,7 +139,12 @@ class SimpleNetworkManager {
             responseData: errorData,
           });
         }        // --- REFRESH TOKEN LOGIC START ---
-        if (status === 401 && !error.config?._retry && this.authCallbacks) {
+        // Don't attempt token refresh for auth endpoints (login, register, refresh)
+        const isAuthEndpoint = error.config?.url?.includes('/auth/login') || 
+                              error.config?.url?.includes('/auth/register') || 
+                              error.config?.url?.includes('/auth/refresh-token');
+        
+        if (status === 401 && !error.config?._retry && this.authCallbacks && !isAuthEndpoint) {
           error.config._retry = true;
           
           logger.info('NetworkManager', '🔐 Token expired (401), attempting refresh...', {
@@ -374,8 +379,16 @@ class SimpleNetworkManager {
   }
 
   private getErrorMessage(error: any): string {
-    // Log detalhado do erro para debug
-    logger.error('NetworkManager', 'Detailed error analysis', error);
+    // Log detalhado do erro para debug - com proteção contra null/undefined
+    if (error) {
+      logger.error('NetworkManager', 'Detailed error analysis', error);
+    } else {
+      logger.error('NetworkManager', 'Error is null or undefined');
+    }
+
+    if (!error) {
+      return ERROR_CODES.NETWORK_ERROR;
+    }
 
     if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
       return ERROR_CODES.NETWORK_ERROR;

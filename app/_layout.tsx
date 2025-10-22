@@ -1,5 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { AvatarProvider } from '@/context/AvatarContext';
+import { MoodProvider } from '@/context/MoodContext';
 import { SessionProvider } from '@/context/SessionContext';
 import { UserDataProvider } from '@/context/UserDataContext';
 import { useNavigationLogic } from '@/hooks/useNavigationLogic';
@@ -41,12 +42,9 @@ export default function RootLayoutHybrid() {
   // Memoize the app preparation function to prevent re-creation
   const prepareApp = useCallback(async () => {
     try {
-      console.log('🚀 Complete Layout: Starting app initialization');
-      
       // Simple delay to simulate loading
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log('✅ Complete Layout: App initialization completed');
       setAppIsReady(true);
     } catch (e) {
       console.error('❌ Complete Layout: App preparation failed', e);
@@ -61,7 +59,6 @@ export default function RootLayoutHybrid() {
   // Memoize the splash screen hiding effect
   useEffect(() => {
     if (appIsReady) {
-      console.log('🎉 Complete Layout: Hiding splash screen');
       SplashScreen.hideAsync();
     }
   }, [appIsReady]);
@@ -75,8 +72,6 @@ export default function RootLayoutHybrid() {
     );
   }
 
-  console.log('🎯 Complete Layout: Rendering main app');
-
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
@@ -84,8 +79,9 @@ export default function RootLayoutHybrid() {
           <AuthProvider>
             <AvatarProvider>
               <UserDataProvider>
-                <ToastProvider>
-                  <PredictionProvider>
+                <MoodProvider>
+                  <ToastProvider>
+                    <PredictionProvider>
                   <NavigationHandler>
                     <View style={styles.container}>
                       <StatusBar style="auto" />
@@ -118,10 +114,11 @@ export default function RootLayoutHybrid() {
                   </NavigationHandler>
                   </PredictionProvider>
                 </ToastProvider>
-              </UserDataProvider>
-            </AvatarProvider>
-          </AuthProvider>
-        </SessionProvider>
+              </MoodProvider>
+            </UserDataProvider>
+          </AvatarProvider>
+        </AuthProvider>
+      </SessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

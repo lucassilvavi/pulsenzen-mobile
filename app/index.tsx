@@ -4,7 +4,7 @@ import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
 import { ThemedView } from '@/components/ThemedView';
 import { useUserData } from '@/hooks/useUserData';
-import { MoodSelector } from '@/modules/mood';
+import { MoodSelector } from '@/components/MoodSelector';
 import { PredictionBanner } from '@/modules/prediction';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';

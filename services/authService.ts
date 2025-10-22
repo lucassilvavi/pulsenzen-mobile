@@ -6,6 +6,21 @@ import { networkManager } from '../utils/simpleNetworkManager';
 
 const API_BASE_URL = appConfig.getApiUrl();
 
+// JWT decode utility (simple base64 decode for payload)
+function decodeJWT(token: string): any {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = parts[1];
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+}
+
 // Legacy types for backward compatibility - will be removed
 export interface RegisterData {
   email: string;
@@ -253,15 +268,19 @@ class AuthService {
           message: response.message || 'Login successful',
         };
       } else {
+        // Handle error responses from the server
+        const errorMessage = response.error || response.message || response.data?.message || 'Invalid credentials';
+        
         logger.warn('AuthService', 'Login failed', { 
-          error: response.message || 'Invalid response structure',
-          status: response.status 
+          error: errorMessage,
+          status: response.status,
+          success: response.success 
         });
 
         return {
           success: false,
-          error: response.message || 'Login failed',
-          message: response.message || 'Invalid credentials',
+          error: errorMessage,
+          message: errorMessage,
         };
       }
     } catch (error) {
@@ -1315,6 +1334,29 @@ class AuthService {
         success: false,
         error: 'Failed to disable biometric authentication',
       };
+    }
+  }
+
+  /**
+   * Get mood status from JWT token
+   */
+  static async getMoodStatusFromToken(): Promise<{ manha: boolean; tarde: boolean; noite: boolean } | null> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return null;
+      }
+
+      const decoded = decodeJWT(token);
+      
+      if (!decoded || !decoded.moodStatus) {
+        return null;
+      }
+
+      return decoded.moodStatus;
+    } catch (error) {
+      logger.error('AuthService', 'Error getting mood status from token', error as Error);
+      return null;
     }
   }
 }

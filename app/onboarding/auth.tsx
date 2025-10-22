@@ -9,18 +9,18 @@ import TermsModal from '@/components/modals/TermsModal';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
-import { fontSize, spacing } from '@/utils/responsive';
 import { AppVersion } from '@/utils/AppVersion';
+import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const { height } = Dimensions.get('window');
