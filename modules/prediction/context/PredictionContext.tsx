@@ -120,13 +120,11 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
   }, [dataSource, toast]);
 
   useEffect(() => {
-    console.log('[PredictionContext] 🏁 Inicializando PredictionProvider...');
     (async () => {
       try {
         // 🔒 Guard: Verifica autenticação ANTES de carregar dados
         const isAuth = await AuthService.isAuthenticated();
         if (!isAuth) {
-          console.log('[PredictionContext] ⚠️ Usuário não autenticado, aguardando login para carregar predições');
           return;
         }
 

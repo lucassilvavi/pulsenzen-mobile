@@ -80,7 +80,7 @@ class BiometricAuthService {
    */
   static async checkBiometricCapabilities(): Promise<BiometricCapabilities> {
     try {
-      logger.info('BiometricAuthService', 'Checking device biometric capabilities');
+      logger.debug('BiometricAuthService', 'Checking device biometric capabilities');
 
       // Check if device has biometric hardware
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
@@ -98,7 +98,7 @@ class BiometricAuthService {
       // Check if biometrics are enrolled
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
       if (!isEnrolled) {
-        logger.info('BiometricAuthService', 'No biometrics enrolled on device');
+        logger.debug('BiometricAuthService', 'No biometrics enrolled on device');
         return {
           hasBiometrics: false,
           hasDevicePasscode: false,

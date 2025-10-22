@@ -35,8 +35,6 @@ export function useNavigationLogic() {
 
   // Simplified navigation logic
   useEffect(() => {
-    console.log('NavigationLogic: Effect triggered - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'pathname:', pathname, 'navigationInProgress:', navigationInProgress.current);
-    
     if (isLoading || navigationInProgress.current) {
       return;
     }
@@ -49,10 +47,7 @@ export function useNavigationLogic() {
         const publicRoutes = ['/onboarding/welcome', '/onboarding/auth'];
         const isOnPublicRoute = publicRoutes.some(route => pathname.includes(route));
         
-        console.log('NavigationLogic: Usuário não autenticado - pathname:', pathname, 'isOnPublicRoute:', isOnPublicRoute);
-        
         if (!isOnPublicRoute) {
-          console.log('NavigationLogic: Usuário não autenticado tentando acessar rota privada, redirecionando para welcome');
           await router.replace('/onboarding/welcome');
         }
       } else {
@@ -62,16 +57,13 @@ export function useNavigationLogic() {
         if (onboardingDone) {
           // Onboarding completo - pode acessar rotas privadas
           if (pathname.includes('/onboarding')) {
-            console.log('NavigationLogic: Onboarding completo, redirecionando para home');
             await router.replace('/');
           }
         } else {
           // Onboarding não completo - vai para setup
           if (pathname === '/onboarding/auth') {
-            console.log('NavigationLogic: Login feito, indo para personal-info');
             await router.replace('/onboarding/personal-info');
           } else if (!pathname.includes('/onboarding') || pathname === '/onboarding/welcome') {
-            console.log('NavigationLogic: Onboarding não completo, indo para personal-info');
             await router.replace('/onboarding/personal-info');
           }
         }

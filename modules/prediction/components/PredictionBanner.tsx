@@ -45,7 +45,6 @@ export const PredictionBanner: React.FC = () => {
   
   // 🔒 GUARD: Só retorna null DEPOIS de todos os hooks serem executados
   if (!isAuthenticated) {
-    console.log('[PredictionBanner] ⚠️ Usuário não autenticado - não renderizando PredictionBanner (Task 8)');
     return null;
   }
   
