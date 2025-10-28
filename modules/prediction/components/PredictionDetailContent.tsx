@@ -6,6 +6,21 @@ import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { usePrediction } from '../context/PredictionContext';
 
+function getRiskDetailTitle(level?: string): string {
+  switch (level) {
+    case 'low':
+      return 'Estado Atual: Estável';
+    case 'medium':
+      return 'Estado Atual: Atenção';
+    case 'high':
+      return 'Estado Atual: Alerta';
+    case 'critical':
+      return 'Estado Atual: Urgente';
+    default:
+      return 'Equilíbrio Atual';
+  }
+}
+
 /**
  * Pure (non-Modal) internal content used by PredictionDetailModal.
  * Extracted to enable simpler and more stable unit tests without dealing with RN Modal/animation quirks.
@@ -20,7 +35,7 @@ export const PredictionDetailContent: React.FC<PredictionDetailContentProps> = (
   return (
     <View style={styles.sheet} testID="prediction-detail-content">
       <View style={[styles.header, { borderBottomColor: palette.border }]}>            
-        <ThemedText style={[styles.title, { color: palette.text }]}>Equilíbrio Atual</ThemedText>
+        <ThemedText style={[styles.title, { color: palette.text }]}>{getRiskDetailTitle(current.level)}</ThemedText>
         {onClose && (
           <TouchableOpacity onPress={onClose} accessibilityLabel="Fechar" style={styles.closeBtn}>
             <Ionicons name="close" size={22} color={palette.text} />

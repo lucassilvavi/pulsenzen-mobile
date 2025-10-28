@@ -10,8 +10,23 @@ import { track } from '../services/Telemetry';
 import { PredictionDetailModal } from './PredictionDetailModal';
 
 function levelColors(level: string) {
-  const palette = getRiskPalette((['low','medium','high'].includes(level) ? level : 'low') as 'low'|'medium'|'high');
+  const palette = getRiskPalette((['low','medium','high','critical'].includes(level) ? level : 'low') as 'low'|'medium'|'high'|'critical');
   return { bg: [palette.bg, palette.bgAlt] as const, text: palette.text };
+}
+
+function getRiskTitle(level?: string): string {
+  switch (level) {
+    case 'low':
+      return 'Estável';
+    case 'medium':
+      return 'Atenção';
+    case 'high':
+      return 'Alerta';
+    case 'critical':
+      return 'Urgente';
+    default:
+      return 'Equilíbrio';
+  }
 }
 
 export const PredictionBanner: React.FC = () => {
@@ -69,7 +84,7 @@ export const PredictionBanner: React.FC = () => {
             </>
           ) : (
             <>
-              <ThemedText style={[styles.title, { color: palette.text }]}>Equilíbrio</ThemedText>
+              <ThemedText style={[styles.title, { color: palette.text }]}>{getRiskTitle(current?.level)}</ThemedText>
               {loading && !current && (
                 <View style={{ marginTop:4 }}>
                   <ActivityIndicator size="small" color={palette.text} />

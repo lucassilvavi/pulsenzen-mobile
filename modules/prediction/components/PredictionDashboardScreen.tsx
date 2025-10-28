@@ -12,6 +12,21 @@ import InsufficientDataContent from './InsufficientDataContent';
 import { InterventionsCarousel } from './InterventionsCarousel';
 import { Skeleton } from './Skeleton';
 
+function getRiskTitle(level?: string): string {
+  switch (level) {
+    case 'low':
+      return 'Saúde Emocional Estável';
+    case 'medium':
+      return 'Atenção à Saúde Emocional';
+    case 'high':
+      return 'Alerta de Saúde Emocional';
+    case 'critical':
+      return 'Cuidado Urgente Necessário';
+    default:
+      return 'Equilíbrio Emocional';
+  }
+}
+
 export const PredictionDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { current, factors, interventions, refresh, loading, lastUpdated, insufficientData } = usePrediction();
@@ -48,7 +63,7 @@ export const PredictionDashboardScreen: React.FC = () => {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Voltar">
           <Ionicons name="chevron-back" size={26} color={colors.primary.main} />
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Equilíbrio Emocional</ThemedText>
+        <ThemedText style={styles.headerTitle}>{getRiskTitle(current?.level)}</ThemedText>
         <View style={styles.headerRight} />
       </View>
 
