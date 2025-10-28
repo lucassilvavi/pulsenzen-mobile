@@ -25,7 +25,6 @@ export const PredictionBanner: React.FC = () => {
   useEffect(() => {
     // Só inicializa se estiver autenticado
     if (isAuthenticated && !hasInitialized) {
-      console.log('[PredictionBanner] 🚀 Banner renderizado, iniciando lazy loading (Task 7)');
       initializeIfNeeded();
       track('prediction_banner_view');
       setHasInitialized(true);

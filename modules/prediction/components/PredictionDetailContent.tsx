@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { colors, getRiskPalette } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { usePrediction } from '../context/PredictionContext';
 
 /**
@@ -31,7 +31,13 @@ export const PredictionDetailContent: React.FC<PredictionDetailContentProps> = (
         <View style={[styles.scoreCard, { backgroundColor: palette.bgAlt, borderColor: palette.border }]}>            
           <ThemedText style={[styles.scoreText, { color: palette.text }]}>{(current.score*100).toFixed(0)}%</ThemedText>
           <ThemedText style={styles.scoreLabel}>{current.label}</ThemedText>
-          <ThemedText style={styles.confidence}>Confiança {Math.round(current.confidence*100)}%</ThemedText>
+          <ThemedText style={styles.confidence}>
+            {current.confidence >= 0.7 
+              ? '✅ Análise completa' 
+              : current.confidence >= 0.5
+              ? '⏳ Coletando mais dados...'
+              : '📊 Continue registrando para melhorar a análise'}
+          </ThemedText>
         </View>
 
         <ThemedText style={styles.sectionTitle}>Principais Fatores</ThemedText>

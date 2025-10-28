@@ -43,7 +43,6 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
       : new CrisisPredictionApiClient(); // Force API client for testing
   }, []);
   const generate = useCallback(async () => {
-    console.log('[PredictionContext] 🚀 Gerando predição...');
     setState(s => ({ ...s, loading: true }));
     await new Promise(r => setTimeout(r, 400));
     
@@ -51,7 +50,6 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
       // 🔒 Guard: Verifica autenticação ANTES de fazer request
       const isAuth = await AuthService.isAuthenticated();
       if (!isAuth) {
-        console.log('[PredictionContext] ⚠️ Usuário não autenticado, aguardando login');
         setState(s => ({
           ...s,
           loading: false,
@@ -64,13 +62,10 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
         return;
       }
 
-      console.log('[PredictionContext] 📡 Fazendo fetch com dataSource...');
       const result = await dataSource.fetchLatest();
-      console.log('[PredictionContext] ✅ Resultado recebido:', result);
       
       // Verificar se é dados insuficientes
       if ('type' in result && result.type === 'insufficient_data') {
-        console.log('[PredictionContext] ⚠️ Dados insuficientes para análise');
         setState(s => ({
           ...s,
           loading: false,
@@ -112,93 +107,57 @@ export const PredictionProvider: React.FC<{ children: React.ReactNode }> = memo(
         }
         return newState;
       });
-      
-      console.log('[PredictionContext] 🎯 Estado atualizado com predição');
     } catch (error) {
-      console.error('[PredictionContext] ❌ Erro ao gerar predição:', error);
+      // Error handled silently
     }
   }, [dataSource, toast]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        // 🔒 Guard: Verifica autenticação ANTES de carregar dados
-        const isAuth = await AuthService.isAuthenticated();
-        if (!isAuth) {
-          return;
-        }
-
-        // 🎯 Task 7: Só carrega cache, NÃO faz fetch automático
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          console.log('[PredictionContext] 💾 Dados em cache encontrados, carregando sem fetch automático (Task 7)');
-          const persisted: PredictionState = JSON.parse(raw);
-          setState({ ...persisted, onboardingSeen: (persisted as any).onboardingSeen || false });
-        } else {
-          console.log('[PredictionContext] 🆕 Nenhum cache encontrado, aguardando lazy loading (Task 7)');
-        }
-      } catch {
-        console.log('[PredictionContext] ❌ Erro ao carregar cache, aguardando lazy loading (Task 7)');
-      }
-    })();
+    // 🔥 REMOVIDO: Não carrega mais cache no mount
+    // Predições são sempre em tempo real via lazy loading no banner
   }, []); // Array vazio para executar apenas uma vez
 
   // 🎯 Task 7: Nova função para inicialização sob demanda
   const initializeIfNeeded = useCallback(async () => {
     // Guard: Se já está inicializando, evita duplicação
     if (isInitializingRef.current) {
-      console.log('[PredictionContext] 🚫 Já está inicializando, ignorando chamada duplicada (Task 7)');
       return;
     }
 
-    // Se já tem dados válidos, não precisa fazer fetch
-    if (state.current && state.lastUpdated && (Date.now() - state.lastUpdated) < TTL_MS) {
-      console.log('[PredictionContext] ✅ Dados já válidos, não precisa inicializar (Task 7)');
-      return;
-    }
+    // 🔥 MUDANÇA: Sempre busca dados frescos, sem verificar cache
+    // Predições devem ser sempre em tempo real após login
 
     // Se já está carregando, não duplicar
     if (state.loading) {
-      console.log('[PredictionContext] ⏳ Já está carregando, aguardando... (Task 7)');
       return;
     }
 
     // Marca como inicializando
     isInitializingRef.current = true;
-    console.log('[PredictionContext] 🚀 Inicializando sob demanda (Task 7)');
     
     try {
       // Verifica autenticação
       const isAuth = await AuthService.isAuthenticated();
       if (!isAuth) {
-        console.log('[PredictionContext] ⚠️ Não autenticado para lazy loading (Task 7)');
         return;
       }
 
-      // Verifica cache novamente (pode ter mudado)
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const persisted: PredictionState = JSON.parse(raw);
-        const isFresh = persisted.lastUpdated && (Date.now() - persisted.lastUpdated) < TTL_MS;
-        if (isFresh) {
-          console.log('[PredictionContext] ✅ Cache ainda válido durante lazy loading (Task 7)');
-          setState({ ...persisted, onboardingSeen: (persisted as any).onboardingSeen || false });
-          return;
-        }
-      }
-
-      // Faz fetch apenas se necessário
-      console.log('[PredictionContext] 📡 Fazendo fetch durante lazy loading (Task 7)');
+      // 🔥 Sempre faz fetch em tempo real, ignorando cache
       await generate();
     } catch (error) {
-      console.error('[PredictionContext] ❌ Erro durante lazy loading (Task 7):', error);
+      // Error handled silently
     } finally {
       // Sempre limpa o flag no final
       isInitializingRef.current = false;
     }
-  }, [state.current, state.lastUpdated, state.loading, generate, STORAGE_KEY, TTL_MS]);
+  }, [state.loading, generate]);
 
-  const refresh = useCallback(async () => { if(!state.loading) await generate(); }, [state.loading, generate]);
+  const refresh = useCallback(async () => { 
+    if (!state.loading) {
+      // 🔥 Força fetch em tempo real, ignorando cache
+      await generate(); 
+    }
+  }, [state.loading, generate]);
   const markInterventionCompleted = useCallback((id: string) => {
     setState(s => {
       const updated = s.interventions.map(i => i.id === id ? { ...i, completed: true } : i);

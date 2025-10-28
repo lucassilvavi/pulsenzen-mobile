@@ -164,6 +164,12 @@ export const colors = {
       bgAlt: '#FEF3F4',
       text: '#B4232C',
       border: '#F5B6BC',
+    },
+    critical: {
+      bg: '#F3E8FF',
+      bgAlt: '#FAF5FF',
+      text: '#7C2D92',
+      border: '#DEC4F5',
     }
   },
   // Prediction factor categories (tokens para UI)
@@ -360,7 +366,7 @@ export const commonStyles = StyleSheet.create({
   roundedFull: { borderRadius: borderRadius.round },
 });
 
-export function getRiskPalette(level: 'low' | 'medium' | 'high'){ return colors.risk[level]; }
+export function getRiskPalette(level: 'low' | 'medium' | 'high' | 'critical'){ return colors.risk[level]; }
 
 export default {
   colors,

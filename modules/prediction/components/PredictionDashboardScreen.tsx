@@ -103,13 +103,13 @@ export const PredictionDashboardScreen: React.FC = () => {
           <>
             <View style={styles.card}>
               <ThemedText style={styles.cardTitle}>Fatores Recentes</ThemedText>
-              {factors.map(f => {
+              {factors.map((f, idx) => {
                 const weightPct = Math.round(f.weight * 100);
                 const intensity = weightPct >= 25 ? 'Alto' : weightPct >= 15 ? 'Médio' : 'Leve';
                 const expanded = !!expandedFactors[f.id];
                 const meta = getFactorCategoryMeta(f.category);
                 return (
-                  <View key={f.id} style={styles.factorRow}>
+                  <View key={`${f.id}-${idx}`} style={styles.factorRow}>
                     <View style={styles.factorHeader}>
                       <View style={styles.factorLeft}>
                         <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}> 

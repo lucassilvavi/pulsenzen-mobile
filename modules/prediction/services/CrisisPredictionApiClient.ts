@@ -31,6 +31,8 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         return this.createInsufficientDataResponse('Você precisa estar logado para ver sua análise de bem-estar.');
       }
 
+      // Sempre buscar dados em tempo real, sem cache
+      // Predições devem ser sempre atualizadas no login e em tempo real
       const response = await networkManager.get<any>(
         appConfig.getApiUrl(CrisisPredictionApiClient.ENDPOINT),
         {
@@ -39,26 +41,33 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
           priority: 'high',
           tags: ['prediction', 'crisis'],
           headers: authHeader,
+          cache: false, // ⚡ NUNCA usar cache - sempre buscar em tempo real
         }
       );
 
+      // NetworkManager já retorna { success, data }
+      // Dentro de data está a resposta da API que também tem { success, data }
       if (response.success && response.data) {
         const apiResponse = response.data;
         
-        if (apiResponse.success && apiResponse.data) {
+        // Verifica se a API retornou sucesso
+        if (apiResponse.success === true && apiResponse.data) {
           logger.info('CrisisPredictionApiClient', 'Successfully fetched prediction from backend');
           
           // Map backend response to mobile types
           const prediction = this.mapApiResponseToPredictionDetail(apiResponse.data);
           return prediction;
-        } else {
+        } 
+        
+        // API retornou falha explícita
+        if (apiResponse.success === false) {
           logger.warn('CrisisPredictionApiClient', 'API response indicates failure', { 
-            success: apiResponse.success,
+            message: apiResponse.message,
             error: apiResponse.error 
           });
           
           // Se a API explicitamente disse que não há dados, não use mock
-          if (apiResponse.error && apiResponse.error.includes('predição válida encontrada')) {
+          if (apiResponse.message && apiResponse.message.includes('predição válida encontrada')) {
             return this.createInsufficientDataResponse(
               'Ainda não temos dados suficientes para gerar sua análise personalizada.',
               [
@@ -71,6 +80,11 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
           
           return this.createInsufficientDataResponse('Erro ao processar dados de análise.');
         }
+        
+        // Formato antigo ou inesperado - trata como dados da predição diretamente
+        logger.info('CrisisPredictionApiClient', 'Legacy or direct format detected, using data directly');
+        const prediction = this.mapApiResponseToPredictionDetail(apiResponse);
+        return prediction;
       } else {
         logger.warn('CrisisPredictionApiClient', 'Network request failed', {
           status: response.status,
@@ -185,8 +199,16 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
    */
   private mapApiResponseToPredictionDetail(apiData: any): PredictionDetail {
     try {
+      // Debug: Log dos campos recebidos da API
+      logger.debug('CrisisPredictionApiClient', 'Mapping API data', {
+        risk_score: apiData.risk_score,
+        confidence_score: apiData.confidence_score,
+        risk_level: apiData.risk_level
+      });
+
       // Map risk level from backend to mobile format
-      const riskLevel = this.mapRiskLevel(apiData.riskLevel);
+      // Backend pode usar snake_case (risk_level) ou camelCase (riskLevel)
+      const riskLevel = this.mapRiskLevel(apiData.risk_level || apiData.riskLevel);
       
       // Map factors from backend format
       const factors: RiskFactor[] = (apiData.factors || []).map((factor: any) => ({
@@ -194,7 +216,7 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         category: this.mapFactorCategory(factor.type),
         label: this.mapFactorLabel(factor.type),
         weight: factor.weight || 0,
-        description: factor.description || 'Fator de análise',
+        description: this.cleanDescription(factor.description || 'Fator de análise'),
         suggestion: this.getFactorSuggestion(factor.type)
       }));
 
@@ -210,13 +232,16 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
       }));
 
       // Create the mapped prediction detail
+      // Backend usa snake_case, precisamos mapear corretamente
       const prediction: PredictionDetail = {
         id: apiData.id || `pred_${Date.now()}`,
-        score: apiData.riskScore || 0,
+        score: parseFloat(apiData.risk_score || apiData.riskScore || 0),
         level: riskLevel,
         label: this.getRiskLevelLabel(riskLevel),
-        confidence: apiData.confidenceScore || 0,
-        generatedAt: apiData.createdAt ? new Date(apiData.createdAt).getTime() : Date.now(),
+        confidence: parseFloat(apiData.confidence_score || apiData.confidenceScore || 0),
+        generatedAt: apiData.created_at ? new Date(apiData.created_at).getTime() : 
+                     apiData.createdAt ? new Date(apiData.createdAt).getTime() : 
+                     Date.now(),
         factors: factors.sort((a, b) => b.weight - a.weight), // Sort by weight descending
         interventions: interventions
       };
@@ -246,26 +271,29 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
       case 'medium':
         return 'medium';
       case 'high':
-      case 'critical':
         return 'high';
+      case 'critical':
+        return 'critical';
       default:
         return 'medium';
     }
   }
 
   /**
-   * Get label for risk level
+   * Get label for risk level (humanizado e claro)
    */
   private getRiskLevelLabel(level: RiskLevel): string {
     switch (level) {
       case 'low':
-        return 'Equilibrado';
+        return '😊 Estável - Você está bem!';
       case 'medium':
-        return 'Atenção leve';
+        return '😐 Atenção - Vamos cuidar melhor de você';
       case 'high':
-        return 'Sinal de atenção';
+        return '😟 Alerta - Busque um especialista para conversar';
+      case 'critical':
+        return '🆘 Urgente - Busque ajuda imediata';
       default:
-        return 'Atenção leve';
+        return '😐 Atenção - Vamos cuidar melhor de você';
     }
   }
 
@@ -282,6 +310,8 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         return 'Linguagem';
       case 'journal_frequency':
         return 'Comportamento';
+      case 'temporal_trend':
+        return 'Tendência';
       default:
         return 'Análise';
     }
@@ -300,6 +330,8 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         return 'Palavras-chave de stress';
       case 'journal_frequency':
         return 'Frequência de registros';
+      case 'temporal_trend':
+        return 'Tendência temporal';
       default:
         return 'Fator de análise';
     }
@@ -318,9 +350,29 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
         return 'Exercícios de respiração e mindfulness';
       case 'journal_frequency':
         return 'Definir lembrete suave diário';
+      case 'temporal_trend':
+        return 'Monitorar padrões ao longo do tempo';
       default:
         return 'Manter práticas de autocuidado';
     }
+  }
+
+  /**
+   * Clean description to remove technical terms and NaN values
+   */
+  private cleanDescription(description: string): string {
+    // Remove "NaN" and replace with user-friendly message
+    if (description.includes('NaN')) {
+      description = description.replace(/NaN/g, 'ainda em análise');
+    }
+    
+    // Remove technical jargon
+    description = description
+      .replace(/sentiment/gi, 'sentimento')
+      .replace(/mood/gi, 'humor')
+      .replace(/null/gi, 'em análise');
+    
+    return description;
   }
 
   /**

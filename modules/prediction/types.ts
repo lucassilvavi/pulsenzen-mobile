@@ -1,5 +1,5 @@
 // Types for prediction (mock)
-export type RiskLevel = 'low' | 'medium' | 'high';
+export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export interface PredictionSummary {
   id: string;

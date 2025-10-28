@@ -15,6 +15,5 @@ export type TelemetryEvent =
   | 'cbt_analysis_success';
 
 export function track(event: TelemetryEvent, payload: Record<string, any> = {}) {
-  // eslint-disable-next-line no-console
-  console.log('[telemetry]', event, payload);
+  // Telemetry disabled in production - replace with real analytics later
 }
