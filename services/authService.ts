@@ -3,6 +3,7 @@ import { APP_CONSTANTS } from '../constants/appConstants';
 import { logger } from '../utils/secureLogger';
 import { secureStorage } from '../utils/secureStorage';
 import { networkManager } from '../utils/simpleNetworkManager';
+import { MoodStatusService } from './moodStatusService';
 
 const API_BASE_URL = appConfig.getApiUrl();
 
@@ -257,6 +258,20 @@ class AuthService {
           response.data.refreshToken, 
           response.data.user
         );
+
+        // Extrair moodStatus do JWT token e salvar no localStorage após login
+        const decodedToken = decodeJWT(response.data.token);
+        
+        if (decodedToken && decodedToken.moodStatus) {
+          await MoodStatusService.saveMoodStatus(decodedToken.moodStatus);
+          logger.info('AuthService', 'MoodStatus extraído do token e salvo no localStorage após login', {
+            moodStatus: decodedToken.moodStatus
+          });
+        } else {
+          // Fallback: inicializar com valores vazios se não houver no token
+          await MoodStatusService.saveMoodStatus({ manha: false, tarde: false, noite: false });
+          logger.warn('AuthService', 'MoodStatus não encontrado no token, inicializando vazio');
+        }
 
         logger.info('AuthService', 'User login successful', { 
           userId: response.data.user.id 
@@ -713,25 +728,6 @@ class AuthService {
   }
 
   /**
-   * Update auth token (used after mood submission)
-   */
-  static async updateToken(newToken: string): Promise<void> {
-    try {
-      // Atualizar cache em memória
-      this.tokenCache = newToken;
-      this.tokenCacheTimestamp = Date.now();
-      
-      // Salvar no storage
-      await secureStorage.setItem(AuthService.TOKEN_KEY, newToken);
-      
-      logger.info('AuthService', 'Token updated successfully after mood submission');
-    } catch (error) {
-      logger.error('AuthService', 'Failed to update token', error instanceof Error ? error : new Error(String(error)));
-      throw error;
-    }
-  }
-
-  /**
    * Clear authentication data and memory cache
    */
   private static async clearAuthData(): Promise<void> {
@@ -761,6 +757,10 @@ class AuthService {
       logger.info('AuthService', 'Removed user data');
       await secureStorage.removeItem('onboardingDone');
       logger.info('AuthService', 'Removed onboarding status');
+      
+      // Limpar moodStatus do localStorage
+      await MoodStatusService.clearMoodStatus();
+      logger.info('AuthService', 'Mood status cleared from localStorage');
       
       // Note: We don't clear biometric data on logout - users should keep their biometric setup
       // Biometric data is only cleared when explicitly disabled or on account deletion

@@ -1,7 +1,7 @@
 import { appConfig } from '@/config/appConfig';
 import { MoodResponse } from '@/context/MoodContext';
 import { networkManager } from '@/utils/simpleNetworkManager';
-import AuthService from './authService';
+import { MoodStatusService } from './moodStatusService';
 
 export class MoodApiService {
   /**
@@ -25,26 +25,15 @@ export class MoodApiService {
         }
       );
 
-      console.log('✅ MoodApiService: Resposta completa da API:', JSON.stringify(result, null, 2));
-
       if (result.success) {
-        // A resposta da API vem como: { success, data: { id, mood_level, ... }, token, message }
-        // Mas o networkManager normaliza para: { success, data: { success, data: {...}, token, message } }
-        // Então precisamos acessar result.data (que contém a resposta original da API)
-        const apiResponse = result.data as any;
-        const newToken = apiResponse?.token;
-        
-        if (newToken) {
-          console.log('🔄 Novo token encontrado, atualizando...');
-          await AuthService.updateToken(newToken);
-          console.log('✅ Token atualizado com sucesso após submissão de mood');
-        } else {
-          console.warn('⚠️ Nenhum token encontrado na resposta da API');
+        // Atualizar localStorage com o período que acabou de ser respondido
+        if (response.period) {
+          await MoodStatusService.updatePeriod(response.period, true);
         }
         
         return { 
           success: true,
-          moodStatus: apiResponse?.moodStatus // Pass through updated mood status
+          moodStatus: result.data?.moodStatus // Pass through updated mood status
         };
       } else {
         // Handle different error types more specifically

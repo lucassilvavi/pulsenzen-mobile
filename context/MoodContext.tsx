@@ -1,5 +1,5 @@
 import { MoodApiService } from '@/services/MoodApiService';
-import AuthService from '@/services/authService';
+import { MoodStatusService } from '@/services/moodStatusService';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
@@ -119,7 +119,8 @@ export function MoodProvider({ children }: MoodProviderProps) {
           return;
         }
         
-        const moodData = await AuthService.getMoodStatusFromToken();
+        // Buscar do localStorage em vez do JWT
+        const moodData = await MoodStatusService.getMoodStatus();
         
         if (moodData) {
           setMoodStatus(moodData);
@@ -128,7 +129,7 @@ export function MoodProvider({ children }: MoodProviderProps) {
           setMoodStatus({ manha: false, tarde: false, noite: false });
         }
       } catch (error) {
-        console.error('🎯 MoodContext: Erro ao carregar mood status:', error);
+        console.error('MoodContext: Erro ao carregar mood status:', error);
         showError(
           'Não foi possível carregar o status do humor. Tente fazer login novamente.',
           'loadMoodStatus'
@@ -181,17 +182,9 @@ export function MoodProvider({ children }: MoodProviderProps) {
       const result = await MoodApiService.submitMood(response);
       
       if (result.success) {
-        // 🔄 Após submissão bem-sucedida, recarregar moodStatus do token atualizado
-        const updatedMoodStatus = await AuthService.getMoodStatusFromToken();
-        if (updatedMoodStatus) {
-          setMoodStatus(updatedMoodStatus);
-        } else {
-          // Fallback: atualizar status local se não conseguir do token
-          setMoodStatus(prev => ({
-            ...prev,
-            [response.period]: true,
-          }));
-        }
+        // 🔄 Após submissão bem-sucedida, recarregar moodStatus do localStorage
+        const updatedMoodStatus = await MoodStatusService.getMoodStatus();
+        setMoodStatus(updatedMoodStatus);
         
         return result;
       } else {
