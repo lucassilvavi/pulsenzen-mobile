@@ -713,6 +713,25 @@ class AuthService {
   }
 
   /**
+   * Update auth token (used after mood submission)
+   */
+  static async updateToken(newToken: string): Promise<void> {
+    try {
+      // Atualizar cache em memória
+      this.tokenCache = newToken;
+      this.tokenCacheTimestamp = Date.now();
+      
+      // Salvar no storage
+      await secureStorage.setItem(AuthService.TOKEN_KEY, newToken);
+      
+      logger.info('AuthService', 'Token updated successfully after mood submission');
+    } catch (error) {
+      logger.error('AuthService', 'Failed to update token', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
    * Clear authentication data and memory cache
    */
   private static async clearAuthData(): Promise<void> {

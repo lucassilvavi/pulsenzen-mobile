@@ -1,6 +1,6 @@
-import { createContext, ReactNode, useCallback, useContext, useState, useEffect } from 'react';
 import { MoodApiService } from '@/services/MoodApiService';
 import AuthService from '@/services/authService';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
 export type MoodPeriod = 'manha' | 'tarde' | 'noite';
@@ -181,11 +181,12 @@ export function MoodProvider({ children }: MoodProviderProps) {
       const result = await MoodApiService.submitMood(response);
       
       if (result.success) {
-        // Se sucesso, usar o moodStatus retornado pela API
-        if (result.moodStatus) {
-          setMoodStatus(result.moodStatus);
+        // 🔄 Após submissão bem-sucedida, recarregar moodStatus do token atualizado
+        const updatedMoodStatus = await AuthService.getMoodStatusFromToken();
+        if (updatedMoodStatus) {
+          setMoodStatus(updatedMoodStatus);
         } else {
-          // Fallback: atualizar status local
+          // Fallback: atualizar status local se não conseguir do token
           setMoodStatus(prev => ({
             ...prev,
             [response.period]: true,
