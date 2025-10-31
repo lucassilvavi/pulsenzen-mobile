@@ -44,7 +44,13 @@ export function useNavigationLogic() {
 
       // Se não está autenticado e não está em uma rota pública, redireciona
       if (!isAuthenticated) {
-        const publicRoutes = ['/onboarding/welcome', '/onboarding/auth'];
+        const publicRoutes = [
+          '/onboarding/welcome', 
+          '/onboarding/auth',
+          '/onboarding/forgot-password',
+          '/onboarding/verify-code',
+          '/onboarding/new-password'
+        ];
         const isOnPublicRoute = publicRoutes.some(route => pathname.includes(route));
         
         if (!isOnPublicRoute) {

@@ -1,18 +1,18 @@
+import { BiometricSetup } from '@/components/biometric';
 import { MoodDebugScreen } from '@/components/debug/MoodDebugScreen';
 import HeaderSection from '@/components/HeaderSection';
+import { MoodSelector } from '@/components/MoodSelector';
 import QuickAccess from '@/components/QuickAccess';
 import RecommendedSection from '@/components/RecommendedSection';
 import { ThemedView } from '@/components/ThemedView';
 import { useUserData } from '@/hooks/useUserData';
-import { MoodSelector } from '@/components/MoodSelector';
 import { PredictionBanner } from '@/modules/prediction';
+import { BiometricPromptService } from '@/services/biometricPromptService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState, useEffect } from 'react';
-import { StyleSheet, Alert } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BiometricSetup } from '@/components/biometric';
-import { BiometricPromptService } from '@/services/biometricPromptService';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();

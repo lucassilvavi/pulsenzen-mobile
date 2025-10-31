@@ -9,6 +9,7 @@ import TermsModal from '@/components/modals/TermsModal';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { BiometricPromptService } from '@/services/biometricPromptService';
 import { AppVersion } from '@/utils/AppVersion';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,7 +23,6 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { BiometricPromptService } from '@/services/biometricPromptService';
 
 const { height } = Dimensions.get('window');
 
@@ -291,6 +291,16 @@ export default function AuthScreen() {
               <ThemedText style={styles.errorText}>{errors.password}</ThemedText>
             )}
 
+            {/* Forgot Password Link - Only show on login mode */}
+            {isLoginMode && (
+              <TouchableOpacity 
+                style={styles.forgotPasswordButton} 
+                onPress={() => router.push('/onboarding/forgot-password')}
+              >
+                <ThemedText style={styles.forgotPasswordText}>Esqueceu a senha?</ThemedText>
+              </TouchableOpacity>
+            )}
+
             {!isLoginMode && (
               <>
                 <CustomTextInput
@@ -448,6 +458,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     marginBottom: spacing.sm,
     marginLeft: spacing.xs,
+  },
+  forgotPasswordButton: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  forgotPasswordText: {
+    color: colors.primary.main,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
   submitButton: {
     marginTop: spacing.md,
