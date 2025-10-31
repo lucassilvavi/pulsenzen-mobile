@@ -26,7 +26,7 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
 import { JournalEntryCardFlat, JournalEntryView } from '../components';
 import { useJournalInfiniteScroll } from '../hooks/useJournalInfiniteScroll';
-import { JournalStatsService } from '../services';
+import { JournalStatsService, JournalService } from '../services';
 import { JournalEntry } from '../types';
 
 export default function JournalScreen() {
@@ -36,6 +36,7 @@ export default function JournalScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [stats, setStats] = useState({ totalEntries: 0, uniqueDays: 0, percentPositive: 0 });
   const [isSearching, setIsSearching] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // Use the new infinite scroll hook
   const {
@@ -54,18 +55,38 @@ export default function JournalScreen() {
   const { createButtonProps } = useAccessibilityProps();
   const { announceNavigation, announceActionComplete } = useScreenReaderAnnouncement();
 
-  // Update stats when entries change
+  // Load global stats from API
+  const loadGlobalStats = useCallback(async () => {
+    try {
+      setLoadingStats(true);
+      const analytics = await JournalService.getAnalytics();
+      setStats({
+        totalEntries: analytics.totalEntries || 0,
+        uniqueDays: analytics.uniqueDays || 0,
+        percentPositive: analytics.percentPositive || 0,
+      });
+    } catch (error) {
+      console.error('Error loading global stats:', error);
+      // Fallback to local calculation if API fails - usar entries paginadas apenas como fallback
+      const fallbackEntries = journalEntries;
+      setStats(JournalStatsService.calculateStats(fallbackEntries));
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []); // Remove journalEntries das dependências
+
+  // Load stats on mount only
   useEffect(() => {
-    setStats(JournalStatsService.calculateStats(journalEntries));
-  }, [journalEntries]);
+    loadGlobalStats();
+  }, []); // Load apenas no mount
 
   // Announce navigation when component mounts
   useEffect(() => {
     announceNavigation(
       'Tela do Diário',
-      `Página do diário carregada. Você tem ${journalEntries.length} entradas no seu diário. Use a barra de pesquisa para encontrar entradas específicas ou toque no botão adicionar para criar uma nova entrada.`
+      `Página do diário carregada. Você tem ${stats.totalEntries} entradas no seu diário. Use a barra de pesquisa para encontrar entradas específicas ou toque no botão adicionar para criar uma nova entrada.`
     );
-  }, [announceNavigation, journalEntries.length]);
+  }, [announceNavigation, stats.totalEntries]);
 
   // Handle search with debounce and apply filters
   const handleSearchChange = useCallback((text: string) => {
@@ -90,7 +111,8 @@ export default function JournalScreen() {
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh])
+      loadGlobalStats(); // Reload stats when screen comes into focus
+    }, [refresh, loadGlobalStats])
   );
 
   const handleEntryPress = (entryId: string) => {
