@@ -15,13 +15,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Alert,
+  Dimensions,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { BiometricPromptService } from '@/services/biometricPromptService';
 
 const { height } = Dimensions.get('window');
 
@@ -123,19 +124,8 @@ export default function AuthScreen() {
         if (isLoginMode) {
           // Check if user should be prompted for biometric setup
           if (isBiometricAvailable && !isBiometricEnabled) {
-            setTimeout(() => {
-              Alert.alert(
-                '🔐 Segurança Aprimorada',
-                'Quer habilitar autenticação biométrica para um acesso mais rápido e seguro?',
-                [
-                  { text: 'Agora não', style: 'cancel' },
-                  { 
-                    text: 'Configurar', 
-                    onPress: () => setShowBiometricSetup(true)
-                  }
-                ]
-              );
-            }, 1000);
+            // Set flag to show biometric prompt after navigation
+            await BiometricPromptService.setShouldShowPrompt(true);
           }
           // For login, let NavigationHandler decide where to go based on onboarding status
           // Don't navigate manually - let the NavigationHandler in _layout handle it

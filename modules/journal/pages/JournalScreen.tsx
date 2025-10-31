@@ -26,7 +26,7 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { LinearGradient } from 'expo-linear-gradient';
 import { JournalEntryCardFlat, JournalEntryView } from '../components';
 import { useJournalInfiniteScroll } from '../hooks/useJournalInfiniteScroll';
-import { JournalStatsService, JournalService } from '../services';
+import { JournalService, JournalStatsService } from '../services';
 import { JournalEntry } from '../types';
 
 export default function JournalScreen() {

@@ -78,7 +78,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       logger.error('useBiometricAuth', 'Error refreshing state', error as Error);
       updateState({
         isChecking: false,
-        error: 'Failed to check biometric status',
+        error: 'Falha ao verificar status biométrico',
       });
     }
   }, [updateState]);
@@ -93,7 +93,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       if (!state.isAvailable) {
         updateState({
           isSettingUp: false,
-          error: 'Biometric authentication is not available on this device',
+          error: 'Autenticação biométrica não disponível neste dispositivo',
         });
         return false;
       }
@@ -107,22 +107,22 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
         });
 
         Alert.alert(
-          '✅ Success',
-          'Biometric authentication has been enabled successfully!',
+          '✅ Sucesso',
+          'A autenticação biométrica foi habilitada com sucesso!',
           [{ text: 'OK' }]
         );
 
         logger.info('useBiometricAuth', 'Biometric setup successful');
         return true;
       } else {
-        const errorMessage = result.error || 'Failed to setup biometric authentication';
+        const errorMessage = result.error || 'Falha ao configurar autenticação biométrica';
         updateState({
           isSettingUp: false,
           error: errorMessage,
         });
 
         Alert.alert(
-          '❌ Setup Failed',
+          '❌ Falha na Configuração',
           errorMessage,
           [{ text: 'OK' }]
         );
@@ -131,7 +131,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       }
     } catch (error) {
       logger.error('useBiometricAuth', 'Biometric setup error', error as Error);
-      const errorMessage = 'An unexpected error occurred during setup';
+      const errorMessage = 'Ocorreu um erro inesperado durante a configuração';
       
       updateState({
         isSettingUp: false,
@@ -139,7 +139,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       });
 
       Alert.alert(
-        '❌ Error',
+        '❌ Erro',
         errorMessage,
         [{ text: 'OK' }]
       );
@@ -158,7 +158,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       if (!state.isEnabled) {
         updateState({
           isLoading: false,
-          error: 'Biometric authentication is not enabled',
+          error: 'Autenticação biométrica não está habilitada',
         });
         return false;
       }
@@ -170,7 +170,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
         logger.info('useBiometricAuth', 'Biometric login successful');
         return true;
       } else {
-        const errorMessage = result.error || 'Biometric authentication failed';
+        const errorMessage = result.error || 'Falha na autenticação biométrica';
         updateState({
           isLoading: false,
           error: errorMessage,
@@ -179,7 +179,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
         // Don't show alert for user cancellation
         if (!errorMessage.toLowerCase().includes('cancel')) {
           Alert.alert(
-            '❌ Authentication Failed',
+            '❌ Falha na Autenticação',
             errorMessage,
             [{ text: 'OK' }]
           );
@@ -189,7 +189,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       }
     } catch (error) {
       logger.error('useBiometricAuth', 'Biometric login error', error as Error);
-      const errorMessage = 'An unexpected error occurred during authentication';
+      const errorMessage = 'Ocorreu um erro inesperado durante a autenticação';
       
       updateState({
         isLoading: false,
@@ -197,7 +197,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       });
 
       Alert.alert(
-        '❌ Error',
+        '❌ Erro',
         errorMessage,
         [{ text: 'OK' }]
       );
@@ -216,11 +216,11 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       // Show confirmation alert
       return new Promise((resolve) => {
         Alert.alert(
-          '⚠️ Disable Biometric Auth',
-          'Are you sure you want to disable biometric authentication? You can re-enable it later in settings.',
+          '⚠️ Desabilitar Autenticação Biométrica',
+          'Tem certeza que deseja desabilitar a autenticação biométrica? Você pode reabilitá-la depois nas configurações.',
           [
             {
-              text: 'Cancel',
+              text: 'Cancelar',
               style: 'cancel',
               onPress: () => {
                 updateState({ isLoading: false });
@@ -228,7 +228,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
               },
             },
             {
-              text: 'Disable',
+              text: 'Desabilitar',
               style: 'destructive',
               onPress: async () => {
                 try {
@@ -241,22 +241,22 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
                     });
 
                     Alert.alert(
-                      '✅ Disabled',
-                      'Biometric authentication has been disabled',
+                      '✅ Desabilitada',
+                      'A autenticação biométrica foi desabilitada',
                       [{ text: 'OK' }]
                     );
 
                     logger.info('useBiometricAuth', 'Biometric disabled successfully');
                     resolve(true);
                   } else {
-                    const errorMessage = result.error || 'Failed to disable biometric authentication';
+                    const errorMessage = result.error || 'Falha ao desabilitar autenticação biométrica';
                     updateState({
                       isLoading: false,
                       error: errorMessage,
                     });
 
                     Alert.alert(
-                      '❌ Failed',
+                      '❌ Falhou',
                       errorMessage,
                       [{ text: 'OK' }]
                     );
@@ -265,7 +265,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
                   }
                 } catch (error) {
                   logger.error('useBiometricAuth', 'Disable biometric error', error as Error);
-                  const errorMessage = 'An unexpected error occurred';
+                  const errorMessage = 'Ocorreu um erro inesperado';
                   
                   updateState({
                     isLoading: false,
@@ -273,7 +273,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
                   });
 
                   Alert.alert(
-                    '❌ Error',
+                    '❌ Erro',
                     errorMessage,
                     [{ text: 'OK' }]
                   );
@@ -289,7 +289,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       logger.error('useBiometricAuth', 'Disable biometric error', error as Error);
       updateState({
         isLoading: false,
-        error: 'Failed to disable biometric authentication',
+        error: 'Falha ao desabilitar autenticação biométrica',
       });
       return false;
     }
@@ -310,11 +310,11 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
         logger.info('useBiometricAuth', 'Backup codes generated successfully');
         return result.codes;
       } else {
-        const errorMessage = result.error || 'Failed to generate backup codes';
+        const errorMessage = result.error || 'Falha ao gerar códigos de backup';
         updateState({ error: errorMessage });
 
         Alert.alert(
-          '❌ Failed',
+          '❌ Falhou',
           errorMessage,
           [{ text: 'OK' }]
         );
@@ -323,7 +323,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       }
     } catch (error) {
       logger.error('useBiometricAuth', 'Generate backup codes error', error as Error);
-      const errorMessage = 'An unexpected error occurred';
+      const errorMessage = 'Ocorreu um erro inesperado';
       
       updateState({
         isLoading: false,
@@ -331,7 +331,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       });
 
       Alert.alert(
-        '❌ Error',
+        '❌ Erro',
         errorMessage,
         [{ text: 'OK' }]
       );
@@ -355,7 +355,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
         logger.info('useBiometricAuth', 'Backup codes retrieved successfully');
         return result.codes;
       } else {
-        const errorMessage = result.error || 'Failed to get backup codes';
+        const errorMessage = result.error || 'Falha ao obter códigos de backup';
         updateState({ error: errorMessage });
         return null;
       }
@@ -363,7 +363,7 @@ export const useBiometricAuth = (): UseBiometricAuthReturn => {
       logger.error('useBiometricAuth', 'Get backup codes error', error as Error);
       updateState({
         isLoading: false,
-        error: 'Failed to get backup codes',
+        error: 'Falha ao obter códigos de backup',
       });
       return null;
     }

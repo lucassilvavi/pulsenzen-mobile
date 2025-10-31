@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Alert,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useBiometricAuth } from '../../hooks/useBiometricAuth';
@@ -25,6 +25,7 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
     disableBiometric,
     generateBackupCodes,
     getBackupCodes,
+    refreshState,
   } = useBiometricAuth();
 
   const [showSetup, setShowSetup] = useState(false);
@@ -43,11 +44,14 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
   /**
    * Handle setup complete
    */
-  const handleSetupComplete = () => {
+  const handleSetupComplete = async () => {
+    // Refresh state to update the checkbox
+    await refreshState();
+    
     Alert.alert(
-      '🎉 Success!',
-      'Biometric authentication has been set up successfully. You can now use it to sign in quickly and securely.',
-      [{ text: 'Great!' }]
+      '🎉 Sucesso!',
+      'A autenticação biométrica foi configurada com sucesso. Agora você pode usá-la para fazer login de forma rápida e segura.',
+      [{ text: 'Ótimo!' }]
     );
   };
 
@@ -62,12 +66,12 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
         const codeList = codes.map((code, index) => `${index + 1}. ${code.code}`).join('\n');
         
         Alert.alert(
-          '🔑 Backup Codes',
-          `Your backup codes:\n\n${codeList}\n\nSave these codes in a secure location.`,
+          '🔑 Códigos de Backup',
+          `Seus códigos de backup:\n\n${codeList}\n\nGuarde estes códigos em um local seguro.`,
           [
-            { text: 'Close', style: 'cancel' },
+            { text: 'Fechar', style: 'cancel' },
             { 
-              text: 'Generate New', 
+              text: 'Gerar Novos', 
               onPress: handleGenerateNewCodes,
               style: 'default'
             }
@@ -75,16 +79,16 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
         );
       } else {
         Alert.alert(
-          '❌ No Codes Found',
-          'No backup codes found. Would you like to generate new ones?',
+          '❌ Nenhum Código Encontrado',
+          'Nenhum código de backup encontrado. Deseja gerar novos?',
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Generate', onPress: handleGenerateNewCodes }
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Gerar', onPress: handleGenerateNewCodes }
           ]
         );
       }
     } catch (error) {
-      Alert.alert('❌ Error', 'Failed to retrieve backup codes');
+      Alert.alert('❌ Erro', 'Falha ao recuperar códigos de backup');
     }
   };
 
@@ -99,15 +103,15 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
         const codeList = codes.map((code, index) => `${index + 1}. ${code}`).join('\n');
         
         Alert.alert(
-          '🔑 New Backup Codes',
-          `Your new backup codes:\n\n${codeList}\n\n⚠️ Save these codes in a secure location. Your old codes are no longer valid.`,
-          [{ text: 'Got it!' }]
+          '🔑 Novos Códigos de Backup',
+          `Seus novos códigos de backup:\n\n${codeList}\n\n⚠️ Guarde estes códigos em um local seguro. Seus códigos antigos não são mais válidos.`,
+          [{ text: 'Entendi!' }]
         );
       } else {
-        Alert.alert('❌ Error', 'Failed to generate backup codes');
+        Alert.alert('❌ Erro', 'Falha ao gerar códigos de backup');
       }
     } catch (error) {
-      Alert.alert('❌ Error', 'Failed to generate backup codes');
+      Alert.alert('❌ Erro', 'Falha ao gerar códigos de backup');
     }
   };
 
@@ -117,7 +121,7 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
         <View style={styles.unavailableContainer}>
           <Ionicons name="finger-print-outline" size={24} color={Colors.gray[400]} />
           <Text style={styles.unavailableText}>
-            Biometric authentication is not available on this device
+            Autenticação biométrica não disponível neste dispositivo
           </Text>
         </View>
       </View>
@@ -135,11 +139,11 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
             color={isEnabled ? Colors.primary[600] : Colors.gray[400]} 
           />
           <View style={styles.settingTextContainer}>
-            <Text style={styles.settingTitle}>Biometric Authentication</Text>
+            <Text style={styles.settingTitle}>Autenticação Biométrica</Text>
             <Text style={styles.settingDescription}>
               {isEnabled 
-                ? 'Use fingerprint or face ID to sign in' 
-                : 'Enable quick and secure login'
+                ? 'Use impressão digital ou Face ID para entrar' 
+                : 'Habilite login rápido e seguro'
               }
             </Text>
           </View>
@@ -170,9 +174,9 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
             <View style={styles.settingLeft}>
               <Ionicons name="key" size={24} color={Colors.gray[600]} />
               <View style={styles.settingTextContainer}>
-                <Text style={styles.settingTitle}>Backup Codes</Text>
+                <Text style={styles.settingTitle}>Códigos de Backup</Text>
                 <Text style={styles.settingDescription}>
-                  View or generate backup access codes
+                  Ver ou gerar códigos de acesso de backup
                 </Text>
               </View>
             </View>
@@ -188,9 +192,9 @@ const BiometricSettings: React.FC<BiometricSettingsProps> = ({ style }) => {
             <View style={styles.settingLeft}>
               <Ionicons name="refresh" size={24} color={Colors.gray[600]} />
               <View style={styles.settingTextContainer}>
-                <Text style={styles.settingTitle}>Generate New Codes</Text>
+                <Text style={styles.settingTitle}>Gerar Novos Códigos</Text>
                 <Text style={styles.settingDescription}>
-                  Create new backup codes (invalidates old ones)
+                  Criar novos códigos de backup (invalida os antigos)
                 </Text>
               </View>
             </View>

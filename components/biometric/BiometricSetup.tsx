@@ -80,10 +80,10 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
   const copyBackupCodes = async () => {
     try {
       await Clipboard.setStringAsync(backupCodes.join('\n'));
-      Alert.alert('✅ Copied', 'Backup codes copied to clipboard');
+      Alert.alert('✅ Copiado', 'Códigos de backup copiados para a área de transferência');
     } catch (error) {
       logger.error('BiometricSetup', 'Copy error', error as Error);
-      Alert.alert('❌ Error', 'Failed to copy backup codes');
+      Alert.alert('❌ Erro', 'Falha ao copiar códigos de backup');
     }
   };
 
@@ -107,26 +107,26 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
         <Ionicons name="finger-print" size={64} color={Colors.primary[600]} />
       </View>
 
-      <Text style={styles.title}>Setup Biometric Authentication</Text>
+      <Text style={styles.title}>Configurar Autenticação Biométrica</Text>
       
       <Text style={styles.description}>
-        Secure your account with fingerprint or face recognition for quick and safe access.
+        Proteja sua conta com impressão digital ou reconhecimento facial para um acesso rápido e seguro.
       </Text>
 
       <View style={styles.benefitsContainer}>
         <View style={styles.benefitItem}>
           <Ionicons name="shield-checkmark" size={24} color={Colors.green[800]} />
-          <Text style={styles.benefitText}>Enhanced Security</Text>
+          <Text style={styles.benefitText}>Segurança Aprimorada</Text>
         </View>
         
         <View style={styles.benefitItem}>
           <Ionicons name="flash" size={24} color={Colors.primary[600]} />
-          <Text style={styles.benefitText}>Quick Access</Text>
+          <Text style={styles.benefitText}>Acesso Rápido</Text>
         </View>
         
         <View style={styles.benefitItem}>
           <Ionicons name="lock-closed" size={24} color={Colors.purple[600]} />
-          <Text style={styles.benefitText}>Privacy Protection</Text>
+          <Text style={styles.benefitText}>Proteção de Privacidade</Text>
         </View>
       </View>
 
@@ -134,7 +134,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
         <View style={styles.warningContainer}>
           <Ionicons name="warning" size={24} color={Colors.orange[800]} />
           <Text style={styles.warningText}>
-            Biometric authentication is not available on this device
+            Autenticação biométrica não está disponível neste dispositivo
           </Text>
         </View>
       )}
@@ -151,7 +151,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
           onPress={onClose}
           disabled={isSettingUp}
         >
-          <Text style={styles.secondaryButtonText}>Maybe Later</Text>
+          <Text style={styles.secondaryButtonText}>Talvez Depois</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -166,7 +166,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
           {isSettingUp ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.primaryButtonText}>Setup Now</Text>
+            <Text style={styles.primaryButtonText}>Configurar Agora</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -182,21 +182,21 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
         <ActivityIndicator size="large" color={Colors.primary[600]} />
       </View>
 
-      <Text style={styles.title}>Setting up...</Text>
+      <Text style={styles.title}>Configurando...</Text>
       
       <Text style={styles.description}>
-        Please follow the prompts to set up biometric authentication.
+        Por favor, siga as instruções para configurar a autenticação biométrica.
       </Text>
 
       <View style={styles.instructionsContainer}>
         <Text style={styles.instructionText}>
-          • Place your finger on the sensor or look at the camera
+          • Coloque seu dedo no sensor ou olhe para a câmera
         </Text>
         <Text style={styles.instructionText}>
-          • Follow any additional prompts from your device
+          • Siga quaisquer instruções adicionais do seu dispositivo
         </Text>
         <Text style={styles.instructionText}>
-          • This may take a few moments
+          • Isso pode levar alguns instantes
         </Text>
       </View>
     </View>
@@ -211,16 +211,16 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
         <Ionicons name="key" size={64} color={Colors.purple[600]} />
       </View>
 
-      <Text style={styles.title}>Save Your Backup Codes</Text>
+      <Text style={styles.title}>Salve Seus Códigos de Backup</Text>
       
       <Text style={styles.description}>
-        These codes will let you access your account if biometric authentication is unavailable.
+        Estes códigos permitirão que você acesse sua conta se a autenticação biométrica estiver indisponível.
       </Text>
 
       <View style={styles.warningContainer}>
         <Ionicons name="warning" size={20} color={Colors.orange[800]} />
         <Text style={styles.warningText}>
-          Save these codes in a secure location. You won't see them again.
+          Salve estes códigos em um local seguro. Você não os verá novamente.
         </Text>
       </View>
 
@@ -234,7 +234,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
 
       <TouchableOpacity style={styles.copyButton} onPress={copyBackupCodes}>
         <Ionicons name="copy" size={20} color={Colors.primary[600]} />
-        <Text style={styles.copyButtonText}>Copy Codes</Text>
+        <Text style={styles.copyButtonText}>Copiar Códigos</Text>
       </TouchableOpacity>
 
       <View style={styles.buttonContainer}>
@@ -242,7 +242,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
           style={[styles.button, styles.primaryButton]}
           onPress={handleBackupCodesAck}
         >
-          <Text style={styles.primaryButtonText}>I've Saved My Codes</Text>
+          <Text style={styles.primaryButtonText}>Salvei Meus Códigos</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -257,26 +257,26 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
         <Ionicons name="checkmark-circle" size={64} color={Colors.green[800]} />
       </View>
 
-      <Text style={styles.title}>Setup Complete!</Text>
+      <Text style={styles.title}>Configuração Completa!</Text>
       
       <Text style={styles.description}>
-        Biometric authentication is now enabled. You can use it to sign in quickly and securely.
+        A autenticação biométrica está ativada. Agora você pode usá-la para entrar de forma rápida e segura.
       </Text>
 
       <View style={styles.benefitsContainer}>
         <View style={styles.benefitItem}>
           <Ionicons name="checkmark" size={20} color={Colors.green[800]} />
-          <Text style={styles.benefitText}>Fast and secure login</Text>
+          <Text style={styles.benefitText}>Login rápido e seguro</Text>
         </View>
         
         <View style={styles.benefitItem}>
           <Ionicons name="checkmark" size={20} color={Colors.green[800]} />
-          <Text style={styles.benefitText}>Backup codes generated</Text>
+          <Text style={styles.benefitText}>Códigos de backup gerados</Text>
         </View>
         
         <View style={styles.benefitItem}>
           <Ionicons name="checkmark" size={20} color={Colors.green[800]} />
-          <Text style={styles.benefitText}>Enhanced account security</Text>
+          <Text style={styles.benefitText}>Segurança da conta aprimorada</Text>
         </View>
       </View>
 
@@ -285,7 +285,7 @@ const BiometricSetup: React.FC<BiometricSetupProps> = ({
           style={[styles.button, styles.primaryButton]}
           onPress={handleComplete}
         >
-          <Text style={styles.primaryButtonText}>Done</Text>
+          <Text style={styles.primaryButtonText}>Concluir</Text>
         </TouchableOpacity>
       </View>
     </View>

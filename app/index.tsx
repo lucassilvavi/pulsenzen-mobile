@@ -7,15 +7,47 @@ import { useUserData } from '@/hooks/useUserData';
 import { MoodSelector } from '@/components/MoodSelector';
 import { PredictionBanner } from '@/modules/prediction';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BiometricSetup } from '@/components/biometric';
+import { BiometricPromptService } from '@/services/biometricPromptService';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { displayName } = useUserData();
   const [showDebug] = useState(false);
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+  
+  // Check if should show biometric prompt
+  useEffect(() => {
+    const checkBiometricPrompt = async () => {
+      const shouldShow = await BiometricPromptService.getShouldShowPrompt();
+      if (shouldShow) {
+        // Clear the flag first
+        await BiometricPromptService.clearPromptFlag();
+        
+        // Show the prompt after a short delay
+        setTimeout(() => {
+          Alert.alert(
+            '🔐 Segurança Aprimorada',
+            'Quer habilitar autenticação biométrica para um acesso mais rápido e seguro?',
+            [
+              { text: 'Agora não', style: 'cancel' },
+              { 
+                text: 'Configurar', 
+                onPress: () => setShowBiometricSetup(true)
+              }
+            ],
+            { cancelable: true }
+          );
+        }, 500);
+      }
+    };
+    
+    checkBiometricPrompt();
+  }, []);
   
   // Accessibility hooks - TODO: Re-enable when needed
   // const accessibilityState = useAccessibilityState();
@@ -59,6 +91,13 @@ export default function HomeScreen() {
         {/*<StreakSection />*/}
         <RecommendedSection />
       </ScrollView>
+      
+      {/* Biometric Setup Modal */}
+      <BiometricSetup
+        visible={showBiometricSetup}
+        onClose={() => setShowBiometricSetup(false)}
+        onSetupComplete={() => setShowBiometricSetup(false)}
+      />
     </ThemedView>
   );
 }
