@@ -2,7 +2,7 @@
   "expo": {
     "name": "pulse-zen-app",
     "slug": "pulse-zen-app",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pulsezenapp",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.lucassilvavi.pulsezenapp",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
@@ -23,7 +23,7 @@
     },
     "android": {
       "package": "com.lucassilvavi.pulsezenapp",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
