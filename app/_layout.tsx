@@ -10,9 +10,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { memo, useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Appearance, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Force light mode for the entire app
+Appearance.setColorScheme('light');
 
 // Keep splash screen visible while loading resources
 SplashScreen.preventAutoHideAsync();
@@ -84,7 +87,7 @@ export default function RootLayoutHybrid() {
                     <PredictionProvider>
                   <NavigationHandler>
                     <View style={styles.container}>
-                      <StatusBar style="auto" />
+                      <StatusBar style="dark" />
                       <Stack
                         screenOptions={{
                           headerShown: false,
