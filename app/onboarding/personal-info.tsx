@@ -6,10 +6,9 @@ import { colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 const GENDER_OPTIONS = [
   { id: 'MENINO', label: 'Ele/Dele', icon: 'male' as const },
@@ -20,14 +19,77 @@ export default function PersonalInfoScreen() {
   const router = useRouter();
   const { updateProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateInput, setDateInput] = useState('');
   
   const [formData, setFormData] = useState({
-    dateOfBirth: new Date(2000, 0, 1), // Default to year 2000
     sex: '' as 'MENINO' | 'MENINA' | '',
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Format date input with mask DD/MM/YYYY
+  const formatDateInput = (text: string) => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, '');
+    
+    // If empty, return empty
+    if (cleaned.length === 0) {
+      return '';
+    }
+    
+    // Apply mask progressively
+    let formatted = cleaned.slice(0, 2); // DD
+    
+    if (cleaned.length >= 3) {
+      formatted += '/' + cleaned.slice(2, 4); // DD/MM
+    }
+    
+    if (cleaned.length >= 5) {
+      formatted += '/' + cleaned.slice(4, 8); // DD/MM/YYYY
+    }
+    
+    return formatted;
+  };
+
+  const handleDateInputChange = (text: string) => {
+    // If user is deleting and hits a '/', remove the character before it too
+    if (text.length < dateInput.length && text.endsWith('/')) {
+      text = text.slice(0, -1);
+    }
+    
+    const formatted = formatDateInput(text);
+    setDateInput(formatted);
+    
+    // Clear error when user starts typing
+    if (errors.dateOfBirth) {
+      setErrors({ ...errors, dateOfBirth: '' });
+    }
+  };
+
+  const parseDateFromInput = (dateStr: string): Date | null => {
+    // Expected format: DD/MM/YYYY
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    if (day < 1 || day > 31) return null;
+    if (month < 1 || month > 12) return null;
+    if (year < 1900 || year > new Date().getFullYear()) return null;
+    
+    // Create date (month is 0-indexed in JS)
+    const date = new Date(year, month - 1, day);
+    
+    // Validate that the date is valid (e.g., not Feb 31)
+    if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+      return null;
+    }
+    
+    return date;
+  };
 
   const calculateAge = (birthDate: Date) => {
     const today = new Date();
@@ -44,12 +106,23 @@ export default function PersonalInfoScreen() {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
-    // Age validation
-    const age = calculateAge(formData.dateOfBirth);
-    if (age < 13) {
-      newErrors.dateOfBirth = 'Você deve ter pelo menos 13 anos';
-    } else if (age > 120) {
-      newErrors.dateOfBirth = 'Data inválida';
+    // Date validation
+    if (!dateInput.trim()) {
+      newErrors.dateOfBirth = 'Data de nascimento é obrigatória';
+    } else if (dateInput.length !== 10) {
+      newErrors.dateOfBirth = 'Data incompleta. Use o formato DD/MM/AAAA';
+    } else {
+      const birthDate = parseDateFromInput(dateInput);
+      if (!birthDate) {
+        newErrors.dateOfBirth = 'Data inválida';
+      } else {
+        const age = calculateAge(birthDate);
+        if (age < 13) {
+          newErrors.dateOfBirth = 'Você deve ter pelo menos 13 anos';
+        } else if (age > 120) {
+          newErrors.dateOfBirth = 'Data inválida';
+        }
+      }
     }
 
     // Gender validation
@@ -69,11 +142,18 @@ export default function PersonalInfoScreen() {
     setIsLoading(true);
     
     try {
-      const age = calculateAge(formData.dateOfBirth);
+      const birthDate = parseDateFromInput(dateInput);
+      if (!birthDate) {
+        Alert.alert('Erro', 'Data de nascimento inválida');
+        setIsLoading(false);
+        return;
+      }
+
+      const age = calculateAge(birthDate);
       
       // Format date to ISO string for backend
       const profileData = {
-        dateOfBirth: formData.dateOfBirth.toISOString().split('T')[0], // YYYY-MM-DD format
+        dateOfBirth: birthDate.toISOString().split('T')[0], // YYYY-MM-DD format
         sex: formData.sex, // MENINO or MENINA
         age, // Calculate and send age for convenience
       };
@@ -108,20 +188,6 @@ export default function PersonalInfoScreen() {
     }
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    // No Android, sempre fecha o modal
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    
-    if (selectedDate && event.type !== 'dismissed') {
-      setFormData({ ...formData, dateOfBirth: selectedDate });
-      if (errors.dateOfBirth) {
-        setErrors({ ...errors, dateOfBirth: '' });
-      }
-    }
-  };
-
   const selectGender = (genderId: 'MENINO' | 'MENINA') => {
     setFormData({ ...formData, sex: genderId });
     if (errors.sex) {
@@ -129,11 +195,17 @@ export default function PersonalInfoScreen() {
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR');
+  const getUserAge = (): number | null => {
+    if (dateInput.length === 10) {
+      const birthDate = parseDateFromInput(dateInput);
+      if (birthDate) {
+        return calculateAge(birthDate);
+      }
+    }
+    return null;
   };
 
-  const userAge = calculateAge(formData.dateOfBirth);
+  const userAge = getUserAge();
 
   return (
     <ScreenContainer style={styles.container}>
@@ -156,26 +228,26 @@ export default function PersonalInfoScreen() {
 
         <Card style={styles.formCard}>
           <View style={styles.form}>
-            {/* Date of Birth */}
+            {/* Date of Birth Input */}
             <View style={styles.fieldContainer}>
               <ThemedText style={styles.fieldLabel}>Quando você nasceu?</ThemedText>
-              <TouchableOpacity 
-                style={[styles.dateButton, errors.dateOfBirth && styles.errorInput]}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <View style={styles.dateButtonContent}>
-                  <Ionicons name="calendar-outline" size={20} color={colors.primary.main} />
-                  <View style={styles.dateTextContainer}>
-                    <ThemedText style={styles.dateButtonText}>
-                      {formatDate(formData.dateOfBirth)}
-                    </ThemedText>
-                    <ThemedText style={styles.ageText}>
-                      {userAge} anos
-                    </ThemedText>
-                  </View>
-                  <Ionicons name="chevron-down-outline" size={16} color={colors.neutral.text.secondary} />
-                </View>
-              </TouchableOpacity>
+              <View style={[styles.dateInputContainer, errors.dateOfBirth && styles.errorInput]}>
+                <Ionicons name="calendar-outline" size={20} color={colors.primary.main} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.dateInput}
+                  placeholder="DD/MM/AAAA"
+                  placeholderTextColor={colors.neutral.text.disabled}
+                  value={dateInput}
+                  onChangeText={handleDateInputChange}
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+                {userAge !== null && (
+                  <ThemedText style={styles.ageText}>
+                    {userAge} anos
+                  </ThemedText>
+                )}
+              </View>
               {errors.dateOfBirth && (
                 <ThemedText style={styles.errorText}>{errors.dateOfBirth}</ThemedText>
               )}
@@ -231,58 +303,6 @@ export default function PersonalInfoScreen() {
             🔒 Seus dados ficam apenas no seu dispositivo e são protegidos por criptografia
           </ThemedText>
         </View>
-
-        {/* Date Picker Modal */}
-        {showDatePicker && (
-          <Modal
-            visible={showDatePicker}
-            transparent={true}
-            animationType="slide"
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHandle} />
-                <View style={styles.modalHeader}>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(false)}
-                    style={styles.modalCancelButton}
-                  >
-                    <ThemedText style={styles.modalCancelText}>Cancelar</ThemedText>
-                  </TouchableOpacity>
-                  <View style={styles.modalTitleContainer}>
-                    <ThemedText style={styles.modalTitle}>Data de Nascimento</ThemedText>
-                    <ThemedText style={styles.modalSubtitle}>Selecione quando você nasceu</ThemedText>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(false)}
-                    style={styles.modalConfirmButton}
-                  >
-                    <ThemedText style={styles.modalConfirmText}>Confirmar</ThemedText>
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.datePickerContainer}>
-                  <DateTimePicker
-                    value={formData.dateOfBirth}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={onDateChange}
-                    maximumDate={new Date()}
-                    minimumDate={new Date(1900, 0, 1)}
-                    style={styles.datePicker}
-                    themeVariant="light"
-                  />
-                </View>
-                
-                <View style={styles.modalFooter}>
-                  <ThemedText style={styles.modalFooterText}>
-                    Idade calculada: <ThemedText style={styles.modalFooterAge}>{calculateAge(formData.dateOfBirth)} anos</ThemedText>
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-          </Modal>
-        )}
 
         <View style={styles.footer}>
           <Button
@@ -368,6 +388,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  dateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.neutral.divider,
+    borderRadius: 12,
+    padding: spacing.lg,
+    backgroundColor: colors.neutral.white,
+    gap: spacing.sm,
+  },
+  inputIcon: {
+    marginRight: spacing.xs,
+  },
+  dateInput: {
+    flex: 1,
+    fontSize: fontSize.md,
+    color: colors.neutral.text.primary,
+    fontWeight: '500',
+  },
   dateTextContainer: {
     flex: 1,
     marginHorizontal: spacing.md,
@@ -380,11 +419,6 @@ const styles = StyleSheet.create({
   ageText: {
     fontSize: fontSize.sm,
     color: colors.neutral.text.secondary,
-    marginTop: 2,
-  },
-  dateTextContainer: {
-    flex: 1,
-    marginHorizontal: spacing.sm,
   },
   genderOptions: {
     gap: spacing.md,
@@ -486,108 +520,5 @@ const styles = StyleSheet.create({
     color: colors.success.main,
     fontWeight: '500',
     marginTop: spacing.sm,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.neutral.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: spacing.xl,
-    maxHeight: '70%',
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.neutral.divider,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral.divider,
-    minHeight: 60,
-  },
-  modalTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.neutral.text.primary,
-    textAlign: 'center',
-  },
-  modalButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  modalButtonText: {
-    fontSize: fontSize.md,
-    color: colors.neutral.text.secondary,
-  },
-  modalButtonConfirm: {
-    color: colors.primary.main,
-    fontWeight: '600',
-  },
-  datePicker: {
-    backgroundColor: colors.neutral.background,
-  },
-  // Novos estilos do modal melhorado
-  modalCancelButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  modalCancelText: {
-    fontSize: fontSize.md,
-    color: colors.neutral.text.secondary,
-  },
-  modalTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  modalSubtitle: {
-    fontSize: fontSize.sm,
-    color: colors.neutral.text.secondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  modalConfirmButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.primary.main,
-    borderRadius: 8,
-  },
-  modalConfirmText: {
-    fontSize: fontSize.md,
-    color: colors.neutral.background,
-    fontWeight: '600',
-  },
-  datePickerContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-  },
-  modalFooter: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral.divider,
-    alignItems: 'center',
-  },
-  modalFooterText: {
-    fontSize: fontSize.sm,
-    color: colors.neutral.text.secondary,
-  },
-  modalFooterAge: {
-    fontWeight: '600',
-    color: colors.primary.main,
   },
 });

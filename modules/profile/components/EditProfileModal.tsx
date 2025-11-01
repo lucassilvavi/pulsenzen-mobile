@@ -7,17 +7,16 @@ import { useAuth } from '@/context/AuthContext';
 import { useUserDataNew } from '@/context/UserDataContext';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { ProfileService } from '../services/ProfileService';
 import { UserProfile } from '../types';
@@ -46,12 +45,86 @@ export function EditProfileModal({
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState(new Date(2000, 0, 1));
+  const [dateInput, setDateInput] = useState('');
   const [sex, setSex] = useState<'MENINO' | 'MENINA' | ''>('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Format date input with mask DD/MM/YYYY
+  const formatDateInput = (text: string) => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, '');
+    
+    // If empty, return empty
+    if (cleaned.length === 0) {
+      return '';
+    }
+    
+    // Apply mask progressively
+    let formatted = cleaned.slice(0, 2); // DD
+    
+    if (cleaned.length >= 3) {
+      formatted += '/' + cleaned.slice(2, 4); // DD/MM
+    }
+    
+    if (cleaned.length >= 5) {
+      formatted += '/' + cleaned.slice(4, 8); // DD/MM/YYYY
+    }
+    
+    return formatted;
+  };
+
+  const handleDateInputChange = (text: string) => {
+    // If user is deleting and hits a '/', remove the character before it too
+    if (text.length < dateInput.length && text.endsWith('/')) {
+      text = text.slice(0, -1);
+    }
+    
+    const formatted = formatDateInput(text);
+    setDateInput(formatted);
+    
+    // Clear error when user starts typing
+    if (errors.dateOfBirth) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.dateOfBirth;
+        return newErrors;
+      });
+    }
+  };
+
+  const parseDateFromInput = (dateStr: string): Date | null => {
+    // Expected format: DD/MM/YYYY
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    if (day < 1 || day > 31) return null;
+    if (month < 1 || month > 12) return null;
+    if (year < 1900 || year > new Date().getFullYear()) return null;
+    
+    // Create date (month is 0-indexed in JS)
+    const date = new Date(year, month - 1, day);
+    
+    // Validate that the date is valid (e.g., not Feb 31)
+    if (date.getDate() !== day || date.getMonth() !== month - 1 || date.getFullYear() !== year) {
+      return null;
+    }
+    
+    return date;
+  };
+
+  const formatDateToInput = (date: Date): string => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   useEffect(() => {
     if (visible && currentProfile) {
@@ -73,12 +146,15 @@ export function EditProfileModal({
       if (currentProfile.dateOfBirth) {
         // Use actual dateOfBirth from API
         const birthDate = new Date(currentProfile.dateOfBirth);
-        setDateOfBirth(birthDate);
+        setDateInput(formatDateToInput(birthDate));
       } else if (currentProfile.age) {
         // Fallback: calculate from age
         const currentYear = new Date().getFullYear();
         const birthYear = currentYear - currentProfile.age;
-        setDateOfBirth(new Date(birthYear, 0, 1));
+        const estimatedDate = new Date(birthYear, 0, 1);
+        setDateInput(formatDateToInput(estimatedDate));
+      } else {
+        setDateInput('');
       }
       
       loadUserAvatar();
@@ -123,34 +199,27 @@ export function EditProfileModal({
       newErrors.email = 'Email inválido';
     }
 
-    // Age validation
-    const age = calculateAge(dateOfBirth);
-    if (age < 13) {
-      newErrors.dateOfBirth = 'Você deve ter pelo menos 13 anos';
-    } else if (age > 120) {
-      newErrors.dateOfBirth = 'Data inválida';
+    // Date validation
+    if (!dateInput.trim()) {
+      newErrors.dateOfBirth = 'Data de nascimento é obrigatória';
+    } else if (dateInput.length !== 10) {
+      newErrors.dateOfBirth = 'Data incompleta. Use o formato DD/MM/AAAA';
+    } else {
+      const birthDate = parseDateFromInput(dateInput);
+      if (!birthDate) {
+        newErrors.dateOfBirth = 'Data inválida';
+      } else {
+        const age = calculateAge(birthDate);
+        if (age < 13) {
+          newErrors.dateOfBirth = 'Você deve ter pelo menos 13 anos';
+        } else if (age > 120) {
+          newErrors.dateOfBirth = 'Data inválida';
+        }
+      }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    // No Android, o DateTimePicker se fecha automaticamente
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    
-    if (selectedDate && event.type !== 'dismissed') {
-      setDateOfBirth(selectedDate);
-      if (errors.dateOfBirth) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.dateOfBirth;
-          return newErrors;
-        });
-      }
-    }
   };
 
   const selectGender = (genderId: 'MENINO' | 'MENINA') => {
@@ -169,6 +238,13 @@ export function EditProfileModal({
 
     setIsLoading(true);
     try {
+      const birthDate = parseDateFromInput(dateInput);
+      if (!birthDate) {
+        setErrors({ ...errors, dateOfBirth: 'Data inválida' });
+        setIsLoading(false);
+        return;
+      }
+
       // Save avatar separately (user-specific)
       await ProfileService.saveUserAvatar(avatarUri, user?.id);
 
@@ -176,12 +252,12 @@ export function EditProfileModal({
       const profileData = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        dateOfBirth: dateOfBirth.toISOString().split('T')[0], // YYYY-MM-DD format
+        dateOfBirth: birthDate.toISOString().split('T')[0], // YYYY-MM-DD format
         sex: sex, // MENINO or MENINA
       };
 
       // Calculate age for local profile
-      const age = calculateAge(dateOfBirth);
+      const age = calculateAge(birthDate);
       const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
       // 1. Update UserDataContext FIRST for immediate UI sync
@@ -220,7 +296,12 @@ export function EditProfileModal({
       
       // Fallback: ensure local data is saved even on errors
       try {
-        const age = calculateAge(dateOfBirth);
+        const birthDate = parseDateFromInput(dateInput);
+        if (!birthDate) {
+          throw new Error('Invalid birth date');
+        }
+        
+        const age = calculateAge(birthDate);
         const localProfile: UserProfile = {
           ...currentProfile,
           name: `${firstName.trim()} ${lastName.trim()}`.trim(),
@@ -261,13 +342,15 @@ export function EditProfileModal({
       setSex((currentProfile.sex as 'MENINO' | 'MENINA') || '');
       
       if (currentProfile.dateOfBirth) {
-        setDateOfBirth(new Date(currentProfile.dateOfBirth));
+        const birthDate = new Date(currentProfile.dateOfBirth);
+        setDateInput(formatDateToInput(birthDate));
       } else if (currentProfile.age) {
         const currentYear = new Date().getFullYear();
         const birthYear = currentYear - currentProfile.age;
-        setDateOfBirth(new Date(birthYear, 0, 1));
+        const estimatedDate = new Date(birthYear, 0, 1);
+        setDateInput(formatDateToInput(estimatedDate));
       } else {
-        setDateOfBirth(new Date(2000, 0, 1));
+        setDateInput('');
       }
     } else {
       // Fallback defaults
@@ -276,10 +359,9 @@ export function EditProfileModal({
       setFirstName('');
       setLastName('');
       setSex('');
-      setDateOfBirth(new Date(2000, 0, 1));
+      setDateInput('');
     }
     
-    setShowDatePicker(false);
     setErrors({});
     setIsLoading(false);
     onClose();
@@ -399,36 +481,28 @@ export function EditProfileModal({
 
               <View style={styles.inputGroup}>
                 <ThemedText style={styles.label}>Data de Nascimento</ThemedText>
-                <TouchableOpacity 
-                  style={[
-                    styles.dateButton, 
-                    errors.dateOfBirth && styles.inputError,
-                    Platform.OS === 'android' && styles.dateButtonAndroid
-                  ]}
-                  onPress={() => setShowDatePicker(true)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.dateButtonContent}>
-                    <Ionicons 
-                      name="calendar-outline" 
-                      size={22} 
-                      color={colors.primary.main} 
-                    />
-                    <View style={styles.dateTextContainer}>
-                      <ThemedText style={styles.dateButtonText}>
-                        {formatDate(dateOfBirth)}
-                      </ThemedText>
-                      <ThemedText style={styles.ageText}>
-                        {calculateAge(dateOfBirth)} anos
-                      </ThemedText>
-                    </View>
-                    <Ionicons 
-                      name={Platform.OS === 'android' ? 'chevron-forward' : 'chevron-down-outline'} 
-                      size={18} 
-                      color={colors.neutral.text.secondary} 
-                    />
-                  </View>
-                </TouchableOpacity>
+                <View style={[styles.dateInputContainer, errors.dateOfBirth && styles.inputError]}>
+                  <Ionicons 
+                    name="calendar-outline" 
+                    size={22} 
+                    color={colors.primary.main}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.dateInput}
+                    placeholder="DD/MM/AAAA"
+                    placeholderTextColor={colors.neutral.text.disabled}
+                    value={dateInput}
+                    onChangeText={handleDateInputChange}
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                  {dateInput.length === 10 && parseDateFromInput(dateInput) && (
+                    <ThemedText style={styles.ageText}>
+                      {calculateAge(parseDateFromInput(dateInput)!)} anos
+                    </ThemedText>
+                  )}
+                </View>
                 {errors.dateOfBirth && (
                   <ThemedText style={styles.errorText}>{errors.dateOfBirth}</ThemedText>
                 )}
@@ -485,71 +559,6 @@ export function EditProfileModal({
             />
           </View>
         </KeyboardAvoidingView>
-
-        {/* Date Picker - Renderização específica por plataforma */}
-        {showDatePicker && Platform.OS === 'ios' && (
-          <Modal
-            visible={showDatePicker}
-            transparent={true}
-            animationType="slide"
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHandle} />
-                <View style={styles.modalHeader}>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(false)}
-                    style={styles.modalCancelButton}
-                  >
-                    <ThemedText style={styles.modalCancelText}>Cancelar</ThemedText>
-                  </TouchableOpacity>
-                  <View style={styles.modalTitleContainer}>
-                    <ThemedText style={styles.modalTitle}>Data de Nascimento</ThemedText>
-                    <ThemedText style={styles.modalSubtitle}>Quando você nasceu?</ThemedText>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(false)}
-                    style={styles.modalConfirmButton}
-                  >
-                    <ThemedText style={styles.modalConfirmText}>Confirmar</ThemedText>
-                  </TouchableOpacity>
-                </View>
-                
-                <View style={styles.datePickerContainer}>
-                  <DateTimePicker
-                    value={dateOfBirth}
-                    mode="date"
-                    display="spinner"
-                    onChange={onDateChange}
-                    maximumDate={new Date()}
-                    minimumDate={new Date(1900, 0, 1)}
-                    style={styles.datePicker}
-                    themeVariant="light"
-                  />
-                </View>
-                
-                <View style={styles.modalFooter}>
-                  <ThemedText style={styles.modalFooterText}>
-                    Idade: <ThemedText style={styles.modalFooterAge}>{calculateAge(dateOfBirth)} anos</ThemedText>
-                  </ThemedText>
-                </View>
-              </View>
-            </View>
-          </Modal>
-        )}
-
-        {/* Android: DateTimePicker nativo mais limpo */}
-        {showDatePicker && Platform.OS === 'android' && (
-          <DateTimePicker
-            value={dateOfBirth}
-            mode="date"
-            display="default"
-            onChange={onDateChange}
-            maximumDate={new Date()}
-            minimumDate={new Date(1900, 0, 1)}
-            themeVariant="light"
-          />
-        )}
       </ThemedView>
     </Modal>
   );
@@ -675,10 +684,28 @@ const styles = StyleSheet.create({
     color: colors.neutral.text.primary,
     fontWeight: '500',
   },
+  dateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.neutral.divider,
+    borderRadius: 12,
+    padding: spacing.lg,
+    backgroundColor: colors.neutral.white,
+    gap: spacing.sm,
+  },
+  inputIcon: {
+    marginRight: spacing.xs,
+  },
+  dateInput: {
+    flex: 1,
+    fontSize: fontSize.md,
+    color: colors.neutral.text.primary,
+    fontWeight: '500',
+  },
   ageText: {
     fontSize: fontSize.sm,
     color: colors.neutral.text.secondary,
-    marginTop: 2,
   },
   // Gender selection styles
   genderOptions: {
@@ -706,96 +733,5 @@ const styles = StyleSheet.create({
   genderButtonTextSelected: {
     color: colors.primary.main,
     fontWeight: '600',
-  },
-  // Date picker modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.neutral.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: spacing.xl,
-    maxHeight: '70%',
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.neutral.divider,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral.divider,
-    minHeight: 60,
-  },
-  modalCancelButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  modalCancelText: {
-    fontSize: fontSize.md,
-    color: colors.neutral.text.secondary,
-  },
-  modalTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  modalTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.neutral.text.primary,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: fontSize.sm,
-    color: colors.neutral.text.secondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  modalConfirmButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.primary.main,
-    borderRadius: 8,
-  },
-  modalConfirmText: {
-    fontSize: fontSize.md,
-    color: colors.neutral.background,
-    fontWeight: '600',
-  },
-  datePickerContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-  },
-  datePicker: {
-    backgroundColor: colors.neutral.background,
-  },
-  modalFooter: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.neutral.divider,
-    alignItems: 'center',
-  },
-  modalFooterText: {
-    fontSize: fontSize.sm,
-    color: colors.neutral.text.secondary,
-  },
-  modalFooterAge: {
-    fontWeight: '600',
-    color: colors.primary.main,
   },
 });
