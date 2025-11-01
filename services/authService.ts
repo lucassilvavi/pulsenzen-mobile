@@ -160,8 +160,20 @@ class AuthService {
             userData
           );
           
-          // Clear onboarding status for new users (they need to complete onboarding)
-          await secureStorage.removeItem('onboarding_done');
+          // Extract onboarding status from JWT token
+          const decodedToken = decodeJWT(token);
+          if (decodedToken && typeof decodedToken.onboardingComplete === 'boolean') {
+            await secureStorage.setItem(
+              APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, 
+              decodedToken.onboardingComplete ? 'true' : 'false'
+            );
+            logger.info('AuthService', 'Onboarding status from token after registration', {
+              onboardingComplete: decodedToken.onboardingComplete
+            });
+          } else {
+            // For new users, onboarding is not complete
+            await secureStorage.removeItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE);
+          }
 
           logger.info('AuthService', 'User registration successful', { 
             userId: userData.id 
@@ -259,7 +271,7 @@ class AuthService {
           response.data.user
         );
 
-        // Extrair moodStatus do JWT token e salvar no localStorage após login
+        // Extrair moodStatus e onboardingComplete do JWT token
         const decodedToken = decodeJWT(response.data.token);
         
         if (decodedToken && decodedToken.moodStatus) {
@@ -271,6 +283,17 @@ class AuthService {
           // Fallback: inicializar com valores vazios se não houver no token
           await MoodStatusService.saveMoodStatus({ manha: false, tarde: false, noite: false });
           logger.warn('AuthService', 'MoodStatus não encontrado no token, inicializando vazio');
+        }
+
+        // Save onboarding status from token
+        if (decodedToken && typeof decodedToken.onboardingComplete === 'boolean') {
+          await secureStorage.setItem(
+            APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, 
+            decodedToken.onboardingComplete ? 'true' : 'false'
+          );
+          logger.info('AuthService', 'Onboarding status from token', {
+            onboardingComplete: decodedToken.onboardingComplete
+          });
         }
 
         logger.info('AuthService', 'User login successful', { 
@@ -1018,31 +1041,46 @@ class AuthService {
     try {
       logger.debug("AuthService", 'Marking onboarding as complete for user:', userId);
       
-      // Update user data locally to mark onboarding as complete
-      const currentUser = await AuthService.getCurrentUser();
-      if (currentUser) {
-        const updatedUser = { ...currentUser, onboardingComplete: true };
-        await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(updatedUser));
-        logger.debug("AuthService", 'Updated user data with onboarding complete');
+      // Get auth header for authenticated request
+      const authHeader = await this.getAuthHeader();
+
+      // Call backend API to mark onboarding as complete
+      const response = await networkManager.post<any>(
+        appConfig.getApiUrl('/auth/complete-onboarding'),
+        {}, // Empty body, backend will use authenticated user
+        {
+          timeout: APP_CONSTANTS.API.TIMEOUT,
+          retries: APP_CONSTANTS.API.RETRY_ATTEMPTS,
+          priority: 'high',
+          tags: ['auth', 'onboarding'],
+          headers: authHeader,
+        }
+      );
+
+      if (response.success && response.data) {
+        logger.info('AuthService', 'Onboarding marked as complete on backend');
+        
+        // Update user data locally
+        const currentUser = await AuthService.getCurrentUser();
+        if (currentUser) {
+          const updatedUser = { ...currentUser, onboardingComplete: true };
+          await secureStorage.setItem(AuthService.USER_KEY, JSON.stringify(updatedUser));
+          logger.debug("AuthService", 'Updated local user data with onboarding complete');
+        }
+        
+        // Save onboarding completion in AsyncStorage
+        await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, 'true');
+        await secureStorage.setItem('onboarding_done', 'true'); // Keep for backward compatibility
+        
+        logger.debug("AuthService", 'Onboarding marked as complete successfully');
+      } else {
+        throw new Error(response.error || 'Failed to mark onboarding complete on backend');
       }
-      
-      // Save onboarding completion in AsyncStorage - use the constant key
-      await secureStorage.setItem(APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, 'true');
-      await secureStorage.setItem('onboarding_done', 'true'); // Keep for backward compatibility
-      
-      logger.debug("AuthService", 'Onboarding marked as complete successfully');
     } catch (error) {
       logger.error('AuthService', 'Mark onboarding complete error', error instanceof Error ? error : new Error(String(error)));
       
-      // Fallback: try to save directly to AsyncStorage without encryption
-      try {
-        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-        await AsyncStorage.setItem('onboardingDone', 'true');
-        await AsyncStorage.setItem('onboarding_done', 'true');
-        logger.debug("AuthService", 'Fallback: Onboarding marked as complete in AsyncStorage');
-      } catch (fallbackError) {
-        logger.error('AuthService', 'Fallback storage also failed', fallbackError instanceof Error ? fallbackError : new Error(String(fallbackError)));
-      }
+      // Don't use fallback - if backend fails, we should not mark as complete locally
+      throw error;
     }
   }
 
