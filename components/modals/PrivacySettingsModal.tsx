@@ -7,13 +7,13 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface PrivacySettings {
@@ -277,10 +277,9 @@ export function PrivacySettingsModal({
             <ThemedText style={styles.sectionTitle}>Contato</ThemedText>
             <ThemedText style={styles.description}>
               Para questões sobre privacidade ou exercer seus direitos da LGPD, entre em contato:
-              {'\n\n'}📧 privacy@pulsezen.com
-              {'\n'}📱 +55 (11) 99999-9999
+              {'\n\n'}📧 acalmarapp@gmail.com
               {'\n\n'}Data Protection Officer:
-              {'\n'}Lucas Vieira - dpo@pulsezen.com
+              {'\n'}Lucas Vieira - acalmarapp@gmail.com
             </ThemedText>
           </View>
         </ScrollView>

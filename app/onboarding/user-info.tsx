@@ -96,7 +96,7 @@ export default function UserInfoScreen() {
         </View>
         <ThemedText style={styles.title}>Conte-nos sobre você</ThemedText>
         <ThemedText style={styles.subtitle}>
-          Essas informações nos ajudam a personalizar sua experiência no PulseZen
+          Essas informações nos ajudam a personalizar sua experiência no Acalmar
         </ThemedText>
       </View>
 

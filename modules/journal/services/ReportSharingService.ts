@@ -81,7 +81,7 @@ export class ReportSharingService {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Relatório Terapêutico - PulseZen</title>
+      <title>Relatório Terapêutico - Acalmar</title>
       <style>
         @page {
           margin: 20mm;
@@ -257,7 +257,7 @@ export class ReportSharingService {
     <body>
       <!-- Header -->
       <div class="header">
-        <div class="logo">🧠 PulseZen</div>
+        <div class="logo">🧠 Acalmar</div>
         <div class="subtitle">Relatório Terapêutico de Saúde Mental</div>
         <div class="date-info">
           <strong>Data do Relatório:</strong> ${currentDate}<br>
@@ -374,9 +374,9 @@ export class ReportSharingService {
 
       <!-- Footer -->
       <div class="footer">
-        <p><strong>PulseZen</strong> - Plataforma de Saúde Mental Digital</p>
+        <p><strong>Acalmar</strong> - Plataforma de Saúde Mental Digital</p>
         <p>Este relatório foi gerado automaticamente e deve ser interpretado por profissionais qualificados.</p>
-        <p>Para mais informações: suporte@pulsezen.com</p>
+        <p>Para mais informações: acalmarapp@gmail.com</p>
       </div>
     </body>
     </html>

@@ -58,7 +58,7 @@ export default function BenefitsScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <ThemedText style={styles.title}>
-                        Por que escolher o PulseZen?
+                        Por que escolher o Acalmar?
                     </ThemedText>
                     <ThemedText style={styles.subtitle}>
                         Descubra os benefícios que milhares de usuários já experimentam
