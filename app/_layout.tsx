@@ -70,7 +70,7 @@ export default function RootLayoutHybrid() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Carregando PulseZen (Completo)...</Text>
+        <Text style={styles.loadingText}>Carregando Acalmar...</Text>
       </View>
     );
   }

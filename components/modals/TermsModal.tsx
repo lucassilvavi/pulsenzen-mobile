@@ -23,7 +23,7 @@ export default function TermsModal({ visible, onClose }: TermsModalProps) {
           </TouchableOpacity>
           <ThemedText style={styles.title}>Termos de Uso</ThemedText>
           <ThemedText style={styles.subtitle}>
-            PulseZen - Aplicativo de Bem-estar Mental
+            Acalmar - Aplicativo de Bem-estar Mental
           </ThemedText>
         </View>
 
@@ -31,7 +31,7 @@ export default function TermsModal({ visible, onClose }: TermsModalProps) {
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>1. Aceite dos Termos</ThemedText>
             <ThemedText style={styles.text}>
-              Ao usar o PulseZen, você concorda com estes Termos de Uso. Se não concordar, 
+              Ao usar o Acalmar, você concorda com estes Termos de Uso. Se não concordar, 
               não use o aplicativo.
             </ThemedText>
           </View>
@@ -39,7 +39,7 @@ export default function TermsModal({ visible, onClose }: TermsModalProps) {
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>2. Descrição do Serviço</ThemedText>
             <ThemedText style={styles.text}>
-              O PulseZen é um aplicativo de bem-estar mental que oferece:
+              O Acalmar é um aplicativo de bem-estar mental que oferece:
             </ThemedText>
             <ThemedText style={styles.bulletText}>• Exercícios de respiração guiada</ThemedText>
             <ThemedText style={styles.bulletText}>• Diário de humor e reflexões</ThemedText>
@@ -50,7 +50,7 @@ export default function TermsModal({ visible, onClose }: TermsModalProps) {
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>3. Não é Substituto Médico</ThemedText>
             <ThemedText style={styles.text}>
-              <ThemedText style={styles.emphasis}>IMPORTANTE:</ThemedText> O PulseZen é uma 
+              <ThemedText style={styles.emphasis}>IMPORTANTE:</ThemedText> O Acalmar é uma
               ferramenta de apoio ao bem-estar e NÃO substitui tratamento médico profissional. 
               Em caso de crise ou pensamentos de autolesão, procure ajuda médica imediata ou 
               ligue para o CVV (188).
@@ -92,7 +92,7 @@ export default function TermsModal({ visible, onClose }: TermsModalProps) {
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>7. Contato</ThemedText>
             <ThemedText style={styles.text}>
-              Para dúvidas sobre estes termos, entre em contato: suporte@pulsezen.com
+              Para dúvidas sobre estes termos, entre em contato: acalmarapp@gmail.com
             </ThemedText>
           </View>
         </ScrollView>

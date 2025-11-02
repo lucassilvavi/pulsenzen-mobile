@@ -23,7 +23,7 @@ export default function PrivacyModal({ visible, onClose }: PrivacyModalProps) {
           </TouchableOpacity>
           <ThemedText style={styles.title}>Política de Privacidade</ThemedText>
           <ThemedText style={styles.subtitle}>
-            PulseZen - Aplicativo de Bem-estar Mental
+           Acalmar -  Aplicativo de Bem-estar Mental
           </ThemedText>
         </View>
 
@@ -31,8 +31,8 @@ export default function PrivacyModal({ visible, onClose }: PrivacyModalProps) {
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>1. Informações Gerais</ThemedText>
             <ThemedText style={styles.text}>
-              Esta Política de Privacidade descreve como coletamos, usamos e protegemos 
-              suas informações pessoais no PulseZen, em conformidade com a LGPD 
+              Esta Política de Privacidade descreve como coletamos, usamos e protegemos
+              suas informações pessoais no Acalmar, em conformidade com a LGPD
               (Lei Geral de Proteção de Dados).
             </ThemedText>
           </View>
@@ -120,8 +120,8 @@ export default function PrivacyModal({ visible, onClose }: PrivacyModalProps) {
             <ThemedText style={styles.text}>
               Para exercer seus direitos ou esclarecer dúvidas sobre privacidade:
             </ThemedText>
-            <ThemedText style={styles.bulletText}>• Email: privacidade@pulsezen.com</ThemedText>
-            <ThemedText style={styles.bulletText}>• DPO (Encarregado de Dados): dpo@pulsezen.com</ThemedText>
+            <ThemedText style={styles.bulletText}>• Email: acalmarapp@gmail.com</ThemedText>
+            <ThemedText style={styles.bulletText}>• DPO (Encarregado de Dados): acalmarapp@gmail.com</ThemedText>
             <ThemedText style={styles.text}>
               Responderemos em até 15 dias conforme previsto na LGPD.
             </ThemedText>

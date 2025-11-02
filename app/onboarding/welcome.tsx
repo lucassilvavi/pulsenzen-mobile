@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
                     {/* Welcome Text */}
                     <View style={styles.textContainer}>
                         <ThemedText style={styles.title}>
-                            Bem-vindo ao PulseZen
+                            Bem-vindo ao Acalmar
                         </ThemedText>
                         <ThemedText style={styles.subtitle}>
                             Sua jornada para o bem-estar mental começa aqui

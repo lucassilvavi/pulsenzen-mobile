@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "pulse-zen-app",
-    "slug": "pulse-zen-app",
+    "name": "Acalmar",
+    "slug": "acalmar-app",
     "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -61,7 +61,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Allow PulseZen to use Face ID for secure and convenient authentication."
+          "faceIDPermission": "Permitir que o Acalmar use Face ID para autenticação segura e conveniente."
         }
       ],
       "expo-secure-store"

@@ -1,4 +1,4 @@
-# 🧘 PulseZen App v1.0.0 - Mental Wellness Companion
+# 🧘 Acalmar App v1.0.0 - Mental Wellness Companion
 
 [![React Native](https://img.shields.io/badge/React%20Native-0.74-blue.svg)](https://reactnative.dev/)
 [![Expo SDK](https://img.shields.io/badge/Expo%20SDK-53-black.svg)](https://expo.dev/)
@@ -10,7 +10,7 @@
 
 ## 🌟 **Visão Geral**
 
-O **PulseZen** é um aplicativo de bem-estar mental desenvolvido com React Native e Expo, focado em ajudar os usuários a gerenciar estresse, ansiedade e melhorar sua saúde mental através de técnicas avançadas e ferramentas intuitivas.
+O **Acalmar** é um aplicativo de bem-estar mental desenvolvido com React Native e Expo, focado em ajudar os usuários a gerenciar estresse, ansiedade e melhorar sua saúde mental através de técnicas avançadas e ferramentas intuitivas.
 
 ### ✨ **Principais Funcionalidades**
 

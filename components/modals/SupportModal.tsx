@@ -6,14 +6,14 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
-    Alert,
-    Linking,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface SupportModalProps {
@@ -56,7 +56,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     id: '6',
     question: 'Como reportar um bug?',
-    answer: 'Use o formulário de contato abaixo ou envie um email para support@pulsezen.com com detalhes do problema.',
+    answer: 'Use o formulário de contato abaixo ou envie um email para acalmarapp@gmail.com com detalhes do problema.',
   },
 ];
 
@@ -71,8 +71,8 @@ export function SupportModal({
   };
 
   const openEmail = () => {
-    const subject = encodeURIComponent('Suporte PulseZen - Ajuda');
-    const body = encodeURIComponent(`Olá equipe do PulseZen,
+    const subject = encodeURIComponent('Suporte Acalmar - Ajuda');
+    const body = encodeURIComponent(`Olá equipe do Acalmar,
 
 Preciso de ajuda com:
 
@@ -84,35 +84,35 @@ Informações do dispositivo:
 
 Obrigado!`);
     
-    Linking.openURL(`mailto:support@pulsezen.com?subject=${subject}&body=${body}`)
+    Linking.openURL(`mailto:acalmarapp@gmail.com?subject=${subject}&body=${body}`)
       .catch(() => {
         Alert.alert(
           'Erro',
-          'Não foi possível abrir o cliente de email. Tente enviar um email manualmente para: support@pulsezen.com'
+          'Não foi possível abrir o cliente de email. Tente enviar um email manualmente para: acalmarapp@gmail.com'
         );
       });
   };
 
   const openWhatsApp = () => {
-    const message = encodeURIComponent('Olá! Preciso de ajuda com o aplicativo PulseZen.');
+    const message = encodeURIComponent('Olá! Preciso de ajuda com o aplicativo Acalmar.');
     Linking.openURL(`whatsapp://send?phone=5511999999999&text=${message}`)
       .catch(() => {
         Alert.alert(
           'WhatsApp não encontrado',
-          'WhatsApp não está instalado. Você pode nos contatar pelo email: support@pulsezen.com'
+          'WhatsApp não está instalado. Você pode nos contatar pelo email: acalmarapp@gmail.com'
         );
       });
   };
 
   const openWebsite = () => {
-    Linking.openURL('https://pulsezen.com/support')
+    Linking.openURL('https://acalmar.com/support')
       .catch(() => {
         Alert.alert('Erro', 'Não foi possível abrir o link.');
       });
   };
 
   const openDocumentation = () => {
-    Linking.openURL('https://docs.pulsezen.com')
+    Linking.openURL('https://docs.acalmar.com')
       .catch(() => {
         Alert.alert('Erro', 'Não foi possível abrir a documentação.');
       });
@@ -150,7 +150,7 @@ Obrigado!`);
               </View>
               <View style={styles.contactInfo}>
                 <ThemedText style={styles.contactLabel}>Email</ThemedText>
-                <ThemedText style={styles.contactDescription}>support@pulsezen.com</ThemedText>
+                <ThemedText style={styles.contactDescription}>acalmarapp@gmail.com</ThemedText>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.neutral.text.disabled} />
             </TouchableOpacity>
@@ -172,7 +172,7 @@ Obrigado!`);
               </View>
               <View style={styles.contactInfo}>
                 <ThemedText style={styles.contactLabel}>Site de Suporte</ThemedText>
-                <ThemedText style={styles.contactDescription}>pulsezen.com/support</ThemedText>
+                <ThemedText style={styles.contactDescription}>acalmar.com/support</ThemedText>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.neutral.text.disabled} />
             </TouchableOpacity>
@@ -183,7 +183,7 @@ Obrigado!`);
               </View>
               <View style={styles.contactInfo}>
                 <ThemedText style={styles.contactLabel}>Documentação</ThemedText>
-                <ThemedText style={styles.contactDescription}>docs.pulsezen.com</ThemedText>
+                <ThemedText style={styles.contactDescription}>docs.acalmar.com</ThemedText>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.neutral.text.disabled} />
             </TouchableOpacity>
@@ -232,7 +232,7 @@ Obrigado!`);
             
             <View style={styles.infoItem}>
               <ThemedText style={styles.infoLabel}>Desenvolvido por</ThemedText>
-              <ThemedText style={styles.infoValue}>PulseZen Team</ThemedText>
+              <ThemedText style={styles.infoValue}>Acalmar Team</ThemedText>
             </View>
           </View>
 
