@@ -1,12 +1,11 @@
 import Button from '@/components/base/Button';
-import ScreenContainer from '@/components/base/ScreenContainer';
 import { ThemedText } from '@/components/ThemedText';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Dimensions, StyleSheet, View } from 'react-native';
-
-const { height } = Dimensions.get('window');
+import { StatusBar } from 'expo-status-bar';
+import { Image, StyleSheet, View } from 'react-native';
 
 export default function WelcomeScreen() {
     const router = useRouter();
@@ -16,18 +15,24 @@ export default function WelcomeScreen() {
     };
 
     return (
-        <ScreenContainer
-            gradientColors={colors.gradients.primary}
-            gradientHeight={height * 0.4}
-        >
-            <View style={styles.container}>
+        <>
+            <StatusBar style="light" />
+            <LinearGradient
+                colors={['#64B5F6', '#FFFFFF']} 
+                style={styles.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            >
+                <View style={styles.container}>
                 {/* Main Content */}
                 <View style={styles.contentContainer}>
                     {/* Logo/Illustration */}
                     <View style={styles.illustrationContainer}>
-                        <View style={styles.logoPlaceholder}>
-                            <ThemedText style={styles.logoText}>🧘‍♀️</ThemedText>
-                        </View>
+                        <Image 
+                            source={require('@/assets/images/adaptive-icon.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
                     </View>
 
                     {/* Welcome Text */}
@@ -66,11 +71,16 @@ export default function WelcomeScreen() {
                     </View>
                 </View>
             </View>
-        </ScreenContainer>
+            </LinearGradient>
+        </>
     );
 }
 
 const styles = StyleSheet.create({
+    gradient: {
+        flex: 1,
+        paddingTop: 50, // Espaço para status bar
+    },
     container: {
         flex: 1,
         paddingHorizontal: spacing.lg,
@@ -96,29 +106,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 80,
+        gap: spacing.lg, // Usa gap para espaçamento consistente
     },
     illustrationContainer: {
-        marginBottom: spacing.xl * 2,
-    },
-    logoPlaceholder: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: colors.neutral.white,
-        justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: colors.neutral.black,
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 8,
+        justifyContent: 'center',
     },
-    logoText: {
-        fontSize: 28,
+    logoImage: {
+        width: 320, // Reduz um pouco o tamanho para melhor proporção
+        height: 320,
     },
     textContainer: {
         alignItems: 'center',

@@ -296,7 +296,7 @@ export default function ProfileScreen() {
         {/* App Version */}
         <View style={styles.versionContainer}>
           <ThemedText style={styles.versionText}>
-            PulseZen {AppVersion.getSimpleVersion()}
+            Acalmar {AppVersion.getSimpleVersion()}
           </ThemedText>
           <ThemedText style={styles.versionSubtext}>
             Build {AppVersion.getBuildNumber()}

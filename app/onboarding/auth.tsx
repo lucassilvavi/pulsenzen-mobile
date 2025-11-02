@@ -379,7 +379,7 @@ export default function AuthScreen() {
           {/* App Version */}
           <View style={styles.versionContainer}>
             <ThemedText style={styles.versionText}>
-              PulseZen {AppVersion.getSimpleVersion()}
+              Acalmar {AppVersion.getSimpleVersion()}
             </ThemedText>
           </View>
         </View>

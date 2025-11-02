@@ -27,7 +27,7 @@ export default function PrivacyPolicyScreen() {
           <ThemedText style={styles.sectionTitle}>1. Introdução</ThemedText>
           <ThemedText style={styles.text}>
             Sua privacidade é fundamental para nós. Esta política explica como coletamos, 
-            usamos e protegemos suas informações pessoais no PulseZen.
+            usamos e protegemos suas informações pessoais no Acalmar.
           </ThemedText>
         </View>
 
@@ -127,7 +127,7 @@ export default function PrivacyPolicyScreen() {
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>9. Menores de Idade</ThemedText>
           <ThemedText style={styles.text}>
-            O PulseZen é destinado a usuários maiores de 13 anos. Para menores entre 13-18 anos, 
+            O Acalmar é destinado a usuários maiores de 13 anos. Para menores entre 13-18 anos, 
             é necessário consentimento dos responsáveis para coleta de dados.
           </ThemedText>
         </View>
@@ -145,9 +145,8 @@ export default function PrivacyPolicyScreen() {
           <ThemedText style={styles.text}>
             Para exercer seus direitos ou esclarecer dúvidas sobre privacidade:
           </ThemedText>
-          <ThemedText style={styles.bulletText}>• Email: privacidade@pulsezen.com</ThemedText>
-          <ThemedText style={styles.bulletText}>• DPO: dpo@pulsezen.com</ThemedText>
-          <ThemedText style={styles.bulletText}>• Telefone: (11) 1234-5678</ThemedText>
+          <ThemedText style={styles.bulletText}>• Email: acalmarapp@gmail.com</ThemedText>
+          <ThemedText style={styles.bulletText}>• DPO: acalmarapp@gmail.com</ThemedText>
         </View>
 
         <View style={styles.footer}>

@@ -54,7 +54,7 @@ export default function BenefitsScreen() {
             Transforme seu bem-estar em apenas 5 minutos por dia
           </ThemedText>
           <ThemedText style={styles.subtitle}>
-            Descubra por que milhares de pessoas escolhem o PulseZen
+            Descubra por que milhares de pessoas escolhem o Acalmar
           </ThemedText>
         </View>
 
