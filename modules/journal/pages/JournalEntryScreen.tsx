@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Dimensions, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import from the journal module
 import { LinearGradient } from 'expo-linear-gradient';
@@ -315,7 +315,7 @@ export default function JournalEntryScreen() {
             presentationStyle="pageSheet"
             onRequestClose={handleCustomPromptCancel}
         >
-            <View style={styles.customPromptContainer}>
+            <SafeAreaView style={styles.customPromptContainer} edges={['top']}>
                 <LinearGradient
                     colors={['#A8D5BA', '#F2F9F5']}
                     style={styles.modalHeaderGradient}
@@ -389,7 +389,7 @@ export default function JournalEntryScreen() {
                         ))}
                     </View>
                 </ScrollView>
-            </View>
+            </SafeAreaView>
         </Modal>
     );
 
@@ -1023,7 +1023,7 @@ backButton: {
         borderBottomWidth: 1,
         borderBottomColor: colors.journal.border.light,
         backgroundColor: 'transparent',
-        minHeight: 70,
+        minHeight: 60,
         zIndex: 1,
     },
     
