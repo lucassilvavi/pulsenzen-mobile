@@ -6,14 +6,15 @@ import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { ActiveSession, CopingStrategiesGrid, EmergencyContacts, HelpMessage } from '../components';
@@ -197,7 +198,7 @@ export default function SOSScreen() {
     }
   };
 
-  const handleEmergencyContact = (contact: EmergencyContact) => {
+  const handleEmergencyContact = async (contact: EmergencyContact) => {
     Alert.alert(
       'Ligar para emergência',
       `Deseja ligar para ${contact.name} (${contact.number})?`,
@@ -206,9 +207,19 @@ export default function SOSScreen() {
         { 
           text: 'Ligar', 
           style: 'default', 
-          onPress: () => {
-            // In a real app, this would use Linking.openURL(`tel:${contact.number}`)
-            Alert.alert('Simulação', `Ligando para ${contact.name}...`);
+          onPress: async () => {
+            const phoneNumber = `tel:${contact.number}`;
+            const canOpen = await Linking.canOpenURL(phoneNumber);
+            
+            if (canOpen) {
+              await Linking.openURL(phoneNumber);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+              Alert.alert(
+                'Erro',
+                'Não foi possível realizar a ligação. Verifique se o dispositivo suporta chamadas telefônicas.'
+              );
+            }
           }
         },
       ]
