@@ -281,17 +281,18 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
 
   /**
    * Get label for risk level (humanizado e claro)
+   * NOVA LÓGICA: 100% = BEM | 0% = CRÍTICO
    */
   private getRiskLevelLabel(level: RiskLevel): string {
     switch (level) {
       case 'low':
-        return '😊 Estável - Você está bem!';
+        return '😊 Excelente - Você está muito bem! (75-100%)';
       case 'medium':
-        return '😐 Atenção - Vamos cuidar melhor de você';
+        return '😐 Atenção - Vamos cuidar melhor de você (50-75%)';
       case 'high':
-        return '😟 Alerta - Busque um especialista para conversar';
+        return '😟 Alerta - Busque um especialista para conversar (25-50%)';
       case 'critical':
-        return '🆘 Urgente - Busque ajuda imediata';
+        return '🆘 Urgente - Busque ajuda imediata (0-25%)';
       default:
         return '😐 Atenção - Vamos cuidar melhor de você';
     }
@@ -325,7 +326,7 @@ export class CrisisPredictionApiClient implements PredictionDataSource {
       case 'mood_decline':
         return 'Variação de humor recente';
       case 'negative_sentiment':
-        return 'Sentiment negativo no diário';
+        return 'Sentimento negativo no diário';
       case 'stress_keywords':
         return 'Palavras-chave de stress';
       case 'journal_frequency':
