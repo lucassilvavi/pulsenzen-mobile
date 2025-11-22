@@ -84,6 +84,10 @@ class BiometricAuthService {
   private static DEVICE_FINGERPRINT_KEY = 'device_fingerprint';
   private static DEVICE_ID_KEY = 'device_id';
   private static BIOMETRIC_ENABLED_KEY = 'biometric_enabled';
+  
+  // In-memory cache for performance
+  private static deviceFingerprintCache: string | null = null;
+  private static deviceInfoCache: DeviceInfo | null = null;
 
   /**
    * Check device biometric capabilities
@@ -179,6 +183,11 @@ class BiometricAuthService {
    * Get device information
    */
   static async getDeviceInfo(): Promise<DeviceInfo> {
+    // Return cached version if available
+    if (this.deviceInfoCache) {
+      return this.deviceInfoCache;
+    }
+
     try {
       logger.info('BiometricAuthService', 'Getting device information');
 
@@ -198,6 +207,10 @@ class BiometricAuthService {
       }
 
       logger.info('BiometricAuthService', 'Device information collected', { deviceInfo });
+      
+      // Cache for future calls
+      this.deviceInfoCache = deviceInfo;
+      
       return deviceInfo;
 
     } catch (error) {
@@ -216,6 +229,11 @@ class BiometricAuthService {
    * Generate or get device fingerprint
    */
   static async getDeviceFingerprint(): Promise<string> {
+    // Return cached version if available
+    if (this.deviceFingerprintCache) {
+      return this.deviceFingerprintCache;
+    }
+
     try {
       // Try to get existing fingerprint
       let fingerprint = await secureStorage.getItem<string>(this.DEVICE_FINGERPRINT_KEY);
@@ -234,6 +252,9 @@ class BiometricAuthService {
         await secureStorage.setItem(this.DEVICE_FINGERPRINT_KEY, fingerprint);
         logger.info('BiometricAuthService', 'New device fingerprint generated');
       }
+
+      // Cache for future calls
+      this.deviceFingerprintCache = fingerprint;
 
       return fingerprint;
     } catch (error) {
@@ -530,17 +551,19 @@ class BiometricAuthService {
         };
       }
 
-      // Get device info for API call - no need for current user since we're logging in
-      const deviceFingerprint = await this.getDeviceFingerprint();
-      const deviceInfo = await this.getDeviceInfo();
+      // Execute all async operations in parallel for better performance
+      const [deviceFingerprint, deviceInfo] = await Promise.all([
+        this.getDeviceFingerprint(),
+        this.getDeviceInfo(),
+      ]);
+      
       const primaryBiometricType = capabilities.biometricTypes[0] || 'fingerprint';
 
-      // Generate real biometric signature based on device and biometric data
-      const biometricSignature = await this.generateBiometricSignature(deviceFingerprint, biometricResult);
-      const challengeResponse = await this.generateChallengeResponse(biometricResult);
-      
-      // Get real user location
-      const geolocation = await this.getCurrentLocation();
+      // Generate signature and challenge in parallel
+      const [biometricSignature, challengeResponse] = await Promise.all([
+        this.generateBiometricSignature(deviceFingerprint, biometricResult),
+        this.generateChallengeResponse(biometricResult),
+      ]);
 
       // Prepare login data - backend will identify user by device fingerprint
       const loginData = {
@@ -548,7 +571,6 @@ class BiometricAuthService {
         biometricType: primaryBiometricType,
         biometricSignature,
         challengeResponse,
-        geolocation,
         deviceInfo,
       };
 
@@ -809,39 +831,6 @@ class BiometricAuthService {
   }
 
   /**
-   * Gets current user location for biometric authentication context
-   */
-  static async getCurrentLocation(): Promise<{ latitude: number; longitude: number; accuracy?: number } | null> {
-    try {
-      // Request location permission
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        logger.warn('BiometricAuthService', 'Location permission denied for biometric authentication');
-        return null;
-      }
-
-      // Get current location with timeout
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-        timeInterval: 10000, // 10 seconds timeout
-      });
-
-      const locationData = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        accuracy: location.coords.accuracy || undefined
-      };
-
-      logger.debug('BiometricAuthService', `Retrieved current location for biometric auth - accuracy: ${locationData.accuracy}, hasCoordinates: ${!!(locationData.latitude && locationData.longitude)}`);
-
-      return locationData;
-    } catch (error) {
-      logger.warn('BiometricAuthService', 'Failed to get current location for biometric auth', error as Error);
-      return null;
-    }
-  }
-
   /**
    * Clear all biometric data
    */
