@@ -1,5 +1,6 @@
 import { AuthProvider } from '@/context/AuthContext';
 import { AvatarProvider } from '@/context/AvatarContext';
+import { BiometricAuthProvider } from '@/context/BiometricAuthContext';
 import { MoodProvider } from '@/context/MoodContext';
 import { SessionProvider } from '@/context/SessionContext';
 import { UserDataProvider } from '@/context/UserDataContext';
@@ -80,11 +81,12 @@ export default function RootLayoutHybrid() {
       <SafeAreaProvider>
         <SessionProvider>
           <AuthProvider>
-            <AvatarProvider>
-              <UserDataProvider>
-                <MoodProvider>
-                  <ToastProvider>
-                    <PredictionProvider>
+            <BiometricAuthProvider>
+              <AvatarProvider>
+                <UserDataProvider>
+                  <MoodProvider>
+                    <ToastProvider>
+                      <PredictionProvider>
                   <NavigationHandler>
                     <View style={styles.container}>
                       <StatusBar style="dark" />
@@ -118,13 +120,14 @@ export default function RootLayoutHybrid() {
                   </Stack>
                 </View>
                   </NavigationHandler>
-                  </PredictionProvider>
-                </ToastProvider>
-              </MoodProvider>
-            </UserDataProvider>
-          </AvatarProvider>
-        </AuthProvider>
-      </SessionProvider>
+                      </PredictionProvider>
+                    </ToastProvider>
+                  </MoodProvider>
+                </UserDataProvider>
+              </AvatarProvider>
+            </BiometricAuthProvider>
+          </AuthProvider>
+        </SessionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -268,7 +268,7 @@ export default function JournalScreen() {
             <Ionicons name="search" size={20} color={colors.neutral.text.secondary} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Pesquisar por conteúdo, categoria, humor..."
+              placeholder="Pesquisar por conteúdo, etc..."
               placeholderTextColor={colors.neutral.text.secondary}
               value={searchQuery}
               onChangeText={handleSearchChange}

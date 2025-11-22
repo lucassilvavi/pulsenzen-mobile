@@ -5,7 +5,7 @@ import ScreenContainer from '@/components/base/ScreenContainer';
 import { colors } from '@/constants/theme';
 import { fontSize, spacing } from '@/utils/responsive';
 import { Ionicons } from '@expo/vector-icons';
-import * as Notifications from 'expo-notifications';
+// import * as Notifications from 'expo-notifications'; // Desabilitado - não suportado no Expo Go SDK 53+
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -52,8 +52,16 @@ export default function PermissionsScreen() {
 
   const requestNotificationPermission = async () => {
     try {
-      const { status } = await Notifications.requestPermissionsAsync();
-      return status === 'granted';
+      // Desabilitado - expo-notifications não funciona no Expo Go SDK 53+
+      // const { status } = await Notifications.requestPermissionsAsync();
+      // return status === 'granted';
+      
+      Alert.alert(
+        'Notificações',
+        'As notificações push requerem um development build. Esta funcionalidade estará disponível na versão final do app.',
+        [{ text: 'OK' }]
+      );
+      return false;
     } catch (error) {
       console.error('Error requesting notification permission:', error);
       return false;

@@ -41,15 +41,25 @@ export interface BiometricEnableResponse {
 export interface BiometricLoginResponse {
   success: boolean;
   data?: {
+    user: {
+      id: string;
+      email: string;
+      emailVerified: boolean;
+      profile: any;
+    };
     token: string;
+    refreshToken: string;
+  };
+  error?: string;
+  fallbackMethods?: string[];
+  deviceId?: string;
+  // Informações adicionais de biometria (opcional no backend)
+  biometric?: {
     method: string;
     trustScore: number;
     deviceId: string;
     expiresAt: string;
   };
-  error?: string;
-  fallbackMethods?: string[];
-  deviceId?: string;
 }
 
 export interface BackupCodesResponse {

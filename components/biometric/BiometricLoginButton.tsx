@@ -1,3 +1,4 @@
+import { useBiometricAuth } from '@/context/BiometricAuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
@@ -7,7 +8,6 @@ import {
     TouchableOpacity
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
-import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 
 interface BiometricLoginButtonProps {
   onSuccess?: () => void;

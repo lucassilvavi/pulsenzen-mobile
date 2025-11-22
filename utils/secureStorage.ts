@@ -301,8 +301,16 @@ class SecureStorageManager {
     // Check version compatibility
     const currentVersion = appConfig.getConfig().environment.version;
     if (item.version !== currentVersion) {
-      console.warn(`Storage version mismatch: ${item.version} vs ${currentVersion}`);
-      // Could implement migration logic here
+      // Auto-migrate data to current version (silent upgrade for patch versions)
+      const [itemMajor, itemMinor] = item.version.split('.').map(Number);
+      const [currentMajor, currentMinor] = currentVersion.split('.').map(Number);
+      
+      // Only warn on major/minor version changes, not patch versions
+      if (itemMajor !== currentMajor || itemMinor !== currentMinor) {
+        console.warn(`Storage version mismatch: ${item.version} vs ${currentVersion}`);
+      }
+      
+      // Return data anyway - version is updated on next write
     }
 
     return item.data;

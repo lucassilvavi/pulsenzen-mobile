@@ -1194,84 +1194,62 @@ class AuthService {
       const biometricResult = await BiometricAuthService.authenticateWithBiometrics();
       
       if (biometricResult.success && biometricResult.data) {
-        const token = biometricResult.data.token;
+        // Backend agora retorna a mesma estrutura que login por senha
+        const { user, token, refreshToken } = biometricResult.data;
         
-        if (token) {
-          // Log the new token for debugging
-          logger.info('AuthService', 'Received new token from biometric auth', { 
-            tokenLength: token.length,
-            tokenStart: token.substring(0, 50) + '...',
-            tokenEnd: '...' + token.substring(token.length - 20)
-          });
-          
-          // Save the new token immediately
-          await secureStorage.setItem(AuthService.TOKEN_KEY, token);
-          
-          // Fetch user data using direct axios call to bypass interceptors
-          try {
-            logger.info('AuthService', 'Making profile request with new token');
-            const axios = require('axios').default;
-            const response = await axios.get(
-              appConfig.getApiUrl('/auth/profile'),
-              {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                timeout: 15000,
-              }
-            );
-            
-            logger.info('AuthService', 'Profile request successful', { status: response.status });
-            
-            if (response.data && response.data.success && response.data.data) {
-              const userData = response.data.data;
-              
-              // Save complete auth data
-              await this.saveAuthData(
-                token,
-                undefined, // No refresh token in biometric response
-                userData
-              );
-
-              logger.info('AuthService', 'Biometric login successful');
-              return {
-                success: true,
-                data: {
-                  user: userData,
-                  token: token,
-                },
-                message: 'Biometric login successful',
-              };
-            } else {
-              logger.warn('AuthService', 'Failed to fetch user profile after biometric login');
-              return {
-                success: false,
-                error: 'Failed to retrieve user profile',
-                message: 'User profile fetch failed',
-              };
-            }
-          } catch (profileError: any) {
-            logger.error('AuthService', 'Error fetching user profile after biometric login', profileError);
-            logger.info('AuthService', 'Profile error details', {
-              status: profileError.response?.status,
-              data: profileError.response?.data,
-              tokenUsed: token.substring(0, 50) + '...'
-            });
-            return {
-              success: false,
-              error: 'Failed to retrieve user data',
-              message: profileError?.response?.data?.message || 'Profile fetch error',
-            };
-          }
-        } else {
-          logger.warn('AuthService', 'Biometric login missing token');
+        if (!token || !user) {
+          logger.warn('AuthService', 'Biometric login missing required data');
           return {
             success: false,
             error: 'Invalid biometric response',
-            message: 'Authentication token missing',
+            message: 'Authentication data incomplete',
           };
         }
+
+        logger.info('AuthService', 'Received new token from biometric auth', { 
+          tokenLength: token.length,
+          tokenStart: token.substring(0, 50) + '...',
+          tokenEnd: '...' + token.substring(token.length - 20)
+        });
+
+        // Save complete auth data (mesma lógica do login por senha)
+        await this.saveAuthData(token, refreshToken, user);
+
+        // Extrair moodStatus e onboardingComplete do JWT token (IGUAL ao login por senha)
+        const decodedToken = decodeJWT(token);
+        
+        if (decodedToken && decodedToken.moodStatus) {
+          await MoodStatusService.saveMoodStatus(decodedToken.moodStatus);
+          logger.info('AuthService', 'MoodStatus extraído do token e salvo no localStorage após login biométrico', {
+            moodStatus: decodedToken.moodStatus
+          });
+        } else {
+          // Fallback: inicializar com valores vazios se não houver no token
+          await MoodStatusService.saveMoodStatus({ manha: false, tarde: false, noite: false });
+          logger.warn('AuthService', 'MoodStatus não encontrado no token, inicializando vazio');
+        }
+
+        // Save onboarding status from token
+        if (decodedToken && typeof decodedToken.onboardingComplete === 'boolean') {
+          await secureStorage.setItem(
+            APP_CONSTANTS.STORAGE_KEYS.ONBOARDING_DONE, 
+            decodedToken.onboardingComplete ? 'true' : 'false'
+          );
+          logger.info('AuthService', 'Onboarding status from token', {
+            onboardingComplete: decodedToken.onboardingComplete
+          });
+        }
+
+        logger.info('AuthService', 'Biometric login successful');
+        return {
+          success: true,
+          data: {
+            user,
+            token,
+            refreshToken,
+          },
+          message: 'Biometric login successful',
+        };
       } else {
         logger.warn('AuthService', 'Biometric login failed', { 
           error: biometricResult.error,

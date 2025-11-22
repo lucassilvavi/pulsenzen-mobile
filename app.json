@@ -64,7 +64,8 @@
           "faceIDPermission": "Permitir que o Acalmar use Face ID para autenticação segura e conveniente."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

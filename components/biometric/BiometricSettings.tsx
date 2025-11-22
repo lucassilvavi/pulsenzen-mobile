@@ -1,15 +1,15 @@
+import { useBiometricAuth } from '@/context/BiometricAuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  Alert,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
-import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import BiometricSetup from './BiometricSetup';
 
 interface BiometricSettingsProps {

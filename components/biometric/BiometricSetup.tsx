@@ -1,3 +1,4 @@
+import { useBiometricAuth } from '@/context/BiometricAuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import React, { useState } from 'react';
@@ -12,7 +13,6 @@ import {
     View,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
-import { useBiometricAuth } from '../../hooks/useBiometricAuth';
 import { logger } from '../../utils/logger';
 
 interface BiometricSetupProps {
