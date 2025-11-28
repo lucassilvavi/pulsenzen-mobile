@@ -33,7 +33,6 @@ export const PredictionDashboardScreen: React.FC = () => {
   const [expandedFactors, setExpandedFactors] = React.useState<Record<string, boolean>>({});
   const { onboardingSeen, markOnboardingSeen } = usePrediction() as any;
   const [showOnboarding, setShowOnboarding] = React.useState(false);
-  const [tooltipFactor, setTooltipFactor] = React.useState<string | null>(null);
   const [showInsufficientDataModal, setShowInsufficientDataModal] = React.useState(false);
   // (reduce motion handled inside specific animated components like carousel)
 
@@ -124,37 +123,37 @@ export const PredictionDashboardScreen: React.FC = () => {
                 const expanded = !!expandedFactors[f.id];
                 const meta = getFactorCategoryMeta(f.category);
                 return (
-                  <View key={`${f.id}-${idx}`} style={styles.factorRow} onPr>
+                  <TouchableOpacity 
+                    key={`${f.id}-${idx}`} 
+                    style={styles.factorRow}
+                    onPress={() => toggleFactor(f.id)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button" 
+                    accessibilityLabel={expanded ? 'Colapsar fator' : 'Expandir fator'}
+                  >
                     <View style={styles.factorHeader}>
                       <View style={styles.factorLeft}>
                         <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}> 
-                          <Ionicons name={meta.icon as any} size={16} color={meta.color} />
+                          <Ionicons name={meta.icon as any} size={18} color={meta.color} />
                         </View>
                         <ThemedText style={styles.factorLabel}>{f.label}</ThemedText>
                       </View>
                       <View style={[styles.badge, intensity==='Alto'? { backgroundColor: colors.riskIntensity.high.bg }: intensity==='Médio'? { backgroundColor: colors.riskIntensity.medium.bg } : { backgroundColor: colors.riskIntensity.low.bg } ]}>
                         <ThemedText style={styles.badgeText}>{intensity}</ThemedText>
                       </View>
-                      <TouchableOpacity onPress={() => toggleFactor(f.id)} onLongPress={() => {
-                        const willOpen = tooltipFactor !== f.id;
-                        setTooltipFactor(willOpen ? f.id : null);
-                        track(willOpen ? 'prediction_factor_tooltip_open' : 'prediction_factor_tooltip_close', { id: f.id });
-                      }} accessibilityRole="button" accessibilityLabel={expanded ? 'Colapsar fator' : 'Expandir fator'}>
-                        <ThemedText style={styles.factorWeight}>{expanded ? '−' : '+'}</ThemedText>
-                      </TouchableOpacity>
+                      <Ionicons 
+                        name={expanded ? 'chevron-up' : 'chevron-down'} 
+                        size={24} 
+                        color={colors.neutral.text.secondary} 
+                      />
                     </View>
                     {expanded && (
                       <>
                         <ThemedText style={styles.factorDesc}>{f.description}</ThemedText>
                         <ThemedText style={styles.factorSuggestion}>Sugestão: {f.suggestion}</ThemedText>
-                        {tooltipFactor===f.id && (
-                          <View style={styles.tooltip}>
-                            <ThemedText style={styles.tooltipText}>Dica TCC: Observe o pensamento sem julgá-lo e registre um gatilho específico.</ThemedText>
-                          </View>
-                        )}
                       </>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -169,7 +168,7 @@ export const PredictionDashboardScreen: React.FC = () => {
         {showOnboarding && (
           <View style={styles.onboardingBubble}>
             <ThemedText style={styles.onboardingTitle}>Bem-vindo ao Painel</ThemedText>
-            <ThemedText style={styles.onboardingText}>Aqui você vê sinais precoces e sugestões suaves. Toque nos fatores para explorar. Pressione longamente para dicas rápidas.</ThemedText>
+            <ThemedText style={styles.onboardingText}>Aqui você vê sinais precoces e sugestões suaves. Toque nos fatores para ver mais detalhes e sugestões personalizadas.</ThemedText>
             <TouchableOpacity onPress={closeOnboarding} style={styles.onboardingButton} accessibilityLabel="Fechar introdução">
               <ThemedText style={styles.onboardingButtonText}>Entendi</ThemedText>
             </TouchableOpacity>
@@ -204,24 +203,21 @@ const styles = StyleSheet.create({
   cardTitle: { fontFamily: 'Inter-SemiBold', fontSize: fontSize.md, marginBottom: spacing.sm, color: colors.primary.main },
   score: { fontFamily: 'Inter-Bold', fontSize: fontSize.lg, color: colors.primary.main, marginBottom: 4 },
   meta: { fontFamily: 'Inter-Medium', fontSize: fontSize.xs, color: colors.neutral.text.secondary, marginBottom: 2 },
-  factorRow: { marginBottom: spacing.md, backgroundColor: '#F8FAFC', padding: spacing.md, borderRadius: 12 },
+  factorRow: { marginBottom: spacing.md, backgroundColor: '#F8FAFC', padding: spacing.lg, borderRadius: 14, minHeight: 64 },
   factorHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4, alignItems:'center' },
   factorLeft: { flexDirection:'row', alignItems:'center', flex:1, paddingRight: spacing.sm },
-  factorLabel: { fontFamily: 'Inter-Medium', fontSize: fontSize.sm, color: colors.neutral.text.primary, flexShrink:1 },
-  iconCircle:{ width:28, height:28, borderRadius:14, alignItems:'center', justifyContent:'center', marginRight:8 },
-  factorWeight: { fontFamily: 'Inter-SemiBold', fontSize: fontSize.sm, color: colors.primary.main },
-  factorDesc: { fontFamily: 'Inter-Regular', fontSize: fontSize.xs, color: colors.neutral.text.secondary, marginBottom: 2 },
-  factorSuggestion: { fontFamily: 'Inter-Medium', fontSize: fontSize.xs, color: colors.primary.main },
+  factorLabel: { fontFamily: 'Inter-Medium', fontSize: fontSize.md, color: colors.neutral.text.primary, flexShrink:1 },
+  iconCircle:{ width:32, height:32, borderRadius:16, alignItems:'center', justifyContent:'center', marginRight:10 },
+  factorDesc: { fontFamily: 'Inter-Regular', fontSize: fontSize.sm, color: colors.neutral.text.secondary, marginBottom: spacing.xs, marginTop: spacing.sm, lineHeight: 20 },
+  factorSuggestion: { fontFamily: 'Inter-Medium', fontSize: fontSize.sm, color: colors.primary.main, lineHeight: 20 },
   interventionsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
   interventionCard: { width: '31%', backgroundColor: '#F3F6F9', padding: spacing.md, borderRadius: 14, alignItems: 'center' },
   interventionDone: { opacity: 0.5 },
   interventionEmoji: { fontSize: 28, marginBottom: 6 },
   interventionTitle: { fontFamily: 'Inter-SemiBold', fontSize: fontSize.sm, color: colors.neutral.text.primary, textAlign: 'center', marginBottom: 4 },
   interventionBenefit: { fontFamily: 'Inter-Regular', fontSize: fontSize.xs, textAlign: 'center', color: colors.neutral.text.secondary },
-  badge: { paddingHorizontal:8, paddingVertical:2, borderRadius:12, marginRight:6 },
-  badgeText: { fontFamily:'Inter-SemiBold', fontSize: fontSize.xs, color:'#fff' },
-  tooltip:{ backgroundColor:'#1E293B', padding: spacing.sm, borderRadius:8, marginTop: spacing.xs },
-  tooltipText:{ fontFamily:'Inter-Regular', fontSize: fontSize.xs, color:'#FFF' },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, marginRight: 8 },
+  badgeText: { fontFamily:'Inter-SemiBold', fontSize: fontSize.sm, color:'#fff' },
   onboardingBubble:{ position:'absolute', top: 10, left: 10, right:10, backgroundColor:'#FFFFFF', borderRadius:20, padding: spacing.lg, shadowColor:'#000', shadowOpacity:0.12, shadowRadius:16, shadowOffset:{ width:0, height:6 }, elevation:8 },
   onboardingTitle:{ fontFamily:'Inter-Bold', fontSize: fontSize.md, color: colors.primary.main, marginBottom: spacing.xs },
   onboardingText:{ fontFamily:'Inter-Regular', fontSize: fontSize.sm, color: colors.neutral.text.primary, marginBottom: spacing.md },
