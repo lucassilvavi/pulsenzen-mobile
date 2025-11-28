@@ -1,0 +1,69 @@
+/* Global CSS for Web - Force Light Mode */
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light !important;
+  --color-background: #ffffff;
+  --color-text: #11181C;
+  --color-primary: #6366F1;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background) !important;
+  color: var(--color-text) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  flex: 1;
+  min-height: 100vh;
+  background-color: var(--color-background) !important;
+}
+
+/* Force light mode even if user has dark mode preference */
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #root {
+    background-color: #ffffff !important;
+    color: #11181C !important;
+  }
+}
+
+/* Remove default focus outline and add custom one */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling for web */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

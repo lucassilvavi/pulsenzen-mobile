@@ -45,10 +45,11 @@ const Card: React.FC<CardProps> = ({
 
   const cardContent = (
     <ThemedView 
+      lightColor={backgroundColor}
       style={[
         styles.card, 
         getShadowStyle(), 
-        { borderRadius, backgroundColor },
+        { borderRadius },
         style
       ]}
     >

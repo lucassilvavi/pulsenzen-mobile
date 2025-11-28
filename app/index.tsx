@@ -105,6 +105,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   headerGradient: {
     position: 'absolute',
@@ -115,8 +116,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingBottom: 30,
+    backgroundColor: 'transparent',
   },
 });

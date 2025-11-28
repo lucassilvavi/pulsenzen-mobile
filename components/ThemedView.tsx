@@ -9,7 +9,8 @@ export type ThemedViewProps = ViewProps & {
 };
 
 export function ThemedView({ style, lightColor, darkColor, children, ...otherProps }: ThemedViewProps) {
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+  // Always use light theme
+  const backgroundColor = lightColor || '#fff';
   
   // Pass only safe props to View
   const safeProps: any = {};

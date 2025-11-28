@@ -21,7 +21,10 @@
     "security:audit": "npm audit && npx audit-ci",
     "ci:setup": "npm ci && npx expo install",
     "ci:test": "npm run lint && npm run test:coverage",
-    "ci:build": "npm run build:production"
+    "ci:build": "npm run build:production",
+    "web:export": "expo export --platform web",
+    "web:build": "docker build -t pulsezen-web .",
+    "web:test": "docker run -p 8080:8080 pulsezen-web"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

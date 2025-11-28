@@ -69,14 +69,15 @@ const styles = StyleSheet.create({
   promptsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: spacing.md,
     marginBottom: spacing.md,
   },
   promptCard: {
-    flexBasis: '48%',
-    marginBottom: spacing.sm,
+    flex: 1,
+    minWidth: '100%',
+    marginBottom: 0,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: 'visible',
     elevation: 2,
     borderWidth: 1,
     borderColor: colors.neutral.divider,
@@ -90,13 +91,14 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   promptContent: {
-    padding: spacing.md,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    minHeight: 60,
   },
   promptIcon: {
-    fontSize: 28,
+    fontSize: 32,
     marginRight: spacing.md,
+    marginTop: 4,
   },
   promptInfo: {
     flex: 1,
@@ -105,10 +107,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.neutral.text.secondary,
     marginBottom: 4,
+    fontFamily: 'Inter-SemiBold',
   },
   promptQuestion: {
     fontSize: fontSize.md,
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-Regular',
     color: colors.neutral.text.primary,
+    lineHeight: 20,
   },
 });

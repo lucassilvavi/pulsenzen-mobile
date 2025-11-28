@@ -1,14 +1,46 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { appConfig } from '../config/appConfig';
 import { logger } from './secureLogger';
 
 // SECURITY: Removed insecure Map() fallback
 // Production apps should fail gracefully when storage is unavailable
 
+// Web-compatible storage wrapper
+const WebStorage = {
+  getItem: async (key: string) => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+    return null;
+  },
+  setItem: async (key: string, value: string) => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  },
+  removeItem: async (key: string) => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(key);
+    }
+  },
+  getAllKeys: async () => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return Object.keys(window.localStorage);
+    }
+    return [];
+  },
+};
+
 // Enhanced secure storage implementation
 const MockSecureStore = {
   getItemAsync: async (key: string) => {
     try {
+      // Use localStorage on web platform
+      if (Platform.OS === 'web') {
+        return await WebStorage.getItem(`secure_${key}`);
+      }
+      
       if (!AsyncStorage || !AsyncStorage.getItem) {
         logger.error('SecureStorage', 'AsyncStorage not available - critical security error');
         throw new Error('Secure storage unavailable');
@@ -22,6 +54,15 @@ const MockSecureStore = {
   
   setItemAsync: async (key: string, value: string) => {
     try {
+      // Use localStorage on web platform
+      if (Platform.OS === 'web') {
+        return await WebStorage.setItem(`secure_${key}`, value);
+      }
+      
+      if (Platform.OS === 'web') {
+        return await WebStorage.setItem(`secure_${key}`, value);
+      }
+      
       if (!AsyncStorage || !AsyncStorage.setItem) {
         logger.error('SecureStorage', 'AsyncStorage not available - critical security error');
         throw new Error('Secure storage unavailable');
@@ -35,6 +76,11 @@ const MockSecureStore = {
   
   deleteItemAsync: async (key: string) => {
     try {
+      // Use localStorage on web platform
+      if (Platform.OS === 'web') {
+        return await WebStorage.removeItem(`secure_${key}`);
+      }
+      
       if (!AsyncStorage || !AsyncStorage.removeItem) {
         logger.error('SecureStorage', 'AsyncStorage not available - critical security error');
         throw new Error('Secure storage unavailable');
@@ -337,7 +383,12 @@ class SecureStorageManager {
         const dataToStore = options.encrypt !== false 
           ? await this.encrypt(jsonData)
           : jsonData;
-        await AsyncStorage.setItem(key, dataToStore);
+        // Use WebStorage on web platform
+        if (Platform.OS === 'web') {
+          await WebStorage.setItem(key, dataToStore);
+        } else {
+          await AsyncStorage.setItem(key, dataToStore);
+        }
       }
       
       return true;
@@ -363,7 +414,12 @@ class SecureStorageManager {
       if (options.useSecureStore) {
         rawData = await MockSecureStore.getItemAsync(key);
       } else {
-        rawData = await AsyncStorage.getItem(key);
+        // Use WebStorage on web platform
+        if (Platform.OS === 'web') {
+          rawData = await WebStorage.getItem(key);
+        } else {
+          rawData = await AsyncStorage.getItem(key);
+        }
         if (rawData && options.encrypt !== false) {
           // Only try to decrypt if the data looks like it might be encrypted
           if (this.isValidBase64(rawData)) {
@@ -418,7 +474,12 @@ class SecureStorageManager {
       if (useSecureStore) {
         await MockSecureStore.deleteItemAsync(key);
       } else {
-        await AsyncStorage.removeItem(key);
+        // Use WebStorage on web platform
+        if (Platform.OS === 'web') {
+          await WebStorage.removeItem(key);
+        } else {
+          await AsyncStorage.removeItem(key);
+        }
       }
       return true;
     } catch (error) {
@@ -429,7 +490,14 @@ class SecureStorageManager {
 
   public async clear(includeSecureStore = false): Promise<boolean> {
     try {
-      await AsyncStorage.clear();
+      // Use WebStorage on web platform
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.clear();
+        }
+      } else {
+        await AsyncStorage.clear();
+      }
       
       if (includeSecureStore) {
         // Note: SecureStore doesn't have a clear all method
@@ -446,6 +514,10 @@ class SecureStorageManager {
 
   public async getAllKeys(): Promise<string[]> {
     try {
+      if (Platform.OS === 'web') {
+        const keys = await WebStorage.getAllKeys();
+        return Array.from(keys);
+      }
       const keys = await AsyncStorage.getAllKeys();
       return Array.from(keys);
     } catch (error) {
@@ -460,7 +532,12 @@ class SecureStorageManager {
       let totalSize = 0;
       
       for (const key of keys) {
-        const value = await AsyncStorage.getItem(key);
+        let value: string | null;
+        if (Platform.OS === 'web') {
+          value = await WebStorage.getItem(key);
+        } else {
+          value = await AsyncStorage.getItem(key);
+        }
         if (value) {
           totalSize += new Blob([value]).size;
         }
@@ -503,7 +580,12 @@ class SecureStorageManager {
       
       for (const key of keys) {
         try {
-          const rawData = await AsyncStorage.getItem(key);
+          let rawData: string | null;
+          if (Platform.OS === 'web') {
+            rawData = await WebStorage.getItem(key);
+          } else {
+            rawData = await AsyncStorage.getItem(key);
+          }
           if (rawData) {
             // If the data looks like it should be encrypted but isn't valid base64
             const config = appConfig.getConfig();
@@ -512,7 +594,11 @@ class SecureStorageManager {
                 // This might be unencrypted JSON that should be encrypted
                 console.warn(`Found unencrypted data for key: ${key}, re-encrypting...`);
                 const encrypted = await this.encrypt(rawData);
-                await AsyncStorage.setItem(key, encrypted);
+                if (Platform.OS === 'web') {
+                  await WebStorage.setItem(key, encrypted);
+                } else {
+                  await AsyncStorage.setItem(key, encrypted);
+                }
                 continue;
               }
             }
@@ -586,7 +672,12 @@ class SecureStorageManager {
       
       for (const key of keys) {
         try {
-          const rawData = await AsyncStorage.getItem(key);
+          let rawData: string | null;
+          if (Platform.OS === 'web') {
+            rawData = await WebStorage.getItem(key);
+          } else {
+            rawData = await AsyncStorage.getItem(key);
+          }
           if (rawData) {
             // Check if data is base64 (potentially encrypted)
             if (this.isValidBase64(rawData)) {

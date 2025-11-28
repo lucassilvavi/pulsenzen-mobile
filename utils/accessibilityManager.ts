@@ -63,6 +63,19 @@ class AccessibilityManager {
    */
   private async initializeAccessibilityState(): Promise<void> {
     try {
+      // Skip on web platform - accessibility APIs are not available
+      if (Platform.OS === 'web') {
+        this.state = {
+          boldTextEnabled: false,
+          grayscaleEnabled: false,
+          invertColorsEnabled: false,
+          reduceMotionEnabled: false,
+          reduceTransparencyEnabled: false,
+          screenReaderEnabled: false,
+        };
+        return;
+      }
+
       const [
         boldTextEnabled,
         grayscaleEnabled,

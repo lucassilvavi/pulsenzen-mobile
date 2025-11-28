@@ -18,6 +18,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileService } from '../services/ProfileService';
 import { UserProfile } from '../types';
 
@@ -374,9 +375,10 @@ export function EditProfileModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <ThemedView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <ThemedView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={colors.neutral.text.primary} />
           </TouchableOpacity>
@@ -560,11 +562,16 @@ export function EditProfileModal({
           </View>
         </KeyboardAvoidingView>
       </ThemedView>
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.neutral.background,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.neutral.background,
@@ -598,7 +605,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl * 2, // Extra padding for buttons
   },
   avatarSection: {
     alignItems: 'center',
@@ -646,7 +653,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingBottom: Platform.OS === 'ios' ? spacing.sm : spacing.lg,
+    backgroundColor: colors.neutral.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.divider,
   },
   cancelButton: {
     flex: 1,

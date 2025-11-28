@@ -36,6 +36,70 @@ const DEFAULT_MOOD_TAGS: MoodTag[] = [
   { id: '8', label: 'Irritado', emoji: '😠', category: 'negative', intensity: 4, hexColor: '#E91E63' },
 ];
 
+// Web-compatible alert helpers
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
+const showConfirmAlert = (
+  title: string,
+  message: string,
+  options: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+) => {
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed) {
+      // Find the first non-cancel option and execute it
+      const confirmOption = options.find(opt => opt.style !== 'cancel');
+      if (confirmOption?.onPress) {
+        confirmOption.onPress();
+      }
+    } else {
+      // Find cancel option and execute it
+      const cancelOption = options.find(opt => opt.style === 'cancel');
+      if (cancelOption?.onPress) {
+        cancelOption.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, options);
+  }
+};
+
+// Web-compatible AsyncStorage wrapper for drafts
+const DraftStorage = {
+  getItem: async (key: string) => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return window.localStorage.getItem(key);
+      }
+      return null;
+    }
+    return await AsyncStorage.getItem(key);
+  },
+  setItem: async (key: string, value: string) => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(key, value);
+      }
+    } else {
+      await AsyncStorage.setItem(key, value);
+    }
+  },
+  removeItem: async (key: string) => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(key);
+      }
+    } else {
+      await AsyncStorage.removeItem(key);
+    }
+  },
+};
 
 export default function JournalEntryScreen() {
     const router = useRouter();
@@ -86,7 +150,7 @@ export default function JournalEntryScreen() {
 
     const loadDraft = async () => {
         try {
-            const draft = await AsyncStorage.getItem('journalDraft');
+            const draft = await DraftStorage.getItem('journalDraft');
             if (draft) {
                 const draftData = JSON.parse(draft);
                 setEntryText(draftData.text || '');
@@ -115,7 +179,7 @@ export default function JournalEntryScreen() {
                 timestamp: new Date().toISOString(),
                 cbtAnalysis: cbtResult,
             };
-            await AsyncStorage.setItem('journalDraft', JSON.stringify(draftData));
+            await DraftStorage.setItem('journalDraft', JSON.stringify(draftData));
         } catch (error) {
             console.error('Error saving draft:', error);
         }
@@ -123,7 +187,7 @@ export default function JournalEntryScreen() {
 
     const saveEntry = async () => {
         if (!entryText.trim()) {
-            Alert.alert('Entrada vazia', 'Por favor, escreva algo antes de salvar.');
+            showAlert('Entrada vazia', 'Por favor, escreva algo antes de salvar.');
             return;
         }
 
@@ -150,14 +214,14 @@ export default function JournalEntryScreen() {
             console.log('✅ Entry saved successfully:', entry);
 
             // Clear draft
-            await AsyncStorage.removeItem('journalDraft');
+            await DraftStorage.removeItem('journalDraft');
 
             // Update user stats
             await updateUserStats();
 
             // Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-            Alert.alert(
+            showConfirmAlert(
                 'Entrada salva!',
                 'Sua reflexão foi salva com sucesso.',
                 [
@@ -167,7 +231,7 @@ export default function JournalEntryScreen() {
             );
         } catch (error) {
             console.error('Error saving entry:', error);
-            Alert.alert('Erro', 'Não foi possível salvar sua entrada. Tente novamente.');
+            showAlert('Erro', 'Não foi possível salvar sua entrada. Tente novamente.');
         } finally {
             setIsSaving(false);
         }

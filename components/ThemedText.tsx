@@ -16,7 +16,10 @@ export function ThemedText({
   type = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  // Check if style has color defined
+  const styleColor = StyleSheet.flatten(style)?.color;
+  // Use color from style if available, otherwise use lightColor or default
+  const color = styleColor || lightColor || '#11181C';
 
   // Ensure children are wrapped properly and converted to string if needed
   const ensureStringChildren = (children: any): React.ReactNode => {

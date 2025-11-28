@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { ProfileService } from '../services/ProfileService';
@@ -137,31 +137,53 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Sair',
-      'Tem certeza que deseja sair da sua conta?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Sair', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Clear local profile data (stats, achievements, settings)
-              await ProfileService.clearUserData();
-              
-              // Logout using AuthContext (clears token and user data)
-              await logout();
-              
-              // Removido: router.replace('/onboarding/welcome');
-            } catch (error) {
-              console.error('Erro ao fazer logout:', error);
-              Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
+    if (Platform.OS === 'web') {
+      // Use window.confirm for web
+      const confirmed = window.confirm('Tem certeza que deseja sair da sua conta?');
+      if (confirmed) {
+        (async () => {
+          try {
+            // Clear local profile data (stats, achievements, settings)
+            await ProfileService.clearUserData();
+            
+            // Logout using AuthContext (clears token and user data)
+            await logout();
+            
+            // Removido: router.replace('/onboarding/welcome');
+          } catch (error) {
+            console.error('Erro ao fazer logout:', error);
+            window.alert('Erro: Não foi possível fazer logout. Tente novamente.');
+          }
+        })();
+      }
+    } else {
+      // Use Alert.alert for mobile
+      Alert.alert(
+        'Sair',
+        'Tem certeza que deseja sair da sua conta?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Sair', 
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Clear local profile data (stats, achievements, settings)
+                await ProfileService.clearUserData();
+                
+                // Logout using AuthContext (clears token and user data)
+                await logout();
+                
+                // Removido: router.replace('/onboarding/welcome');
+              } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+                Alert.alert('Erro', 'Não foi possível fazer logout. Tente novamente.');
+              }
             }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   return (
