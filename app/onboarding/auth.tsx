@@ -16,13 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View
+    Alert,
+    Dimensions,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 const { height } = Dimensions.get('window');
@@ -259,33 +259,27 @@ export default function AuthScreen() {
           <View style={styles.form}>
             {!isLoginMode && (
               <>
-                <View style={styles.nameRow}>
-                  <View style={styles.nameInput}>
-                    <CustomTextInput
-                      value={formData.firstName}
-                      onChangeText={(text) => setFormData({ ...formData, firstName: text })}
-                      placeholder="Nome"
-                      containerStyle={styles.input}
-                      autoCapitalize="words"
-                    />
-                    {errors.firstName && (
-                      <ThemedText style={styles.errorText}>{errors.firstName}</ThemedText>
-                    )}
-                  </View>
-                  
-                  <View style={styles.nameInput}>
-                    <CustomTextInput
-                      value={formData.lastName}
-                      onChangeText={(text) => setFormData({ ...formData, lastName: text })}
-                      placeholder="Sobrenome"
-                      containerStyle={styles.input}
-                      autoCapitalize="words"
-                    />
-                    {errors.lastName && (
-                      <ThemedText style={styles.errorText}>{errors.lastName}</ThemedText>
-                    )}
-                  </View>
-                </View>
+                <CustomTextInput
+                  value={formData.firstName}
+                  onChangeText={(text) => setFormData({ ...formData, firstName: text })}
+                  placeholder="Nome"
+                  containerStyle={styles.input}
+                  autoCapitalize="words"
+                />
+                {errors.firstName && (
+                  <ThemedText style={styles.errorText}>{errors.firstName}</ThemedText>
+                )}
+
+                <CustomTextInput
+                  value={formData.lastName}
+                  onChangeText={(text) => setFormData({ ...formData, lastName: text })}
+                  placeholder="Sobrenome"
+                  containerStyle={styles.input}
+                  autoCapitalize="words"
+                />
+                {errors.lastName && (
+                  <ThemedText style={styles.errorText}>{errors.lastName}</ThemedText>
+                )}
               </>
             )}
 
@@ -471,14 +465,6 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: spacing.lg,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  nameInput: {
-    flex: 1,
   },
   input: {
     marginBottom: spacing.sm,
