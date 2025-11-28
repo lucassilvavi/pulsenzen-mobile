@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -25,6 +26,38 @@ import {
 } from 'react-native';
 
 const { height } = Dimensions.get('window');
+
+// Web-compatible alert helpers
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
+
+const showConfirmAlert = (
+  title: string,
+  message: string,
+  options: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+) => {
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed) {
+      const confirmOption = options.find(opt => opt.style !== 'cancel');
+      if (confirmOption?.onPress) {
+        confirmOption.onPress();
+      }
+    } else {
+      const cancelOption = options.find(opt => opt.style === 'cancel');
+      if (cancelOption?.onPress) {
+        cancelOption.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, options);
+  }
+};
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -137,15 +170,15 @@ export default function AuthScreen() {
         // Use different alert types based on whether it's informational or an error
         if (result.isInformational) {
           // For informational messages (like "email already exists"), use a neutral alert
-          Alert.alert('Informação', result.message, [{ text: 'OK', style: 'default' }]);
+          showConfirmAlert('Informação', result.message, [{ text: 'OK', style: 'default' }]);
         } else {
           // For real errors, use error alert
-          Alert.alert('Erro', result.message, [{ text: 'OK', style: 'cancel' }]);
+          showConfirmAlert('Erro', result.message, [{ text: 'OK', style: 'cancel' }]);
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
-      Alert.alert('Erro', 'Ocorreu um erro inesperado. Tente novamente.');
+      showAlert('Erro', 'Ocorreu um erro inesperado. Tente novamente.');
     }
   };
 
@@ -173,7 +206,7 @@ export default function AuthScreen() {
     console.error('Biometric login error:', error);
     // Don't show alert for user cancellation
     if (!error.toLowerCase().includes('cancel')) {
-      Alert.alert('❌ Autenticação Biométrica Falhou', error);
+      showAlert('❌ Autenticação Biométrica Falhou', error);
     }
   };
 
@@ -181,7 +214,7 @@ export default function AuthScreen() {
    * Handle biometric setup completion
    */
   const handleBiometricSetupComplete = () => {
-    Alert.alert(
+    showConfirmAlert(
       '🎉 Sucesso!',
       'Autenticação biométrica configurada com sucesso! Agora você pode fazer login de forma rápida e segura.',
       [{ text: 'Ótimo!' }]

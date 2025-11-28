@@ -9,16 +9,41 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import API_CONFIG from '../../config/api';
 
 const { height } = Dimensions.get('window');
+
+// Web-compatible alert helper
+const showConfirmAlert = (
+  title: string,
+  message: string,
+  options: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+) => {
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed) {
+      const confirmOption = options.find(opt => opt.style !== 'cancel');
+      if (confirmOption?.onPress) {
+        confirmOption.onPress();
+      }
+    } else {
+      const cancelOption = options.find(opt => opt.style === 'cancel');
+      if (cancelOption?.onPress) {
+        cancelOption.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, options);
+  }
+};
 
 export default function NewPasswordScreen() {
   const router = useRouter();
@@ -72,13 +97,17 @@ export default function NewPasswordScreen() {
 
       const data = await response.json();
 
+      console.log('Password reset response:', data);
+
       if (data.success) {
-        Alert.alert(
+        console.log('Password reset successful, showing alert...');
+        
+        showConfirmAlert(
           'Senha redefinida! ✅',
           'Sua senha foi alterada com sucesso. Você já pode fazer login.',
           [
             {
-              text: 'Fazer Login',
+              text: 'OK',
               onPress: () => {
                 router.replace('/onboarding/auth');
               },
@@ -86,6 +115,7 @@ export default function NewPasswordScreen() {
           ]
         );
       } else {
+        console.log('Password reset failed:', data.message);
         Alert.alert('Erro', data.message || 'Não foi possível alterar a senha');
       }
     } catch (error) {

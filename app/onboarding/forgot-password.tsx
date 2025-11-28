@@ -11,6 +11,7 @@ import { useState } from 'react';
 import {
     Alert,
     Dimensions,
+    Platform,
     ScrollView,
     StyleSheet,
     TouchableOpacity,
@@ -19,6 +20,30 @@ import {
 import API_CONFIG from '../../config/api';
 
 const { height } = Dimensions.get('window');
+
+// Web-compatible alert helper
+const showConfirmAlert = (
+  title: string,
+  message: string,
+  options: Array<{ text: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }>
+) => {
+  if (Platform.OS === 'web') {
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed) {
+      const confirmOption = options.find(opt => opt.style !== 'cancel');
+      if (confirmOption?.onPress) {
+        confirmOption.onPress();
+      }
+    } else {
+      const cancelOption = options.find(opt => opt.style === 'cancel');
+      if (cancelOption?.onPress) {
+        cancelOption.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, options);
+  }
+};
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -61,12 +86,12 @@ export default function ForgotPasswordScreen() {
       const data = await response.json();
 
       if (data.success) {
-        Alert.alert(
+        showConfirmAlert(
           'Código enviado! 📧',
-          'Verifique seu email e digite o código de 6 dígitos na próxima tela.',
+          'Verifique seu email e digite o código de 6 dígitos.',
           [
             {
-              text: 'OK',
+              text: 'Continuar',
               onPress: () => {
                 router.push({
                   pathname: '/onboarding/verify-code',

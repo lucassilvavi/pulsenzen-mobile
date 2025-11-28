@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     Dimensions,
+    Platform,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -19,6 +20,15 @@ import {
 import API_CONFIG from '../../config/api';
 
 const { height } = Dimensions.get('window');
+
+// Web-compatible alert helper
+const showAlert = (title: string, message: string) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
 export default function VerifyCodeScreen() {
   const router = useRouter();
@@ -92,13 +102,13 @@ export default function VerifyCodeScreen() {
           params: { email, code: fullCode },
         });
       } else {
-        Alert.alert('Código inválido', data.message || 'Código incorreto ou expirado');
+        showAlert('Código inválido', data.message || 'Código incorreto ou expirado');
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
     } catch (error) {
       console.error('Error verifying code:', error);
-      Alert.alert('Erro', 'Não foi possível verificar o código. Tente novamente.');
+      showAlert('Erro', 'Não foi possível verificar o código. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -119,15 +129,15 @@ export default function VerifyCodeScreen() {
       const data = await response.json();
 
       if (data.success) {
-        Alert.alert('Código reenviado! 📧', 'Verifique seu email novamente.');
+        showAlert('Código reenviado! 📧', 'Verifique seu email novamente.');
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       } else {
-        Alert.alert('Erro', data.message || 'Não foi possível reenviar o código');
+        showAlert('Erro', data.message || 'Não foi possível reenviar o código');
       }
     } catch (error) {
       console.error('Error resending code:', error);
-      Alert.alert('Erro', 'Não foi possível reenviar o código. Tente novamente.');
+      showAlert('Erro', 'Não foi possível reenviar o código. Tente novamente.');
     } finally {
       setResending(false);
     }

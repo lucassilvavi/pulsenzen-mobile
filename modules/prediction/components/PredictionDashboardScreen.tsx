@@ -124,7 +124,7 @@ export const PredictionDashboardScreen: React.FC = () => {
                 const expanded = !!expandedFactors[f.id];
                 const meta = getFactorCategoryMeta(f.category);
                 return (
-                  <View key={`${f.id}-${idx}`} style={styles.factorRow}>
+                  <View key={`${f.id}-${idx}`} style={styles.factorRow} onPr>
                     <View style={styles.factorHeader}>
                       <View style={styles.factorLeft}>
                         <View style={[styles.iconCircle, { backgroundColor: meta.bg }]}> 
