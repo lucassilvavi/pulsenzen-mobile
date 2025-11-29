@@ -151,9 +151,14 @@ export default function PersonalInfoScreen() {
 
       const age = calculateAge(birthDate);
       
-      // Format date to ISO string for backend
+      // Format date without timezone conversion to avoid day shift
+      const year = birthDate.getFullYear();
+      const month = String(birthDate.getMonth() + 1).padStart(2, '0');
+      const day = String(birthDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`; // YYYY-MM-DD format
+      
       const profileData = {
-        dateOfBirth: birthDate.toISOString().split('T')[0], // YYYY-MM-DD format
+        dateOfBirth: formattedDate,
         sex: formData.sex, // MENINO or MENINA
         age, // Calculate and send age for convenience
       };
