@@ -146,7 +146,10 @@ export function EditProfileModal({
       // Handle date of birth - priority: actual dateOfBirth from API, then calculate from age
       if (currentProfile.dateOfBirth) {
         // Use actual dateOfBirth from API
-        const birthDate = new Date(currentProfile.dateOfBirth);
+        // Parse only the date part to avoid timezone issues
+        const dateStr = currentProfile.dateOfBirth.split('T')[0]; // Get YYYY-MM-DD
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const birthDate = new Date(year, month - 1, day); // Create date in local timezone
         setDateInput(formatDateToInput(birthDate));
       } else if (currentProfile.age) {
         // Fallback: calculate from age
@@ -250,10 +253,16 @@ export function EditProfileModal({
       await ProfileService.saveUserAvatar(avatarUri, user?.id);
 
       // Prepare profile data for API
+      // Format date without timezone conversion to avoid day shift
+      const year = birthDate.getFullYear();
+      const month = String(birthDate.getMonth() + 1).padStart(2, '0');
+      const day = String(birthDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`; // YYYY-MM-DD format
+      
       const profileData = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        dateOfBirth: birthDate.toISOString().split('T')[0], // YYYY-MM-DD format
+        dateOfBirth: formattedDate,
         sex: sex, // MENINO or MENINA
       };
 
@@ -343,7 +352,10 @@ export function EditProfileModal({
       setSex((currentProfile.sex as 'MENINO' | 'MENINA') || '');
       
       if (currentProfile.dateOfBirth) {
-        const birthDate = new Date(currentProfile.dateOfBirth);
+        // Parse only the date part to avoid timezone issues
+        const dateStr = currentProfile.dateOfBirth.split('T')[0]; // Get YYYY-MM-DD
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const birthDate = new Date(year, month - 1, day); // Create date in local timezone
         setDateInput(formatDateToInput(birthDate));
       } else if (currentProfile.age) {
         const currentYear = new Date().getFullYear();
