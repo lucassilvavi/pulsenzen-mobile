@@ -2,7 +2,7 @@
   "expo": {
     "name": "Acalmar",
     "slug": "pulse-zen-app",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pulsezenapp",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.lucassilvavi.pulsezenapp",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
@@ -23,7 +23,7 @@
     },
     "android": {
       "package": "com.lucassilvavi.pulsezenapp",
-      "versionCode": 8,
+      "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
