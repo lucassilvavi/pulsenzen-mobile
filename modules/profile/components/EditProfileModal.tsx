@@ -18,6 +18,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProfileService } from '../services/ProfileService';
 import { UserProfile } from '../types';
 
@@ -41,6 +42,7 @@ export function EditProfileModal({
 }: EditProfileModalProps) {
   const { updateProfile: updateAuthProfile, user } = useAuth();
   const { updateUserData } = useUserDataNew();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -399,10 +401,12 @@ export function EditProfileModal({
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.content}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
           <ScrollView 
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {/* Avatar Section */}
             <View style={styles.avatarSection}>
@@ -554,7 +558,12 @@ export function EditProfileModal({
           </ScrollView>
 
           {/* Action Buttons */}
-          <View style={styles.actions}>
+          <View style={[
+            styles.actions,
+            { 
+              paddingBottom: Math.max(insets.bottom, spacing.lg),
+            }
+          ]}>
             <Button
               label="Cancelar"
               variant="outline"
@@ -610,7 +619,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xxl * 2, // Extra space at the bottom
   },
   avatarSection: {
     alignItems: 'center',
@@ -658,13 +667,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral.divider,
+    backgroundColor: colors.neutral.background,
   },
   cancelButton: {
     flex: 1,
+    minHeight: 48,
   },
   saveButton: {
     flex: 1,
+    minHeight: 48,
   },
   // Date picker styles
   dateButton: {
